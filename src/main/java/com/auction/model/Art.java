@@ -1,17 +1,26 @@
 package com.auction.model;
 
-public class Art extends Item{
+public class Art extends Item {
     private String artist;
-    private int years;
-    public Art(String name,String description,double startingprice,String artist,int years) {
-        super(name, description, startingprice);
+    private int year;
+
+    public Art(String name, String description, double startingPrice, String artist, int year) {
+        super(name, description, startingPrice);
         this.artist = artist;
-        this.years = years;
+        this.year = year;
     }
-    public String getArtist(){
+
+    public String getArtist() {
         return artist;
     }
-    public int getYears(){
-        return years;
+
+    public int getYear() {
+        return year;
+    }
+
+    @Override
+    public String toString() {
+        return "Art{name='" + name + "', artist='" + artist + "', year=" + year +
+                ", startingPrice=" + startingPrice + "}";
     }
 }

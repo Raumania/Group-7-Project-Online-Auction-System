@@ -6,10 +6,6 @@ public class Bidder extends User {
 
     public Bidder(String username, String password, String email) {
         super(username, password, email);
-        this.id= IdGenerator.generationBidId();
+        this.id = IdGenerator.generationBidId();
     }
-    public String getId(){
-        return this.id;
-    }
-
 }

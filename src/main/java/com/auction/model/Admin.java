@@ -6,9 +6,6 @@ public class Admin extends User {
 
     public Admin(String username, String password, String email) {
         super(username, password, email);
-        this.id= IdGenerator.generationAdminId();
-    }
-    public String getId(){
-        return this.id;
+        this.id = IdGenerator.generationAdminId();
     }
 }
