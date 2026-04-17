@@ -1,5 +1,6 @@
 package com.auction.model;
 
+import com.auction.observer.AuctionObserver;
 import com.auction.util.IdGenerator;
 
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ public class Auction extends Entity {
     private Bidder highestBidder;
     private List<BidTransaction> bidHistory;
     private AuctionStatus status;
+    private List<AuctionObserver> observers;
 
     public Auction(Item item, Seller seller) {
         super();
@@ -29,9 +31,26 @@ public class Auction extends Entity {
         this.bidHistory = new ArrayList<>();
         this.status = AuctionStatus.OPEN;
         this.id = IdGenerator.generationAuctionId();
+        this.observers = new ArrayList<>();
     }
 
-    public void placeBid(Bidder bidder, double amount) {
+    public void addObserver(AuctionObserver observer) {
+        if (observer != null) {
+            observers.add(observer);
+        }
+    }
+
+    public void removeObserver(AuctionObserver observer) {
+        observers.remove(observer);
+    }
+
+    private void notifyObservers(String message) {
+        for (AuctionObserver observer : observers) {
+            observer.update(this, message);
+        }
+    }
+
+    public synchronized void placeBid(Bidder bidder, double amount) {
         if (bidder == null) {
             throw new RuntimeException("Bidder cannot be null");
         }
@@ -51,6 +70,7 @@ public class Auction extends Entity {
         bidHistory.add(transaction);
 
         System.out.println("New bid " + amount + " by " + bidder.getUsername());
+        notifyObservers("New bid: " + amount + " by " + bidder.getUsername());
     }
 
     public void closeAuction() {
@@ -62,8 +82,10 @@ public class Auction extends Entity {
 
         if (highestBidder != null) {
             System.out.println("Winner " + highestBidder.getUsername());
+            notifyObservers("Auction finished. Winner: " + highestBidder.getUsername());
         } else {
             System.out.println("No bid placed");
+            notifyObservers("Auction finished with no bids.");
         }
     }
 
