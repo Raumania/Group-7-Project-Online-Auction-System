@@ -1,0 +1,16 @@
+#background_login {
+    -fx-background-image: url("../images/background_login.png");
+    -fx-background-size: cover;
+    -fx-background-position: center center;
+    -fx-background-repeat: no-repeat;
+}
+
+#frame_login {
+    -fx-background-color: rgb(88, 130, 193, 0.5);
+    -fx-background-radius: 28.46;
+}
+
+#button {
+    -fx-background-color: rgb(0, 52, 101);
+    -fx-background-radius: 7.11
+}
