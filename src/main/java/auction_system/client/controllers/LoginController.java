@@ -1,15 +1,14 @@
 package auction_system.client.controllers;
 
+import auction_system.Utils.CryptoUtils;
 import auction_system.Utils.ViewUtils;
+import auction_system.server.dao.UserDAO;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -34,23 +33,14 @@ public class LoginController {
             statusLabel.setText("Phải điền đầy đủ thông tin đăng nhập!");
             return;
         }
-        //check data (code database ở đây)
-
         //Trường hợp có điền đầy đủ
-        System.out.println(username);
-        System.out.println(password);
-        if(username.equals("52ducbanh") && password.equals("123")) {
+        if(UserDAO.checkLogin(username,password)) {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/auction_list.fxml"));
             root = loader.load();
             AuctionListController auctionListController = loader.getController();
 
-            stage = (Stage)((Node)event.getSource()).getScene().getWindow();
-            scene = ViewUtils.createScene("/fxml/auction_list.fxml","/css/login.css");
-            stage.setScene(scene);
-
-            stage.setFullScreen(true);
-            stage.setFullScreenExitHint("");
-            stage.show();
+            scene = ViewUtils.getScene();
+            scene.setRoot(root);
         }
         else {
             statusLabel.setText("Sai tài khoản hoặc mật khẩu!");
@@ -58,7 +48,7 @@ public class LoginController {
     }
 
     public void exit(ActionEvent event) {
-        stage = (Stage)((Node)event.getSource()).getScene().getWindow();
+        stage = ViewUtils.getStage();
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Exit");
@@ -67,7 +57,6 @@ public class LoginController {
         alert.initOwner(stage);
 
         if(alert.showAndWait().get() == ButtonType.OK) {
-            stage = (Stage)((Node)event.getSource()).getScene().getWindow();
             stage.close();
         }
     }
@@ -77,12 +66,8 @@ public class LoginController {
         root = loader.load();
         RegisterController registerController = loader.getController();
 
-        stage = (Stage)((Node)event.getSource()).getScene().getWindow();
-        scene = ViewUtils.createScene("/fxml/register.fxml","/css/login.css");
-        stage.setScene(scene);
-        stage.setFullScreen(true);
-        stage.setFullScreenExitHint("");
-        stage.show();
+        scene = ViewUtils.getScene();
+        scene.setRoot(root);
 
         ViewUtils.scaleLayout(scene);
     }

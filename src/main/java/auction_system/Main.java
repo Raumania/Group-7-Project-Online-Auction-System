@@ -10,6 +10,8 @@ import java.io.IOException;
 public class Main extends Application {
     public void start(Stage stage) throws IOException {
         Scene scene = ViewUtils.createScene("/fxml/login.fxml","/css/login.css");
+        ViewUtils.setStage(stage);
+        ViewUtils.setScene(scene);
         stage.setTitle("Online Auction");
         stage.setScene(scene);
         stage.setFullScreen(true);

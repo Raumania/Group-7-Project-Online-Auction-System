@@ -5,12 +5,15 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Region;
+import javafx.stage.Stage;
 
 import java.io.IOException;
 
 public class ViewUtils {
     private static final double BASE_WIDTH = 1920.0;
     private static final double BASE_HEIGHT = 1080.0;
+    private static Stage stage;
+    private static Scene scene;
     //Tạo scene
     public static Scene createScene(String fxmlPath, String cssPath) throws IOException {
         Parent root = FXMLLoader.load(ViewUtils.class.getResource(fxmlPath));
@@ -18,6 +21,22 @@ public class ViewUtils {
         if(cssPath != null){
             scene.getStylesheets().add(ViewUtils.class.getResource(cssPath).toExternalForm());
         }
+        return scene;
+    }
+
+    public static void setStage(Stage stage) {
+        ViewUtils.stage = stage;
+    }
+
+    public static void setScene(Scene scene) {
+        ViewUtils.scene = scene;
+    }
+
+    public static Stage getStage() {
+        return stage;
+    }
+
+    public static Scene getScene() {
         return scene;
     }
 
