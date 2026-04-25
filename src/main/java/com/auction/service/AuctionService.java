@@ -1,5 +1,8 @@
 package com.auction.service;
 
+import com.auction.exception.AuctionClosedException;
+import com.auction.exception.AuthenticationException;
+import com.auction.exception.InvalidBidException;
 import com.auction.service.AuctionManager;
 import com.auction.model.Auction;
 import com.auction.model.Bidder;
@@ -22,7 +25,7 @@ public class AuctionService {
         return auction;
     }
 
-    public void placeBid(String auctionId, Bidder bidder, double amount) {
+    public void placeBid(String auctionId, Bidder bidder, double amount) throws AuthenticationException, InvalidBidException, AuctionClosedException {
         Auction auction = auctionManager.findAuctionById(auctionId);
 
         if (auction == null) {

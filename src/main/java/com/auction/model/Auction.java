@@ -1,5 +1,8 @@
 package com.auction.model;
 
+import com.auction.exception.AuctionClosedException;
+import com.auction.exception.AuthenticationException;
+import com.auction.exception.InvalidBidException;
 import com.auction.observer.AuctionObserver;
 import com.auction.util.IdGenerator;
 
@@ -50,17 +53,17 @@ public class Auction extends Entity {
         }
     }
 
-    public synchronized void placeBid(Bidder bidder, double amount) {
+    public synchronized void placeBid(Bidder bidder, double amount) throws AuthenticationException, InvalidBidException {
         if (bidder == null) {
-            throw new RuntimeException("Bidder cannot be null");
+            throw new AuthenticationException("Please login to your account");
         }
 
         if (status != AuctionStatus.OPEN) {
-            throw new RuntimeException("Auction is not open");
+            throw new AuctionClosedException("Auction is not open");
         }
 
         if (amount <= currentPrice) {
-            throw new RuntimeException("Bid must be higher than current price");
+            throw new InvalidBidException("Bid must be higher than current price");
         }
 
         currentPrice = amount;
