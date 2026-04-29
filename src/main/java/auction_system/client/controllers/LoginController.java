@@ -1,54 +1,42 @@
 package auction_system.client.controllers;
 
-import auction_system.Utils.CryptoUtils;
-import auction_system.Utils.ViewUtils;
-import auction_system.server.dao.UserDAO;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.fxml.Initializable;
+import javafx.scene.Node;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.io.IOException;
 
-public class LoginController {
-    @FXML
-    private TextField usernameField;
-    @FXML
-    private PasswordField passwordField;
-    @FXML
-    private Label statusLabel;
+public class LoginController implements Initializable {
+    @FXML private VBox registerForm;
+    @FXML private VBox loginForm;
+    @FXML private TextField usernameField;
+    @FXML private TextField fullnameField;
+    @FXML private PasswordField passwordField;
+    @FXML private PasswordField confirmPasswordField;
 
-    private Stage stage;
-    private Scene scene;
-    private Parent root;
+    public void initialize(java.net.URL location, java.util.ResourceBundle resources) {
+        registerForm.setVisible(false);
+        loginForm.setVisible(true);
+    }
 
-    public void login(ActionEvent event) throws IOException {
-        //Trường hợp không điền gì
-        String username = usernameField.getText();
-        String password = passwordField.getText();
-        if(username.isEmpty() || password.isEmpty()) {
-            statusLabel.setText("Phải điền đầy đủ thông tin đăng nhập!");
-            return;
-        }
-        //Trường hợp có điền đầy đủ
-        if(UserDAO.checkLogin(username,password)) {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/auction_list.fxml"));
-            root = loader.load();
-            AuctionListController auctionListController = loader.getController();
+    public void showRegisterForm(ActionEvent e) {
+        loginForm.setVisible(false);
+        registerForm.setVisible(true);
+    }
 
-            scene = ViewUtils.getScene();
-            scene.setRoot(root);
-        }
-        else {
-            statusLabel.setText("Sai tài khoản hoặc mật khẩu!");
-        }
+    public void showLoginForm(ActionEvent e) {
+        registerForm.setVisible(false);
+        loginForm.setVisible(true);
     }
 
     public void exit(ActionEvent event) {
-        stage = ViewUtils.getStage();
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Exit");
@@ -61,14 +49,17 @@ public class LoginController {
         }
     }
 
-    public void register(ActionEvent event) throws IOException {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/register.fxml"));
-        root = loader.load();
-        RegisterController registerController = loader.getController();
+    public void login(ActionEvent e) {
+        String username = usernameField.getText();
+        String password = passwordField.getText();
+        // AuthService will be here
+    }
 
-        scene = ViewUtils.getScene();
-        scene.setRoot(root);
-
-        ViewUtils.scaleLayout(scene);
+    public void register(ActionEvent e) {
+        String fullname  = fullnameField.getText();
+        String username = usernameField.getText();
+        String password = passwordField.getText();
+        String confirmPassword = confirmPasswordField.getText();
+        // AuthService will be here
     }
 }
