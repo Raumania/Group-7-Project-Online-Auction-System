@@ -1,10 +1,5 @@
 .root-pane {
-    -fx-background-color: linear-gradient(
-            to bottom,
-            #60A5FA 0%,
-            #3B82F6 50%,
-            #1E40AF 100%
-    );
+    -fx-background-color: #FFFF
 }
 
 .header-pane {
@@ -61,10 +56,9 @@
     -fx-text-fill: #FFFFFF;
 }
 .scroll-pane {
-    -fx-background-color: linear-gradient(
-            to bottom,
-            #60A5FA 0%,
-            #3B82F6 50%,
-            #1E40AF 100%
-    );
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
 }

@@ -17,7 +17,7 @@
    <children>
       <ImageView fitHeight="1080.0" fitWidth="1920.0" pickOnBounds="true">
          <image>
-            <Image url="@../images/background.png" />
+            <Image url="@../images/login%20UI/background.png" />
          </image>
       </ImageView>
       <StackPane alignment="BOTTOM_LEFT" layoutX="160.0" layoutY="350.0" prefHeight="650.0" prefWidth="500.0">
