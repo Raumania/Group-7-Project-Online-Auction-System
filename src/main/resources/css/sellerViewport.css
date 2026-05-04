@@ -1,0 +1,63 @@
+.viewport-container { -fx-background-color: transparent; }
+
+.content-card {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-padding: 15;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);
+}
+
+.section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1E293B;
+    -fx-padding: 0 0 5 0;
+}
+
+/* FIX LỖI ĐÈ CHỮ: Quan trọng nhất */
+.input-label {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.text-field, .combo-box, .date-picker, .text-area {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #E2E8F0;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+/* TÙY CHỈNH TABLEVIEW CHO TO RÕ */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: #E2E8F0;
+}
+.table-view .column-header {
+    -fx-background-color: #F8FAFC;
+    -fx-padding: 10;
+}
+.table-view .column-header .label {
+    -fx-text-fill: #475569;
+    -fx-font-weight: bold;
+}
+
+/* HỆ THỐNG NÚT BẤM GỌN GÀNG */
+.btn {
+    -fx-cursor: hand;
+    -fx-background-radius: 6;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+.btn-add { -fx-background-color: #10B981; }
+.btn-update { -fx-background-color: #3B82F6; }
+.btn-clear { -fx-background-color: #F59E0B; }
+.btn-delete { -fx-background-color: #EF4444; }
+
+.image-upload-box {
+    -fx-border-color: #CBD5E1;
+    -fx-border-style: dashed;
+    -fx-border-radius: 10;
+    -fx-background-color: #F8FAFC;
+}

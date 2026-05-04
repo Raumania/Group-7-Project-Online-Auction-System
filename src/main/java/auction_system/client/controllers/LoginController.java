@@ -1,65 +1,67 @@
 package auction_system.client.controllers;
 
+import javafx.animation.TranslateTransition;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 
-public class LoginController implements Initializable {
-    @FXML private VBox registerForm;
-    @FXML private VBox loginForm;
-    @FXML private TextField usernameField;
-    @FXML private TextField fullnameField;
-    @FXML private PasswordField passwordField;
-    @FXML private PasswordField confirmPasswordField;
+public class LoginController  {
+    @FXML
+    private Button side_CreateBtn;
 
-    public void initialize(java.net.URL location, java.util.ResourceBundle resources) {
-        registerForm.setVisible(false);
-        loginForm.setVisible(true);
+    @FXML
+    private Button side_alreadyHave;
+
+    @FXML
+    private AnchorPane side_form;
+
+    @FXML
+    private AnchorPane su_signupForm;
+
+    @FXML
+    private AnchorPane su_signupForm1;
+
+    @FXML
+    void regBtn(ActionEvent event) {
+
     }
 
-    public void showRegisterForm(ActionEvent e) {
-        loginForm.setVisible(false);
-        registerForm.setVisible(true);
-    }
+    @FXML
+    void switchForm(ActionEvent event) {
 
-    public void showLoginForm(ActionEvent e) {
-        registerForm.setVisible(false);
-        loginForm.setVisible(true);
-    }
+        TranslateTransition slider = new TranslateTransition();
 
-    public void exit(ActionEvent event) {
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        if (event.getSource() == side_CreateBtn) {
+            slider.setNode(side_form);
+            slider.setToX(640);
+            slider.setDuration(Duration.seconds(1));
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Exit");
-        alert.setHeaderText("You're about to exit!");
-        alert.setContentText("Are you sure?");
-        alert.initOwner(stage);
+            slider.setOnFinished((ActionEvent e) -> {
+                side_alreadyHave.setVisible(true);
+                side_CreateBtn.setVisible(false);
+            });
 
-        if(alert.showAndWait().get() == ButtonType.OK) {
-            stage.close();
+            slider.play();
+        } else if (event.getSource() == side_alreadyHave) {
+            slider.setNode(side_form);
+            slider.setToX(0);
+            slider.setDuration(Duration.seconds(1));
+
+            slider.setOnFinished((ActionEvent e) -> {
+                side_alreadyHave.setVisible(false);
+                side_CreateBtn.setVisible(true);
+            });
+
+            slider.play();
         }
+
     }
 
-    public void login(ActionEvent e) {
-        String username = usernameField.getText();
-        String password = passwordField.getText();
-        // AuthService will be here
-    }
-
-    public void register(ActionEvent e) {
-        String fullname  = fullnameField.getText();
-        String username = usernameField.getText();
-        String password = passwordField.getText();
-        String confirmPassword = confirmPasswordField.getText();
-        // AuthService will be here
-    }
 }

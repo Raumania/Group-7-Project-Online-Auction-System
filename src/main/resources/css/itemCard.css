@@ -1,0 +1,70 @@
+/* AUCTION CARD */
+.auction-card {
+    -fx-background-color: #60A5FA;
+    -fx-background-radius: 15;
+    -fx-padding: 15;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 5);
+}
+
+.card-image-placeholder {
+    -fx-background-color: #E2E8F0;
+    -fx-background-radius: 10;
+}
+
+.card-tag {
+    -fx-background-color: #8B5CF6;
+    -fx-text-fill: white;
+    -fx-padding: 2 10;
+    -fx-background-radius: 10;
+    -fx-font-size: 10px;
+}
+
+.card-price {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 22px;
+}
+
+/* Khai báo lại tiện ích text để Card có thể đứng độc lập */
+.text-white-bold {
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.text-muted {
+    -fx-text-fill: #93C5FD;
+    -fx-font-size: 11px;
+}
+
+/* Đếm giờ */
+.timer-box {
+    -fx-background-color: #1E3A8A;
+    -fx-background-radius: 10;
+    -fx-padding: 10;
+}
+
+.timer-num {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+
+.timer-label {
+    -fx-text-fill: #93C5FD;
+    -fx-font-size: 8px;
+}
+
+.timer-colon {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* Nút bấm đặt giá */
+.place-bid-btn {
+    -fx-background-color: #D9F99D;
+    -fx-text-fill: #166534;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 8;
+    -fx-cursor: hand;
+}

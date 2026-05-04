@@ -1,8 +1,8 @@
 package auction_system;
 
-import auction_system.client.Utils.ViewUtils;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
@@ -10,11 +10,9 @@ import java.io.IOException;
 
 public class Main extends Application {
     public void start(Stage stage) throws IOException {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/auction_list.fxml"));
-        Scene scene = new Scene(loader.load());
+        Parent root = FXMLLoader.load(getClass().getResource("/fxml/mainAuction.fxml"));
+        Scene scene = new Scene(root);
 
-//        stage.setFullScreen(true);
-//        stage.setFullScreenExitHint("");
         stage.setScene(scene);
         stage.show();
     }

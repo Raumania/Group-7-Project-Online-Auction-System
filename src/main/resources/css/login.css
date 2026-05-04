@@ -1,56 +1,47 @@
-
-.glass-pane {
-    -fx-background-color: rgba(255, 255, 255, 0.2);
-    -fx-background-radius: 20;
-    -fx-border-color: rgba(255, 255, 255, 0.4);
-    -fx-border-radius: 20;
-    -fx-border-width: 2;
-}
-
-.form-title {
-    -fx-font-family: "System";
-    -fx-font-weight: bold;
-    -fx-font-size: 40px;
-    -fx-text-fill: white;
-}
-
-.input-label {
-    -fx-font-size: 14px;
-    -fx-text-fill: white;
-}
-
-.text-field-custom {
-    -fx-background-radius: 8;
-    -fx-font-size: 14px;
-    -fx-background-color: white;
-}
-
-.text-field-custom:focused {
-    -fx-border-color: #0b2e59;
-    -fx-border-radius: 8;
-    -fx-border-width: 2;
-}
-
-.button-primary {
-    -fx-background-color: #0b2e59;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-background-radius: 8;
-    -fx-font-size: 16px;
+.login-btn{
+    -fx-background-color: linear-gradient(to bottom right, #4c8df5, #2264d1);
+    -fx-background-radius: 5px;
     -fx-cursor: hand;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+.login-btn:hover {
+    -fx-background-color: linear-gradient(to bottom right, #6b9ff7, #3776e0);
+    -fx-effect: dropshadow(three-pass-box, rgba(34, 100, 209, 0.4), 10, 0, 0, 4);
 }
 
-.button-primary:hover {
-    -fx-background-color: #1a4a8d;
+.login-btn:pressed {
+    -fx-background-color: linear-gradient(to bottom right, #3b7ce4, #1952b3);
+    -fx-effect: none;
 }
 
-.button-secondary {
-    -fx-background-color: #0b2e59;
-    -fx-text-fill: white;
-    -fx-background-radius: 8;
+.create-btn{
+    -fx-background-color: transparent;
     -fx-cursor: hand;
+    -fx-text-fill: #fff;
+    -fx-border-color: #fff;
+    -fx-border-width: 1px;
+}
+.create-btn:hover{
+    -fx-background-color: #fff;
+    -fx-text-fill: #000;
+}
+.slide-pane {
+    -fx-background-color: linear-gradient(to bottom right, #4c8df5, #2264d1);
 }
 
-.button-secondary:hover {
-    -fx-background-color: #1a4a8d;
+.textfield{
+    -fx-background-color: transparent;
+    -fx-border-color: linear-gradient(to bottom right, #4c8df5, #2264d1);
+    -fx-border-width: .5px;
+}
+.textfield:focused{
+    -fx-border-width: 1px;
+}
+
+.head-label{
+    -fx-border-color: #2264d1;
+    -fx-border-width: 0 0 0 3px;
+    -fx-padding: 0 0 0 5px;
 }
