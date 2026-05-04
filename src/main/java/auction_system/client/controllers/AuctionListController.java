@@ -32,9 +32,9 @@ public class AuctionListController implements Initializable {
         try {
             Image avartarImage = new Image(getClass().getResource("/images/avartar/avartar.jpg").toExternalForm());
             avartarImageView.setImage(avartarImage);
-            FXMLLoader detailItemLoader = new FXMLLoader(getClass().getResource("/fxml/detail-item.fxml"));
-            BorderPane detailItem = detailItemLoader.load();
-            contentPane.getChildren().add(detailItem);
+//            FXMLLoader detailItemLoader = new FXMLLoader(getClass().getResource("/fxml/auction_list.fxml"));
+//            BorderPane detailItem = detailItemLoader.load();
+//            contentPane.getChildren().add(detailItem);
             for(int i = 1;i <= 10;i++) {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/item-card.fxml"));
                 VBox itemCard = loader.load();

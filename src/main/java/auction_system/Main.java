@@ -13,8 +13,8 @@ public class Main extends Application {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/auction_list.fxml"));
         Scene scene = new Scene(loader.load());
 
-        stage.setFullScreen(true);
-        stage.setFullScreenExitHint("");
+//        stage.setFullScreen(true);
+//        stage.setFullScreenExitHint("");
         stage.setScene(scene);
         stage.show();
     }
