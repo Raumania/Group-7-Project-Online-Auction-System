@@ -1,13 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox stylesheets="@../css/mainAuction.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controllers.ListViewportController">
    <children>
+      <HBox spacing="15.0">
+         <children>
+            <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+               <children>
+                  <Label styleClass="text-muted" text="Categories" />
+                  <ComboBox maxWidth="1.7976931348623157E308" promptText="All Categories" styleClass="combo-box-filter" />
+               </children>
+            </VBox>
+            <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+               <children>
+                  <Label styleClass="text-muted" text="Status" />
+                  <ComboBox maxWidth="1.7976931348623157E308" promptText="All Status" styleClass="combo-box-filter" />
+               </children>
+            </VBox>
+            <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+               <children>
+                  <Label styleClass="text-muted" text="Sort By" />
+                  <ComboBox maxWidth="1.7976931348623157E308" promptText="Ending Soon" styleClass="combo-box-filter" />
+               </children>
+            </VBox>
+         </children>
+      </HBox>
       <Label styleClass="section-title" text="⏱ Top Upcoming Auctions" />
       <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 20 0 0 0;" VBox.vgrow="ALWAYS">
          <content>

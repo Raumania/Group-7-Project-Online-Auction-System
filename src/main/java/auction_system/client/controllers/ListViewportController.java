@@ -19,11 +19,12 @@ public class ListViewportController implements Initializable {
                 FXMLLoader loader = new FXMLLoader();
                 loader.setLocation(getClass().getResource("/fxml/itemCard.fxml"));
                 VBox pane = loader.load();
-                ItemController  itemController = loader.getController();
+                ItemCardController itemCardController = loader.getController();
                 itemContainer.getChildren().add(pane);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
+
 }

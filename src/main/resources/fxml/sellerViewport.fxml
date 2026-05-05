@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.net.URL?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
@@ -17,17 +16,34 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="15.0" styleClass="viewport-container" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controllers.SellerViewportController">
+<VBox spacing="15.0" styleClass="viewport-container" stylesheets="@../css/sellerViewport.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controllers.SellerViewportController">
     <padding>
         <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
     </padding>
 
-    <stylesheets>
-        <URL value="@../css/sellerView.css" />
-      <URL value="@../css/sellerViewport.css" />
-    </stylesheets>
-
     <children>
+      <HBox spacing="15.0">
+         <children>
+            <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+               <children>
+                  <Label styleClass="text-muted" text="Categories" />
+                  <ComboBox maxWidth="1.7976931348623157E308" promptText="All Categories" styleClass="combo-box-filter" />
+               </children>
+            </VBox>
+            <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+               <children>
+                  <Label styleClass="text-muted" text="Status" />
+                  <ComboBox maxWidth="1.7976931348623157E308" promptText="All Status" styleClass="combo-box-filter" />
+               </children>
+            </VBox>
+            <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+               <children>
+                  <Label styleClass="text-muted" text="Sort By" />
+                  <ComboBox maxWidth="1.7976931348623157E308" promptText="Ending Soon" styleClass="combo-box-filter" />
+               </children>
+            </VBox>
+         </children>
+      </HBox>
         <!-- PHẦN 1: TABLE LÀ CHÍNH (VBox.vgrow="ALWAYS") -->
         <VBox spacing="10.0" styleClass="content-card" VBox.vgrow="ALWAYS">
             <children>

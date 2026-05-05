@@ -1,5 +1,6 @@
 package auction_system.client.controllers;
 
+import auction_system.client.Utils.ViewSingleton;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -21,9 +22,9 @@ public class MainAuctionController implements Initializable{
     private VBox listViewport;
     private VBox sellerViewport;
 
-
     public void initialize(URL location, ResourceBundle resources) {
         try {
+            ViewSingleton.getInstance().setViewport(viewport);
             FXMLLoader listLoader = new FXMLLoader();
             FXMLLoader sellerLoader = new FXMLLoader();
             listLoader.setLocation(getClass().getResource("/fxml/listViewport.fxml"));

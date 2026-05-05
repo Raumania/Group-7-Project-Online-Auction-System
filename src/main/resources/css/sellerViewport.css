@@ -1,4 +1,7 @@
-.viewport-container { -fx-background-color: transparent; }
+/* --- CONTAINER & LAYOUT --- */
+.viewport-container {
+    -fx-background-color: transparent;
+}
 
 .content-card {
     -fx-background-color: white;
@@ -7,20 +10,31 @@
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);
 }
 
+/* --- TEXT & LABELS --- */
 .section-title {
-    -fx-font-size: 16px;
+    -fx-font-size: 18px;
     -fx-font-weight: bold;
-    -fx-text-fill: #1E293B;
+    -fx-text-fill: #1E293B; /* Đổi về màu tối để nổi trên nền card trắng */
     -fx-padding: 0 0 5 0;
 }
 
-/* FIX LỖI ĐÈ CHỮ: Quan trọng nhất */
 .input-label {
     -fx-text-fill: #64748B;
     -fx-font-size: 11px;
     -fx-font-weight: bold;
 }
 
+.text-muted {
+    -fx-text-fill: #93C5FD;
+    -fx-font-size: 11px;
+}
+
+.upload-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: #64748B;
+}
+
+/* --- INPUT CONTROLS --- */
 .text-field, .combo-box, .date-picker, .text-area {
     -fx-background-color: #F8FAFC;
     -fx-border-color: #E2E8F0;
@@ -28,21 +42,30 @@
     -fx-background-radius: 6;
 }
 
-/* TÙY CHỈNH TABLEVIEW CHO TO RÕ */
+.combo-box-filter {
+    -fx-background-color: #1E3A8A;
+    -fx-base: #1E3A8A;
+    -fx-background-radius: 8;
+    -fx-text-fill: white;
+}
+
+/* --- TABLE VIEW --- */
 .table-view {
     -fx-background-color: transparent;
     -fx-border-color: #E2E8F0;
 }
+
 .table-view .column-header {
     -fx-background-color: #F8FAFC;
     -fx-padding: 10;
 }
+
 .table-view .column-header .label {
     -fx-text-fill: #475569;
     -fx-font-weight: bold;
 }
 
-/* HỆ THỐNG NÚT BẤM GỌN GÀNG */
+/* --- BUTTONS & SPECIAL BOXES --- */
 .btn {
     -fx-cursor: hand;
     -fx-background-radius: 6;
@@ -50,6 +73,14 @@
     -fx-font-weight: bold;
     -fx-font-size: 13px;
 }
+
+.btn-refresh {
+    -fx-background-color: #3B82F6;
+    -fx-text-fill: white;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+
 .btn-add { -fx-background-color: #10B981; }
 .btn-update { -fx-background-color: #3B82F6; }
 .btn-clear { -fx-background-color: #F59E0B; }

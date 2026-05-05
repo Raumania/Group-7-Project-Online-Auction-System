@@ -9,6 +9,12 @@
     -fx-padding: 15 20;
 }
 
+.combo-box-filter {
+    -fx-background-color: #1E3A8A;
+    -fx-base: #1E3A8A;
+    -fx-background-radius: 8;
+}
+
 .app-title {
     -fx-font-size: 22px;
     -fx-font-weight: bold;
@@ -120,12 +126,6 @@
 /* Bộ lọc */
 .main-content {
     -fx-padding: 20;
-}
-
-.combo-box-filter {
-    -fx-background-color: #1E3A8A;
-    -fx-base: #1E3A8A;
-    -fx-background-radius: 8;
 }
 
 .section-title {

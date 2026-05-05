@@ -1,0 +1,157 @@
+/* --- CONTAINER CHÍNH --- */
+.viewport-container {
+    -fx-background-color: transparent; /* Để lộ nền xanh của mainAuction */
+}
+
+/* Nút Back và Tiêu đề Header */
+.btn-back {
+    -fx-background-color: rgba(255, 255, 255, 0.15);
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+    -fx-padding: 8 15;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-border-radius: 8;
+}
+.btn-back:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.25);
+}
+
+.page-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+/* --- THẺ NỘI DUNG (WHITE CARDS) --- */
+.content-card {
+    -fx-background-color: white;
+    -fx-background-radius: 15;
+    -fx-padding: 20;
+    /* Đổ bóng nhẹ để nổi bật trên nền xanh */
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 15, 0, 0, 5);
+}
+
+/* Khu vực ảnh */
+.image-preview-area {
+    -fx-background-color: #F8FAFC;
+    -fx-border-color: #F1F5F9;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+
+/* --- TABS & DESCRIPTION --- */
+.tab-container {
+    -fx-padding: 5 0 0 0;
+}
+.tab-item {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #94A3B8;
+    -fx-cursor: hand;
+}
+.tab-active {
+    -fx-text-fill: #3B82F6;
+    -fx-border-color: transparent transparent #3B82F6 transparent;
+    -fx-border-width: 0 0 3 0;
+    -fx-padding: 0 0 8 0;
+}
+
+/* Text hiển thị trong mô tả */
+.label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #475569;
+    -fx-line-spacing: 6px;
+}
+
+/* --- THÔNG TIN CHI TIẾT (BÊN PHẢI) --- */
+.section-subtitle {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1E293B;
+}
+
+.text-muted {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 13px;
+}
+
+.text-bold {
+    -fx-font-weight: bold;
+    -fx-text-fill: #1E293B;
+}
+
+.text-bold-blue {
+    -fx-font-weight: bold;
+    -fx-text-fill: #3B82F6;
+    -fx-font-size: 18px;
+}
+
+.text-bold-green {
+    -fx-font-weight: bold;
+    -fx-text-fill: #10B981;
+    -fx-font-size: 20px;
+}
+
+/* Trạng thái Running */
+.badge-running {
+    -fx-background-color: #DCFCE7;
+    -fx-text-fill: #16A34A;
+    -fx-font-weight: bold;
+    -fx-padding: 6 18;
+    -fx-background-radius: 20;
+    -fx-font-size: 13px;
+}
+
+/* --- COUNTDOWN BOXES --- */
+.countdown-box {
+    -fx-background-color: #EFF6FF;
+    -fx-border-color: #DBEAFE;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+}
+.cd-number {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1E40AF;
+}
+.cd-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: #60A5FA;
+    -fx-font-weight: bold;
+}
+
+/* --- NÚT BẤM CHÍNH --- */
+.btn-join-room {
+    -fx-background-color: #22C55E;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+    -fx-padding: 12 25;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+}
+.btn-join-room:hover {
+    -fx-background-color: #16A34A;
+    -fx-effect: dropshadow(three-pass-box, rgba(34, 197, 94, 0.4), 12, 0, 0, 0);
+}
+
+/* --- TÙY CHỈNH THANH CUỘN (SCROLLBAR) CHO ĐẸP --- */
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+.scroll-pane .thumb {
+    -fx-background-color: #CBD5E1;
+    -fx-background-radius: 10;
+}
+.scroll-pane .thumb:hover {
+    -fx-background-color: #94A3B8;
+}
+.scroll-pane .track {
+    -fx-background-color: #F1F5F9;
+    -fx-background-radius: 10;
+}
