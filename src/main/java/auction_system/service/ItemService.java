@@ -1,53 +1,105 @@
 package auction_system.service;
 
-import auction_system.factory.ItemFactory;
+import auction_system.model.Art;
+import auction_system.model.Electronics;
 import auction_system.model.Item;
-import auction_system.model.ItemType;
 import auction_system.model.Seller;
-
-import java.util.List;
+import auction_system.model.Vehicle;
+import auction_system.server.dao.ItemDAO;
 
 public class ItemService {
 
-    private ItemManager itemManager;
+    private ItemDAO itemDAO;
 
     public ItemService() {
-        this.itemManager = ItemManager.getInstance();
+        this.itemDAO = new ItemDAO();
     }
 
-    public Item createItem(ItemType type, String name, String description, double startingPrice, Seller owner, Object... extraParams) {
-        Item item = ItemFactory.createItem(type, name, description, startingPrice, owner, extraParams);
-        itemManager.addItem(item);
-        return item;
+    /*
+        Tạo item loại Electronics.
+
+        Service sẽ:
+        1. Kiểm tra seller có null không
+        2. Tạo object Electronics
+        3. Gọi ItemDAO để lưu vào database
+        4. Trả item vừa tạo về
+    */
+    public Electronics createElectronics(String name, String description, double startingPrice,
+                                         Seller owner, String brand, String model) {
+        if (owner == null) {
+            throw new RuntimeException("Owner cannot be null");
+        }
+
+        Electronics electronics = new Electronics(
+                name,
+                description,
+                startingPrice,
+                owner,
+                brand,
+                model
+        );
+
+        itemDAO.save(electronics);
+
+        return electronics;
     }
 
-    public void addItem(Item item) {
-        itemManager.addItem(item);
+    /*
+        Tạo item loại Art.
+    */
+    public Art createArt(String name, String description, double startingPrice,
+                         Seller owner, String artist, int year) {
+        if (owner == null) {
+            throw new RuntimeException("Owner cannot be null");
+        }
+
+        Art art = new Art(
+                name,
+                description,
+                startingPrice,
+                owner,
+                artist,
+                year
+        );
+
+        itemDAO.save(art);
+
+        return art;
     }
 
-    public Item findItemById(String id) {
-        Item item = itemManager.findItemById(id);
+    /*
+        Tạo item loại Vehicle.
+    */
+    public Vehicle createVehicle(String name, String description, double startingPrice,
+                                 Seller owner, String brand, int year) {
+        if (owner == null) {
+            throw new RuntimeException("Owner cannot be null");
+        }
+
+        Vehicle vehicle = new Vehicle(
+                name,
+                description,
+                startingPrice,
+                owner,
+                brand,
+                year
+        );
+
+        itemDAO.save(vehicle);
+
+        return vehicle;
+    }
+
+    /*
+        Tìm item theo id.
+    */
+    public Item getItemById(String id) {
+        Item item = itemDAO.findById(id);
 
         if (item == null) {
-            throw new RuntimeException("Item not found with id: " + id);
+            throw new RuntimeException("Item not found");
         }
 
         return item;
-    }
-
-    public List<Item> getAllItems() {
-        return itemManager.getAllItems();
-    }
-
-    public List<Item> getItemsByType(ItemType type) {
-        return itemManager.getItemsByType(type);
-    }
-
-    public List<Item> getItemsBySeller(Seller seller) {
-        return itemManager.getItemsBySeller(seller);
-    }
-
-    public boolean removeItem(String id) {
-        return itemManager.removeItemById(id);
     }
 }

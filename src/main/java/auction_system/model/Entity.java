@@ -8,11 +8,14 @@ public abstract class Entity {
 
     public Entity() {
         this.createdAt = System.currentTimeMillis();
-        this.id = IdGenerator.generateEmtityId();
+        this.id = IdGenerator.generateEntityId();
     }
 
     public String getId() {
         return id;
+    }
+    public void setId(String id){
+        this.id=id;
     }
 
     public long getCreatedAt() {

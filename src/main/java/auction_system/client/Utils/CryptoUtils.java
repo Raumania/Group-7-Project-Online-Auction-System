@@ -1,4 +1,4 @@
-package auction_system.Utils;
+package auction_system.client.Utils;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 

@@ -1,11 +1,10 @@
 package auction_system.model;
 
-import auction_system.model.Bidder;
-import auction_system.model.Entity;
+import auction_system.util.IdGenerator;
 
 public class BidTransaction extends Entity {
 
-    Bidder bidder;
+    private Bidder bidder;
     private double amount;
     private long timestamp;
 
@@ -15,10 +14,12 @@ public class BidTransaction extends Entity {
         if (bidder == null) {
             throw new RuntimeException("Bidder cannot be null");
         }
+
         if (amount <= 0) {
             throw new RuntimeException("Amount must be positive");
         }
 
+        this.id = IdGenerator.generationBidTransactionId();
         this.bidder = bidder;
         this.amount = amount;
         this.timestamp = System.currentTimeMillis();
@@ -34,6 +35,16 @@ public class BidTransaction extends Entity {
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    /*
+        Setter này cần cho DAO.
+
+        Khi lấy bid transaction từ database ra,
+        object Java phải giữ lại timestamp cũ trong database.
+    */
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 
     @Override

@@ -3,18 +3,39 @@ package auction_system.service;
 import auction_system.model.Auction;
 import auction_system.model.BidTransaction;
 import auction_system.model.Bidder;
-import auction_system.service.AuctionManager;
+import auction_system.model.User;
+import auction_system.server.dao.AuctionDAO;
+import auction_system.server.dao.BidTransactionDAO;
 
 import java.util.List;
 
 public class BidService {
 
-    private AuctionManager auctionManager;
+    private AuctionService auctionService;
+    private UserService userService;
+    private AuctionDAO auctionDAO;
+    private BidTransactionDAO bidTransactionDAO;
 
     public BidService() {
-        this.auctionManager = AuctionManager.getInstance();
+        this.auctionService = AuctionService.getInstance();
+        this.userService = new UserService();
+        this.auctionDAO = new AuctionDAO();
+        this.bidTransactionDAO = new BidTransactionDAO();
     }
-    //đặt bid
+
+    /*
+        Đặt bid.
+
+        Luồng:
+        1. Lấy auction từ database.
+        2. Kiểm tra bidder.
+        3. Kiểm tra số tiền bid.
+        4. Kiểm tra số dư bidder.
+        5. Gọi auction.placeBid().
+        6. Lấy bid transaction mới nhất trong object auction.
+        7. Lưu bid transaction vào database.
+        8. Update auction trong database.
+    */
     public void placeBid(String auctionId, Bidder bidder, double amount) {
         Auction auction = findAuctionOrThrow(auctionId);
 
@@ -26,23 +47,91 @@ public class BidService {
             throw new RuntimeException("Bid amount must be greater than 0");
         }
 
-        auction.placeBid(bidder, amount);
-    }
-    //lấy lịch sử bid
-    public List<BidTransaction> getBidHistory(String auctionId) {
-        Auction auction = findAuctionOrThrow(auctionId);
-        return auction.getBidHistory();
-    }
-    //lấy bid gần nhất
-    public BidTransaction getLatestBid(String auctionId) {
-        Auction auction = findAuctionOrThrow(auctionId);
-        List<BidTransaction> bidHistory = auction.getBidHistory();
+        /*
+            Lấy bidder mới nhất từ database để kiểm tra balance.
+            Tránh trường hợp object bidder truyền vào bị cũ.
+        */
+        User user = userService.getUserById(bidder.getId());
 
-        if (bidHistory.isEmpty()) {
+        if (!(user instanceof Bidder)) {
+            throw new RuntimeException("Only bidder can place bid");
+        }
+
+        Bidder realBidder = (Bidder) user;
+
+        if (realBidder.getBalance() < amount) {
+            throw new RuntimeException("Not enough balance");
+        }
+
+        /*
+            Nếu có highestBidder cũ thì hoàn tiền cho người đó.
+            Đây là cách đơn giản cho project:
+            - Bidder mới bị trừ amount
+            - Highest bidder cũ được hoàn currentPrice
+        */
+        if (auction.getHighestBidder() != null) {
+            Bidder oldHighestBidder = auction.getHighestBidder();
+            userService.deposit(oldHighestBidder.getId(), auction.getCurrentPrice());
+        }
+
+        /*
+            Trừ tiền bidder mới.
+        */
+        userService.withdraw(realBidder.getId(), amount);
+
+        /*
+            Cập nhật object auction:
+            - currentPrice
+            - highestBidder
+            - bidHistory
+        */
+        auction.placeBid(realBidder, amount);
+
+        /*
+            Lấy bid mới nhất trong bidHistory.
+        */
+        List<BidTransaction> bidHistory = auction.getBidHistory();
+        BidTransaction latestTransaction = bidHistory.get(bidHistory.size() - 1);
+
+        /*
+            Lưu bid transaction.
+        */
+        bidTransactionDAO.save(auctionId, latestTransaction);
+
+        /*
+            Update auction:
+            - current_price
+            - highest_bidder_id
+            - status
+        */
+        boolean updated = auctionDAO.update(auction);
+
+        if (!updated) {
+            throw new RuntimeException("Cannot update auction after bid");
+        }
+    }
+
+    /*
+        Lấy lịch sử bid từ database.
+    */
+    public List<BidTransaction> getBidHistory(String auctionId) {
+        findAuctionOrThrow(auctionId);
+        return bidTransactionDAO.findByAuctionId(auctionId);
+    }
+
+    /*
+        Lấy bid gần nhất từ database.
+    */
+    public BidTransaction getLatestBid(String auctionId) {
+        findAuctionOrThrow(auctionId);
+
+        BidTransaction transaction = bidTransactionDAO.findLatestByAuctionId(auctionId);
+
+        if (transaction == null) {
             throw new RuntimeException("This auction has no bids yet");
         }
 
-        return bidHistory.get(bidHistory.size() - 1);
+        return transaction;
     }
 
     public Bidder getHighestBidder(String auctionId) {
@@ -56,27 +145,26 @@ public class BidService {
     }
 
     public int getTotalBids(String auctionId) {
-        Auction auction = findAuctionOrThrow(auctionId);
-        return auction.getBidHistory().size();
+        findAuctionOrThrow(auctionId);
+        return bidTransactionDAO.countByAuctionId(auctionId);
     }
 
     public boolean hasBids(String auctionId) {
-        Auction auction = findAuctionOrThrow(auctionId);
-        return !auction.getBidHistory().isEmpty();
+        return getTotalBids(auctionId) > 0;
     }
 
     public boolean isHighestBidder(String auctionId, Bidder bidder) {
-        Auction auction = findAuctionOrThrow(auctionId);
-
         if (bidder == null) {
             return false;
         }
+
+        Auction auction = findAuctionOrThrow(auctionId);
 
         if (auction.getHighestBidder() == null) {
             return false;
         }
 
-        return auction.getHighestBidder().equals(bidder);
+        return auction.getHighestBidder().getId().equals(bidder.getId());
     }
 
     public boolean auctionExists(String auctionId) {
@@ -84,15 +172,16 @@ public class BidService {
             return false;
         }
 
-        return auctionManager.findAuctionById(auctionId) != null;
+        return auctionDAO.findById(auctionId) != null;
     }
 
+    //bọc Service nhưng thêm phan kiểm tra lỗi
     private Auction findAuctionOrThrow(String auctionId) {
         if (auctionId == null || auctionId.trim().isEmpty()) {
             throw new RuntimeException("Auction id cannot be null or empty");
         }
 
-        Auction auction = auctionManager.findAuctionById(auctionId);
+        Auction auction = auctionService.getAuctionById(auctionId);
 
         if (auction == null) {
             throw new RuntimeException("Auction not found");
