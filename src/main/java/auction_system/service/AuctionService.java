@@ -8,12 +8,23 @@ import java.util.List;
 
 public class AuctionService {
 
+    private static AuctionService instance;
     private AuctionManager auctionManager;
 
-    public AuctionService() {
+    // Constructor private
+    private AuctionService() {
         this.auctionManager = AuctionManager.getInstance();
     }
 
+    // Singleton getInstance
+    public static synchronized AuctionService getInstance() {
+        if (instance == null) {
+            instance = new AuctionService();
+        }
+        return instance;
+    }
+
+    // Các phương thức giữ nguyên y hệt
     public Auction createAuction(Item item, Seller seller) {
 
         if (item == null) {

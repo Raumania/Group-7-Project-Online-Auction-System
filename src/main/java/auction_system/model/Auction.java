@@ -79,7 +79,15 @@ public class Auction extends Entity {
         notifyObservers("New bid: " + amount + " by " + bidder.getUsername());
     }
 
-    public void closeAuction() {
+    public synchronized void startAuction() {
+        if (status == AuctionStatus.OPEN) {
+            status = AuctionStatus.RUNNING;
+        } else {
+            throw new RuntimeException("Cannot start auction from status " + status);
+        }
+    }
+
+    public synchronized void closeAuction() {
         if (status == AuctionStatus.FINISHED || status == AuctionStatus.CANCELLED) {
             throw new RuntimeException("Auction already closed");
         }
