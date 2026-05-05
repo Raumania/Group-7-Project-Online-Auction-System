@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.TilePane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefHeight="1080.0" prefWidth="1920.0" styleClass="root-pane" stylesheets="@../css/auction_list.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controllers.AuctionListController">
+   <top>
+      <HBox alignment="CENTER" prefHeight="90.0" prefWidth="1920.0" spacing="20.0" styleClass="header-pane" BorderPane.alignment="CENTER">
+         <children>
+            <Label prefHeight="38.0" text="Auction System" textFill="WHITE">
+               <font>
+                  <Font name="System Bold" size="32.0" />
+               </font>
+            </Label>
+            <Region prefHeight="200.0" prefWidth="200.0" />
+            <TextField prefHeight="38.0" prefWidth="629.0" promptText="Search for Auction..." styleClass="search-text-field">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </TextField>
+            <Button mnemonicParsing="false" prefHeight="38.0" prefWidth="121.0" styleClass="search-button" text="Search" textFill="WHITE">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+         </children>
+      </HBox>
+   </top>
+   <left>
+      <VBox alignment="TOP_CENTER" prefHeight="990.0" prefWidth="352.0" styleClass="sidebar-pane" BorderPane.alignment="CENTER">
+         <children>
+            <Button mnemonicParsing="false" prefWidth="352.0" styleClass="sidebar-button" text="Auction list" />
+            <Button mnemonicParsing="false" prefWidth="352.0" styleClass="sidebar-button" text="My bids" />
+            <Button mnemonicParsing="false" prefWidth="352.0" styleClass="sidebar-button" text="My items" />
+            <Button mnemonicParsing="false" prefWidth="352.0" styleClass="sidebar-button" text="Logout" />
+            <Region prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS" />
+            <Separator prefWidth="200.0" />
+            <HBox prefHeight="100.0" prefWidth="200.0">
+               <children>
+                  <ImageView fx:id="avartarImageView" fitHeight="100.0" fitWidth="116.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../../../../../../Pictures/My%20picture/1766027106715%202.jpg" />
+                     </image>
+                  </ImageView>
+                  <VBox alignment="CENTER_LEFT" prefHeight="200.0" prefWidth="100.0" HBox.hgrow="ALWAYS">
+                     <children>
+                        <Label fx:id="fullnameLabel" text="Full name: Trần Vũ Đức" textFill="WHITE" wrapText="true">
+                           <font>
+                              <Font name="System Bold" size="18.0" />
+                           </font>
+                        </Label>
+                        <Label fx:id="usernameLabel" text="Username: 52ducbanh" textFill="WHITE">
+                           <font>
+                              <Font name="System Bold" size="18.0" />
+                           </font>
+                        </Label>
+                        <Label fx:id="moneyLabel" text="Money: 360.000.000.000 VNĐ" textFill="WHITE" wrapText="true">
+                           <font>
+                              <Font name="System Bold" size="17.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <opaqueInsets>
+                        <Insets />
+                     </opaqueInsets>
+                     <padding>
+                        <Insets left="4.0" />
+                     </padding>
+                  </VBox>
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+   </left>
+   <center>
+      <StackPane fx:id="contentPane" prefHeight="150.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+         <children>
+            <ScrollPane fx:id="auctionListPane" fitToWidth="true" hbarPolicy="NEVER" prefHeight="200.0" prefWidth="200.0" visible="false">
+               <content>
+                  <TilePane fx:id="itemContainer" hgap="10.0" prefHeight="200.0" prefWidth="200.0" vgap="10.0" />
+               </content>
+            </ScrollPane>
+         </children>
+      </StackPane>
+   </center>
+</BorderPane>
