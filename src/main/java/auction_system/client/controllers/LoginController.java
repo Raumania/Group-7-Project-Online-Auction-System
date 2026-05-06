@@ -1,65 +1,52 @@
-package auction_system.client.controllers;
+package auction_system.controller;
 
-import javafx.event.ActionEvent;
+import auction_system.client.AuctionClient;
+import auction_system.server.common.protocol.Response;
+import auction_system.util.SceneSwitcher;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 
-
-public class LoginController implements Initializable {
-    @FXML private VBox registerForm;
-    @FXML private VBox loginForm;
+public class LoginController {
     @FXML private TextField usernameField;
-    @FXML private TextField fullnameField;
     @FXML private PasswordField passwordField;
-    @FXML private PasswordField confirmPasswordField;
+    @FXML private Label errorLabel;
 
-    public void initialize(java.net.URL location, java.util.ResourceBundle resources) {
-        registerForm.setVisible(false);
-        loginForm.setVisible(true);
-    }
+    private AuctionClient client;
+    private SceneSwitcher switcher;
 
-    public void showRegisterForm(ActionEvent e) {
-        loginForm.setVisible(false);
-        registerForm.setVisible(true);
-    }
+    public void setClient(AuctionClient client) { this.client = client; }
+    public void setSceneSwitcher(SceneSwitcher switcher) { this.switcher = switcher; }
 
-    public void showLoginForm(ActionEvent e) {
-        registerForm.setVisible(false);
-        loginForm.setVisible(true);
-    }
-
-    public void exit(ActionEvent event) {
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Exit");
-        alert.setHeaderText("You're about to exit!");
-        alert.setContentText("Are you sure?");
-        alert.initOwner(stage);
-
-        if(alert.showAndWait().get() == ButtonType.OK) {
-            stage.close();
-        }
-    }
-
-    public void login(ActionEvent e) {
+    @FXML
+    private void handleLogin() {
         String username = usernameField.getText();
         String password = passwordField.getText();
-        // AuthService will be here
-    }
 
-    public void register(ActionEvent e) {
-        String fullname  = fullnameField.getText();
-        String username = usernameField.getText();
-        String password = passwordField.getText();
-        String confirmPassword = confirmPasswordField.getText();
-        // AuthService will be here
+        Task<Response> loginTask = new Task<>() {
+            @Override
+            protected Response call() throws Exception {
+                return client.login(username, password);
+            }
+        };
+        loginTask.setOnSucceeded(event -> {
+            Response res = loginTask.getValue();
+            if ("SUCCESS".equals(res.getStatus())) {
+                // Lưu user nếu cần (có thể parse res.getData() thành User)
+                try {
+                    switcher.switchTo("/view/dashboard.fxml", "Dashboard");
+                } catch (Exception e) {
+                    errorLabel.setText("Lỗi chuyển màn hình: " + e.getMessage());
+                }
+            } else {
+                errorLabel.setText(res.getMessage());
+            }
+        });
+        loginTask.setOnFailed(event ->
+                errorLabel.setText("Lỗi kết nối: " + loginTask.getException().getMessage())
+        );
+        new Thread(loginTask).start();
     }
 }

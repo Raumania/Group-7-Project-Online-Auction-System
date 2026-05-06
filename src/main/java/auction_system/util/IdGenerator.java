@@ -23,7 +23,12 @@ public class IdGenerator {
     public static String generationBidId(){
         return generationId("BID");
     }
-    public static String generateEmtityId() {
+    public static String generateEntityId() {
         return UUID.randomUUID().toString();
+    }
+    private static int bidTransactionCounter = 1;
+
+    public static String generationBidTransactionId() {
+        return generationId("BID_TRANSACTION");
     }
 }

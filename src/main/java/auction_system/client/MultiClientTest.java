@@ -1,7 +1,7 @@
 package auction_system.client;
 
-import auction_system.common.protocol.Action;
-import auction_system.common.protocol.Request;
+import auction_system.server.common.protocol.Action;
+import auction_system.server.common.protocol.Request;
 import com.google.gson.Gson;
 import java.io.*;
 import java.net.Socket;
