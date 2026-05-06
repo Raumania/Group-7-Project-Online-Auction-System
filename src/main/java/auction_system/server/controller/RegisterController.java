@@ -18,7 +18,7 @@ public class RegisterController implements RequestHandler {
     @Override
     public Response handle(Request request) {
         if (!Action.REGISTER.equals(request.getAction())) {
-            return new Response("ERROR", null, "Invalid action for RegisterController");
+            return new Response("ERROR","REGISTER", null, "Invalid action for RegisterController");
         }
 
         try {
@@ -50,6 +50,7 @@ public class RegisterController implements RequestHandler {
 
             return new Response(
                     "SUCCESS",
+                    "REGISTER",
                     gson.toJson(user),
                     "Register successfully"
             );
@@ -57,6 +58,7 @@ public class RegisterController implements RequestHandler {
         } catch (Exception e) {
             return new Response(
                     "ERROR",
+                    "REGISTER",
                     null,
                     "Register failed: " + e.getMessage()
             );

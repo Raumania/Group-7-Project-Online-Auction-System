@@ -19,7 +19,7 @@ public class AuctionServer {
     private volatile boolean running;
 
     // Port server lắng nghe
-    private static final int PORT = 1234;
+    private static final int PORT = 3636;
 
     // Số lượng thread tối đa xử lý client đồng thời
     private static final int POOL_SIZE = 20;

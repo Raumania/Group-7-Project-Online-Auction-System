@@ -17,7 +17,7 @@ public class LoginController implements RequestHandler {
     @Override
     public Response handle(Request request) {
         if (!Action.LOGIN.equals(request.getAction())) {
-            return new Response("ERROR", null, "Invalid action for LoginController");
+            return new Response("ERROR","LOGIN", null, "Invalid action for LoginController");
         }
         try {
             LoginData loginData = gson.fromJson(request.getData(), LoginData.class);
@@ -27,9 +27,9 @@ public class LoginController implements RequestHandler {
                 System.out.println("Ket noi duoc roi");
             }
             // Xoá mật khẩu trước khi gửi về client (bảo mậ
-            return new Response("SUCCESS", gson.toJson(user), "Login successful");
+            return new Response("SUCCESS","LOGIN", gson.toJson(user), "Login successful");
         } catch (Exception e) {
-            return new Response("ERROR", null, "Login failed: " + e.getMessage());
+            return new Response("ERROR","LOGIN", null, "Login failed: " + e.getMessage());
         }
     }
 }

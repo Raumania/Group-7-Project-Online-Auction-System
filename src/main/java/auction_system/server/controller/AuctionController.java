@@ -34,33 +34,33 @@ public class AuctionController implements RequestHandler {
                 case Action.CLOSE_AUCTION:
                     return closeAuction(jsonData);
                 default:
-                    return new Response("ERROR", null, "Unknown auction action: " + action);
+                    return new Response("ERROR","AUCTION", null, "Unknown auction action: " + action);
             }
         } catch (Exception e) {
-            return new Response("ERROR", null, e.getMessage());
+            return new Response("ERROR","AUCTION", null, e.getMessage());
         }
     }
 
     private Response getAllAuctions() {
         List<Auction> auctions = auctionService.getAllAuctions();
-        return new Response("SUCCESS", gson.toJson(auctions), "List returned");
+        return new Response("SUCCESS","AUCTION", gson.toJson(auctions), "List returned");
     }
 
     private Response getAuctionDetail(String jsonData) {
         String auctionId = gson.fromJson(jsonData, String.class);
         Auction auction = auctionService.getAuctionById(auctionId);
-        return new Response("SUCCESS", gson.toJson(auction), "Auction detail");
+        return new Response("SUCCESS","AUCTION", gson.toJson(auction), "Auction detail");
     }
 
     private Response createAuction(String jsonData) {
         CreateAuctionData data = gson.fromJson(jsonData, CreateAuctionData.class);
         Auction auction = auctionService.createAuction(data.getItem(), data.getSeller());
-        return new Response("SUCCESS", gson.toJson(auction), "Auction created");
+        return new Response("SUCCESS","AUCTION", gson.toJson(auction), "Auction created");
     }
 
     private Response closeAuction(String jsonData) {
         String auctionId = gson.fromJson(jsonData, String.class);
         auctionService.closeAuction(auctionId);
-        return new Response("SUCCESS", null, "Auction closed");
+        return new Response("SUCCESS","AUCTION", null, "Auction closed");
     }
 }

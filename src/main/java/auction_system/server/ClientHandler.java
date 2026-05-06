@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -57,17 +58,17 @@ public class ClientHandler implements Runnable {
     public void run() {
 
         // Mở luồng đọc/ghi với client
+        // Thay thế PrintWriter bằng DataOutputStream
         try (BufferedReader in = new BufferedReader(
-                new InputStreamReader(socket.getInputStream()));
-             PrintWriter out = new PrintWriter(
-                     socket.getOutputStream(), true)) {
+                new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+             DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
 
             String line;
 
             // Đọc dữ liệu từ client từng dòng (JSON string)
             while ((line = in.readLine()) != null) {
-
                 // Convert JSON → Request object
+                System.out.println(line);
                 Request req = gson.fromJson(line, Request.class);
 
                 // Lấy handler tương ứng với action
@@ -85,13 +86,21 @@ public class ClientHandler implements Runnable {
                     // Nếu không có handler
                     res = new Response(
                             "ERROR",
+                            "type",
                             null,
                             "Unknown action: " + req.getAction()
                     );
                 }
 
-                // Convert Response → JSON → gửi lại client
-                out.println(gson.toJson(res));
+                // Convert Response → JSON
+                String jsonResponse = gson.toJson(res);
+
+                // Ghi ra luồng DataOutputStream kèm ký tự xuống dòng "\n"
+                // để phía client vẫn có thể đọc bằng readLine()
+                out.write((jsonResponse + "\n").getBytes(StandardCharsets.UTF_8));
+
+                // Bắt buộc phải flush() để đẩy dữ liệu qua mạng ngay lập tức
+                out.flush();
             }
 
         } catch (IOException e) {

@@ -20,22 +20,22 @@ public class BidController implements RequestHandler {
     @Override
     public Response handle(Request request) {
         if (!Action.PLACE_BID.equals(request.getAction())) {
-            return new Response("ERROR", null, "Invalid action for BidController");
+            return new Response("ERROR","BIDDING", null, "Invalid action for BidController");
         }
         try {
             BidData bidData = gson.fromJson(request.getData(), BidData.class);
             // Lấy User từ bidderId (giả sử bidderId là id của user)
             User user = userService.getUserById(bidData.getBidderId());
             if (!(user instanceof Bidder)) {
-                return new Response("ERROR", null, "Only bidders can place bids");
+                return new Response("ERROR","BIDDING", null, "Only bidders can place bids");
             }
             Bidder bidder = (Bidder) user;
             bidService.placeBid(bidData.getAuctionId(), bidder, bidData.getAmount());
             // Lấy giao dịch mới nhất để trả về (tuỳ chọn)
             var latestBid = bidService.getLatestBid(bidData.getAuctionId());
-            return new Response("SUCCESS", gson.toJson(latestBid), "Bid placed successfully");
+            return new Response("SUCCESS","BIDDING", gson.toJson(latestBid), "Bid placed successfully");
         } catch (Exception e) {
-            return new Response("ERROR", null, "Place bid failed: " + e.getMessage());
+            return new Response("ERROR","BIDDING", null, "Place bid failed: " + e.getMessage());
         }
     }
 }

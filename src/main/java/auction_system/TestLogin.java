@@ -9,11 +9,11 @@ import java.net.Socket;
 public class TestLogin {
     public static void main(String[] args) {
         String host = "localhost";
-        int port = 1234;
+        int port = 3636;
         Gson gson = new Gson();
 
         // Tạo LoginData và chuyển thành JSON
-        LoginData loginData = new LoginData("chuongque", "123456");
+        LoginData loginData = new LoginData("chuongque", "123478");
         System.out.println(loginData.getPassword());
         String jsonData = gson.toJson(loginData);
         // Tạo Request với action LOGIN
