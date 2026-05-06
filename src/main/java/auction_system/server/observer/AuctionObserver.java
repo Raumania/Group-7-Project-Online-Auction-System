@@ -1,4 +1,4 @@
-package auction_system.observer;
+package auction_system.server.observer;
 
 import auction_system.model.Auction;
 
