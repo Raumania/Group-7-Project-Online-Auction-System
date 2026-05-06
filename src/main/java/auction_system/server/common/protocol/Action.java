@@ -1,4 +1,4 @@
-package auction_system.common.protocol;
+package auction_system.server.common.protocol;
 
 /**
  * Lớp chứa các hằng số action (lệnh) để giao tiếp giữa client và server.

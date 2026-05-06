@@ -1,6 +1,6 @@
 package auction_system.model;
 
-import auction_system.observer.AuctionObserver;
+import auction_system.server.observer.AuctionObserver;
 import auction_system.util.IdGenerator;
 
 import java.util.ArrayList;

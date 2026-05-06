@@ -1,4 +1,4 @@
-package auction_system.common.protocol;
+package auction_system.server.common.protocol;
 
 public class Request {
     private String action;

@@ -1,8 +1,8 @@
 package auction_system.server;
 
 import com.google.gson.Gson;
-import auction_system.common.protocol.*;
-import auction_system.service.AuctionService;
+import auction_system.server.common.protocol.*;
+import auction_system.server.service.AuctionService;
 import auction_system.model.*;
 
 import java.io.*;

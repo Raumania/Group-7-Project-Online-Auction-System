@@ -4,9 +4,9 @@ import auction_system.model.Auction;
 import auction_system.model.Item;
 import auction_system.model.Seller;
 import auction_system.model.User;
-import auction_system.service.AuctionService;
-import auction_system.service.ItemService;
-import auction_system.service.UserService;
+import auction_system.server.service.AuctionService;
+import auction_system.server.service.ItemService;
+import auction_system.server.service.UserService;
 
 public class TestCreateAuction {
     public static void main(String[] args) {

@@ -2,13 +2,13 @@ package auction_system;
 
 import auction_system.model.Bidder;
 import auction_system.model.User;
-import auction_system.service.UserService;
+import auction_system.server.service.UserService;
 
 public class TestLogin {
     public static void main(String[] args) {
         UserService userService = new UserService();
 
-        User user = userService.login("chuong", "123456");
+        User user = userService.login("taixiu", "123456");
 
         System.out.println("Login successfully!");
         System.out.println("Id: " + user.getId());

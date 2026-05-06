@@ -3,8 +3,8 @@ package auction_system;
 import auction_system.model.Electronics;
 import auction_system.model.Seller;
 import auction_system.model.User;
-import auction_system.service.ItemService;
-import auction_system.service.UserService;
+import auction_system.server.service.ItemService;
+import auction_system.server.service.UserService;
 
 public class TestCreateItem {
     public static void main(String[] args) {

@@ -1,7 +1,6 @@
-package auction_system.observer;
+package auction_system.server.observer;
 
 import auction_system.model.Auction;
-import auction_system.observer.AuctionObserver;
 
 public class ConsoleObserver implements AuctionObserver {
 

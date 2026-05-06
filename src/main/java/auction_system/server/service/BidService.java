@@ -1,4 +1,4 @@
-package auction_system.service;
+package auction_system.server.service;
 
 import auction_system.model.Auction;
 import auction_system.model.BidTransaction;

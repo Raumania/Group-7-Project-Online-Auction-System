@@ -1,4 +1,4 @@
-package auction_system.service;
+package auction_system.server.service;
 
 import auction_system.model.Art;
 import auction_system.model.Electronics;

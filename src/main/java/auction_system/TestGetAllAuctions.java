@@ -1,7 +1,7 @@
 package auction_system;
 
 import auction_system.model.Auction;
-import auction_system.service.AuctionService;
+import auction_system.server.service.AuctionService;
 
 import java.util.List;
 

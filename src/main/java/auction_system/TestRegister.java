@@ -2,7 +2,7 @@ package auction_system;
 
 import auction_system.model.Bidder;
 import auction_system.model.User;
-import auction_system.service.UserService;
+import auction_system.server.service.UserService;
 
 public class TestRegister {
     public static void main(String[] args) {

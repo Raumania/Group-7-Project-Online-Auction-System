@@ -1,7 +1,7 @@
 package auction_system;
 
 import auction_system.model.Seller;
-import auction_system.service.UserService;
+import auction_system.server.service.UserService;
 
 public class TestCreateSeller {
     public static void main(String[] args) {
