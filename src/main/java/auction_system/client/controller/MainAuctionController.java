@@ -1,13 +1,12 @@
-package auction_system.client.controllers;
+package auction_system.client.controller;
 
-import auction_system.client.Utils.ViewSingleton;
+import auction_system.client.Util.ViewSingleton;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;

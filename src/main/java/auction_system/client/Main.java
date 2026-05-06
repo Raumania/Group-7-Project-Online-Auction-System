@@ -1,5 +1,6 @@
-package auction_system;
+package auction_system.client;
 
+import auction_system.client.socket.SocketClient;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -7,10 +8,13 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.net.Socket;
 
 public class Main extends Application {
     public void start(Stage stage) throws IOException {
-        Parent root = FXMLLoader.load(getClass().getResource("/fxml/mainAuction.fxml"));
+        SocketClient.getInstance().connect("10.11.217.112",3636);
+
+        Parent root = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
         Scene scene = new Scene(root);
 
         stage.setScene(scene);

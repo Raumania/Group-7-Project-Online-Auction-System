@@ -4,12 +4,15 @@ module com.auction_system {
     requires java.desktop;
     requires spring.security.crypto;
     requires java.sql;
+    requires jdk.jdi;
+    requires com.google.gson;
 
+    opens auction_system.client.controller to javafx.fxml;
+    opens auction_system.client to javafx.fxml;
 
-    opens auction_system to javafx.fxml;
-    exports auction_system;
+    opens auction_system.common.protocol to com.google.gson;
+    opens auction_system.client.model to com.google.gson;
 
-    opens auction_system.client.controllers to javafx.fxml;
-    exports auction_system.client.controllers;
-
+    exports auction_system.client.controller;
+    exports auction_system.client;
 }

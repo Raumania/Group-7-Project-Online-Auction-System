@@ -20,7 +20,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox minHeight="0.0" spacing="5.0" styleClass="viewport-background" stylesheets="@../css/bidViewport.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controllers.BidViewportController">
+<VBox minHeight="0.0" spacing="5.0" styleClass="viewport-background" stylesheets="@../css/bidViewport.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.BidViewportController">
 
     <!-- Bóp gọn Padding ngoài cùng -->
     <padding>
@@ -100,10 +100,10 @@
                                       <Label minHeight="-Infinity" styleClass="section-title" text="Bidding History" />
                                       <TableView minHeight="0.0" VBox.vgrow="ALWAYS">
                                           <columns>
-                                              <TableColumn prefWidth="40.0" text="#" />
-                                              <TableColumn prefWidth="120.0" text="User" />
-                                              <TableColumn prefWidth="130.0" text="Bid Amount (USD)" />
-                                              <TableColumn prefWidth="110.0" text="Time" />
+                                              <TableColumn editable="false" prefWidth="40.0" sortable="false" text="#" />
+                                              <TableColumn editable="false" prefWidth="120.0" sortable="false" text="User" />
+                                              <TableColumn editable="false" prefWidth="130.0" sortable="false" text="Bid Amount (USD)" />
+                                              <TableColumn editable="false" prefWidth="110.0" sortable="false" text="Time" />
                                           </columns>
                                           <columnResizePolicy>
                                               <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

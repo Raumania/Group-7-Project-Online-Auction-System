@@ -45,3 +45,11 @@
     -fx-border-width: 0 0 0 3px;
     -fx-padding: 0 0 0 5px;
 }
+.error-label {
+    -fx-text-fill: #d32f2f;
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 5 0 5 0;
+    -fx-alignment: center-left;
+}

@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="15.0" styleClass="viewport-container" stylesheets="@../css/detailViewport.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controllers.DetailViewportController">
+<VBox spacing="15.0" styleClass="viewport-container" stylesheets="@../css/detailViewport.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.DetailViewportController">
 
     <!-- Đã tăng padding từ 20 lên 30 để tạo khoảng thở -->
     <padding>
