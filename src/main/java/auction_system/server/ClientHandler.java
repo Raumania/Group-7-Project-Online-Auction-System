@@ -10,107 +10,73 @@ import com.google.gson.Gson;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientHandler implements Runnable {
 
-    // Socket kết nối với 1 client cụ thể
     private final Socket socket;
-
-    // Dùng để parse JSON <-> Object
     private final Gson gson = new Gson();
-
-    // Map action → handler tương ứng
-    // ConcurrentHashMap để thread-safe
     private final Map<String, RequestHandler> handlers = new ConcurrentHashMap<>();
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
-
-        // Khởi tạo các controller xử lý request
         initHandlers();
     }
 
     private void initHandlers() {
-
-        // LOGIN → LoginController
         handlers.put(Action.LOGIN, new LoginController());
-
-        // Dùng chung 1 instance AuctionController cho nhiều action
         AuctionController auctionController = new AuctionController();
-
-        // REGISTER → RegisterController
         handlers.put(Action.REGISTER, new RegisterController());
-
-        // Các action liên quan auction
         handlers.put(Action.GET_ALL_AUCTIONS, auctionController);
         handlers.put(Action.GET_AUCTION_DETAIL, auctionController);
         handlers.put(Action.CREATE_AUCTION, auctionController);
         handlers.put(Action.CLOSE_AUCTION, auctionController);
-
-        // Đặt giá
         handlers.put(Action.PLACE_BID, new BidController());
     }
 
     @Override
     public void run() {
 
-        // Mở luồng đọc/ghi với client
-        // Thay thế PrintWriter bằng DataOutputStream
-        try (BufferedReader in = new BufferedReader(
-                new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-             DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
+        // SỬA: Đồng bộ dùng DataInputStream và DataOutputStream như Client
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+             DataOutputStream out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()))) {
 
-            String line;
+            // Dùng vòng lặp vô hạn, readUTF() sẽ quăng lỗi EOFException khi Client đóng kết nối
+            while (true) {
+                String line;
 
-            // Đọc dữ liệu từ client từng dòng (JSON string)
-            while ((line = in.readLine()) != null) {
-                // Convert JSON → Request object
-                System.out.println(line);
+                try {
+                    // SỬA: Đọc bằng readUTF() để khớp với out.writeUTF() của Client
+                    line = in.readUTF();
+                } catch (EOFException e) {
+                    // Client ngắt kết nối
+                    System.out.println("Client disconnected.");
+                    break;
+                }
+
+                System.out.println("Received: " + line);
                 Request req = gson.fromJson(line, Request.class);
 
-                // Lấy handler tương ứng với action
                 RequestHandler handler = handlers.get(req.getAction());
-
                 Response res;
 
                 if (handler != null) {
-
-                    // Gọi controller xử lý
                     res = handler.handle(req);
-
                 } else {
-
-                    // Nếu không có handler
-                    res = new Response(
-                            "ERROR",
-                            "type",
-                            null,
-                            "Unknown action: " + req.getAction()
-                    );
+                    res = new Response("ERROR", "type", null, "Unknown action: " + req.getAction());
                 }
 
-                // Convert Response → JSON
                 String jsonResponse = gson.toJson(res);
 
-                // Ghi ra luồng DataOutputStream kèm ký tự xuống dòng "\n"
-                // để phía client vẫn có thể đọc bằng readLine()
-                out.write((jsonResponse + "\n").getBytes(StandardCharsets.UTF_8));
-
-                // Bắt buộc phải flush() để đẩy dữ liệu qua mạng ngay lập tức
+                // SỬA: Gửi đi bằng writeUTF() để khớp với in.readUTF() của Client
+                out.writeUTF(jsonResponse);
                 out.flush();
             }
 
         } catch (IOException e) {
-
-            // Lỗi IO (client disconnect, mạng lỗi...)
             System.err.println("ClientHandler IO error: " + e.getMessage());
-
         } finally {
-
-            // Đóng socket khi client ngắt
             try {
                 if (socket != null && !socket.isClosed())
                     socket.close();
