@@ -1,60 +1,56 @@
 package auction_system;
 
-import auction_system.server.common.protocol.*;
-import auction_system.server.common.protocol.CreateAuctionData;
-import auction_system.server.model.*;
+import auction_system.client.AuctionClient;
+import auction_system.server.common.protocol.CreateAuctionRequest;
+import auction_system.server.common.protocol.Request;
+import auction_system.server.common.protocol.Response;
 import com.google.gson.Gson;
-import java.io.*;
-import java.net.Socket;
 
 public class TestCreateAuction {
     public static void main(String[] args) {
-        String host = "localhost";
-        int port = 1234;
+        AuctionClient client = new AuctionClient();
         Gson gson = new Gson();
 
-        // 1. Tạo đối tượng Item (Electronics) trước
-        // Giả sử bạn đã có Seller (cần có id, username, ...)
-        // Nếu chưa có seller, bạn cần tạo seller qua UserService hoặc tạo sẵn trong DB.
-        // Ở đây ta tạo seller trực tiếp (chỉ để test, nhưng lý tưởng nên lấy từ DB)
-        Seller seller = new Seller("seller1", "123", "seller@ex.com"); // giả sử constructor
+        try {
+            // 1. Kết nối (đổi cổng cho đúng với server của bạn)
+            System.out.println("Đang kết nối tới server...");
+            client.connect("localhost", 3636);  // nếu server chạy cổng 1234
+            System.out.println("Kết nối thành công!");
 
-        // Tạo Electronics
-        Electronics laptop = new Electronics(
-                "Laptop Dell XPS",
-                "Laptop cao cấp",
-                1000.0,
-                seller,
-                "Dell",
-                "XPS 15"
-        );
+            // 2. Tạo dữ liệu request
+            CreateAuctionRequest req = new CreateAuctionRequest();
+            req.setSellerId("SELLER _ 255aabf9-e5a8-4075-bd20-eff8bf59dcd9");   // ⚠️ thay bằng ID seller thật từ DB
+            req.setItemType("ELECTRONICS");
+            req.setName("Laptop Dell XPS");
+            req.setDescription("Laptop cao cấp");
+            req.setStartingPrice(1000.0);
+            req.setBrand("Dell");
+            req.setModel("XPS 15");
 
-        // 2. Tạo CreateAuctionData
-        CreateAuctionData auctionData = new CreateAuctionData(laptop, seller);
-        String jsonData = gson.toJson(auctionData);
+            String jsonData = gson.toJson(req);
+            Request request = new Request("CREATE_AUCTION", jsonData);
 
-        // 3. Tạo Request với action CREATE_AUCTION
-        Request request = new Request(Action.CREATE_AUCTION, jsonData);
-        String jsonRequest = gson.toJson(request);
+            // 3. Gửi request và nhận response
+            System.out.println("Đang gửi request...");
+            Response response = client.sendRequest(request);
+            System.out.println("=== KẾT QUẢ ===");
+            System.out.println("Status : " + response.getStatus());
+            System.out.println("Message: " + response.getMessage());
+            System.out.println("Data   : " + response.getData());
 
-        try (Socket socket = new Socket(host, port);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-
-            System.out.println("Sending request: " + jsonRequest);
-            out.println(jsonRequest);
-            String responseLine = in.readLine();
-            System.out.println("Response: " + responseLine);
-
-            Response response = gson.fromJson(responseLine, Response.class);
-            if ("SUCCESS".equals(response.getStatus())) {
-                System.out.println("Auction created successfully. Data: " + response.getData());
-            } else {
-                System.out.println("Create auction failed: " + response.getMessage());
-            }
-
-        } catch (IOException e) {
+        } catch (java.net.SocketTimeoutException e) {
+            System.err.println("LỖI: Timeout – server không phản hồi. Kiểm tra server đã chạy và cổng đúng.");
+        } catch (Exception e) {
+            System.err.println("LỖI: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            // 4. Ngắt kết nối
+            try {
+                client.disconnect();
+                System.out.println("Đã ngắt kết nối.");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }

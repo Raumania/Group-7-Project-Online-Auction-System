@@ -84,6 +84,14 @@ public class UserService {
         return user;
     }
 
+    public Seller getSellerById(String id) {
+        User user = getUserById(id);
+        if (user instanceof Seller) {
+            return (Seller) user;
+        }
+        throw new RuntimeException("User with id " + id + " is not a seller");
+    }
+
     /*
         Đăng nhập.
 
