@@ -9,6 +9,7 @@ import auction_system.server.common.protocol.Request;
 import auction_system.server.common.protocol.Response;
 import auction_system.server.service.UserService;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 
 public class RegisterController implements RequestHandler {
 
@@ -18,11 +19,19 @@ public class RegisterController implements RequestHandler {
     @Override
     public Response handle(Request request) {
         if (!Action.REGISTER.equals(request.getAction())) {
-            return new Response("ERROR","REGISTER", null, "Invalid action for RegisterController");
+            return new Response("ERROR", "REGISTER", null, "Invalid action for RegisterController");
         }
 
         try {
-            RegisterData data = gson.fromJson(request.getData(), RegisterData.class);
+            // Xử lý data có thể là JsonElement hoặc Object
+            RegisterData data;
+            Object dataObj = request.getData();
+            if (dataObj instanceof JsonElement) {
+                data = gson.fromJson((JsonElement) dataObj, RegisterData.class);
+            } else {
+                String json = gson.toJson(dataObj);
+                data = gson.fromJson(json, RegisterData.class);
+            }
 
             if (data.getRole() == null || data.getRole().trim().isEmpty()) {
                 throw new RuntimeException("Role cannot be empty");
@@ -48,10 +57,14 @@ public class RegisterController implements RequestHandler {
                 throw new RuntimeException("Invalid role. Role must be BIDDER or SELLER");
             }
 
+            // Xóa mật khẩu trước khi gửi về client
+            user.setPassword(null);
+
+            // Trả về user object trực tiếp, không dùng gson.toJson()
             return new Response(
                     "SUCCESS",
                     "REGISTER",
-                    gson.toJson(user),
+                    user,
                     "Register successfully"
             );
 

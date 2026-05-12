@@ -4,11 +4,8 @@ import auction_system.server.common.protocol.*;
 import auction_system.server.model.User;
 import auction_system.server.service.UserService;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 
-/**
- * Xử lý action LOGIN.
- * Sử dụng UserService.login() để xác thực.
- */
 public class LoginController implements RequestHandler {
 
     private final Gson gson = new Gson();
@@ -17,19 +14,52 @@ public class LoginController implements RequestHandler {
     @Override
     public Response handle(Request request) {
         if (!Action.LOGIN.equals(request.getAction())) {
-            return new Response("ERROR","LOGIN", null, "Invalid action for LoginController");
+            return new Response("ERROR", "LOGIN", null, "Invalid action");
         }
         try {
-            LoginData loginData = gson.fromJson(request.getData(), LoginData.class);
-            User user = userService.login(loginData.getUsername(), loginData.getPassword());
-            System.out.println(loginData.getUsername());
-            if(user!=null){
-                System.out.println("Ket noi duoc roi");
+            Object rawData = request.getData();
+            System.out.println("DEBUG: rawData class = " + (rawData == null ? "null" : rawData.getClass().getName()));
+            System.out.println("DEBUG: rawData toString = " + (rawData == null ? "null" : rawData.toString()));
+            if (rawData != null && rawData instanceof String) {
+                System.out.println("DEBUG: rawData is String, content = " + rawData);
             }
-            // Xoá mật khẩu trước khi gửi về client (bảo mậ
-            return new Response("SUCCESS","LOGIN", gson.toJson(user), "Login successful");
+
+            LoginData loginData = parseData(rawData, LoginData.class);
+            System.out.println("DEBUG: loginData = " + loginData);
+            System.out.println("DEBUG: username = " + loginData.getUsername());
+            System.out.println("DEBUG: password = " + loginData.getPassword());
+
+            if (loginData.getPassword() == null || loginData.getPassword().trim().isEmpty()) {
+                System.err.println("ERROR: Password is null or empty after parse");
+                return new Response("ERROR", "LOGIN", null, "Password cannot be null or empty");
+            }
+
+            User user = userService.login(loginData.getUsername(), loginData.getPassword());
+            if (user != null) {
+                user.setPassword(null);
+                return new Response("SUCCESS", "LOGIN", user, "Login successful");
+            } else {
+                return new Response("ERROR", "LOGIN", null, "Invalid username or password");
+            }
         } catch (Exception e) {
-            return new Response("ERROR","LOGIN", null, "Login failed: " + e.getMessage());
+            e.printStackTrace();
+            return new Response("ERROR", "LOGIN", null, "Login failed: " + e.getMessage());
+        }
+    }
+
+    private <T> T parseData(Object dataObj, Class<T> clazz) {
+        if (dataObj == null) {
+            throw new RuntimeException("Data object is null");
+        }
+        if (dataObj instanceof JsonElement) {
+            return gson.fromJson((JsonElement) dataObj, clazz);
+        } else if (dataObj instanceof String) {
+            // Chuỗi JSON: parse trực tiếp
+            return gson.fromJson((String) dataObj, clazz);
+        } else {
+            // Có thể là LinkedTreeMap hoặc Map khác
+            String json = gson.toJson(dataObj);
+            return gson.fromJson(json, clazz);
         }
     }
 }

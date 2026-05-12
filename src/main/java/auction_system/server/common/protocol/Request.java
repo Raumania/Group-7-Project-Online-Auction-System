@@ -2,15 +2,15 @@ package auction_system.server.common.protocol;
 
 public class Request {
     private String type;
-    private String data; // JSON string
+    private Object data; // JSON string
 
     public Request() {}
 
-    public Request(String type, String data) {
+    public Request(String type, Object data) {
         this.type = type;
         this.data = data;
     }
 
     public String getAction() { return type; }
-    public String getData() { return data; }
+    public Object getData() { return data; }
 }

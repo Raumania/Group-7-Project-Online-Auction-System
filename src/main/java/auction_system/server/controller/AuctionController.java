@@ -8,6 +8,7 @@ import auction_system.server.service.AuctionService;
 import auction_system.server.service.ItemService;
 import auction_system.server.service.UserService;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 
 import java.util.List;
 
@@ -21,18 +22,17 @@ public class AuctionController implements RequestHandler {
     @Override
     public Response handle(Request request) {
         String action = request.getAction();
-        String jsonData = request.getData();
 
         try {
             switch (action) {
                 case Action.GET_ALL_AUCTIONS:
                     return getAllAuctions();
                 case Action.GET_AUCTION_DETAIL:
-                    return getAuctionDetail(jsonData);
+                    return getAuctionDetail(request.getData());
                 case Action.CREATE_AUCTION:
-                    return createAuction(jsonData);
+                    return createAuction(request.getData());
                 case Action.CLOSE_AUCTION:
-                    return closeAuction(jsonData);
+                    return closeAuction(request.getData());
                 default:
                     return new Response("ERROR", "AUCTION", null, "Unknown action: " + action);
             }
@@ -43,27 +43,28 @@ public class AuctionController implements RequestHandler {
 
     private Response getAllAuctions() {
         List<Auction> auctions = auctionService.getAllAuctions();
-        return new Response("SUCCESS", "AUCTION", gson.toJson(auctions), "List returned");
+        // Trả về trực tiếp list object, Gson sẽ serialize đúng
+        return new Response("SUCCESS", "AUCTION", auctions, "List returned");
     }
 
-    private Response getAuctionDetail(String jsonData) {
-        String auctionId = gson.fromJson(jsonData, String.class);
+    private Response getAuctionDetail(Object dataObj) {
+        String auctionId = parseDataAsString(dataObj);
         Auction auction = auctionService.getAuctionById(auctionId);
-        return new Response("SUCCESS", "AUCTION", gson.toJson(auction), "Auction detail");
+        return new Response("SUCCESS", "AUCTION", auction, "Auction detail");
     }
 
-    private Response createAuction(String jsonData) {
+    private Response createAuction(Object dataObj) {
         try {
-            // 1. Parse request
-            CreateAuctionRequest req = gson.fromJson(jsonData, CreateAuctionRequest.class);
+            // Parse CreateAuctionRequest từ Object/JsonElement
+            CreateAuctionRequest req = parseData(dataObj, CreateAuctionRequest.class);
 
-            // 2. Lấy seller
+            // Lấy seller
             Seller seller = userService.getSellerById(req.getSellerId());
             if (seller == null) {
                 return new Response("ERROR", "AUCTION", null, "Seller not found");
             }
 
-            // 3. Tạo Item dựa trên itemType
+            // Tạo Item dựa trên itemType
             Item item = null;
             String type = req.getItemType();
             if (type == null) {
@@ -93,18 +94,40 @@ public class AuctionController implements RequestHandler {
                     return new Response("ERROR", "AUCTION", null, "Unsupported item type: " + type);
             }
 
-            // 4. Tạo auction
             Auction auction = auctionService.createAuction(item, seller);
-            return new Response("SUCCESS", "AUCTION", gson.toJson(auction), "Auction created");
+            return new Response("SUCCESS", "AUCTION", auction, "Auction created");
         } catch (Exception e) {
             e.printStackTrace();
             return new Response("ERROR", "AUCTION", null, "Create auction failed: " + e.getMessage());
         }
     }
 
-    private Response closeAuction(String jsonData) {
-        String auctionId = gson.fromJson(jsonData, String.class);
+    private Response closeAuction(Object dataObj) {
+        String auctionId = parseDataAsString(dataObj);
         auctionService.closeAuction(auctionId);
         return new Response("SUCCESS", "AUCTION", null, "Auction closed");
+    }
+
+    // Helper chuyển đổi Object hoặc JsonElement thành string
+    private String parseDataAsString(Object dataObj) {
+        if (dataObj instanceof String) {
+            return (String) dataObj;
+        } else if (dataObj instanceof JsonElement) {
+            return gson.fromJson((JsonElement) dataObj, String.class);
+        } else {
+            // Nếu là LinkedTreeMap hoặc object khác, chuyển thành JSON rồi parse String
+            String json = gson.toJson(dataObj);
+            return gson.fromJson(json, String.class);
+        }
+    }
+
+    // Helper parse object thành class T
+    private <T> T parseData(Object dataObj, Class<T> clazz) {
+        if (dataObj instanceof JsonElement) {
+            return gson.fromJson((JsonElement) dataObj, clazz);
+        } else {
+            String json = gson.toJson(dataObj);
+            return gson.fromJson(json, clazz);
+        }
     }
 }
