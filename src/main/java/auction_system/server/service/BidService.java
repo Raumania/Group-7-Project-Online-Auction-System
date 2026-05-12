@@ -1,11 +1,11 @@
 package auction_system.server.service;
 
-import auction_system.model.Auction;
-import auction_system.model.BidTransaction;
-import auction_system.model.Bidder;
-import auction_system.model.User;
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.BidTransactionDAO;
+import auction_system.server.model.Auction;
+import auction_system.server.model.BidTransaction;
+import auction_system.server.model.User;
+import auction_system.server.model.UserRole;
 
 import java.util.List;
 
@@ -35,12 +35,20 @@ public class BidService {
         6. Lấy bid transaction mới nhất trong object auction.
         7. Lưu bid transaction vào database.
         8. Update auction trong database.
+
+        Lưu ý mới:
+        - bidder không còn là Bidder object nữa
+        - bidder là User có role BIDDER
     */
-    public void placeBid(String auctionId, Bidder bidder, double amount) {
+    public void placeBid(String auctionId, User bidder, double amount) {
         Auction auction = findAuctionOrThrow(auctionId);
 
         if (bidder == null) {
             throw new RuntimeException("Bidder cannot be null");
+        }
+
+        if (!bidder.hasRole(UserRole.BIDDER)) {
+            throw new RuntimeException("Only bidder can place bid");
         }
 
         if (amount <= 0) {
@@ -51,13 +59,11 @@ public class BidService {
             Lấy bidder mới nhất từ database để kiểm tra balance.
             Tránh trường hợp object bidder truyền vào bị cũ.
         */
-        User user = userService.getUserById(bidder.getId());
+        User realBidder = userService.getUserById(bidder.getId());
 
-        if (!(user instanceof Bidder)) {
+        if (!realBidder.hasRole(UserRole.BIDDER)) {
             throw new RuntimeException("Only bidder can place bid");
         }
-
-        Bidder realBidder = (Bidder) user;
 
         if (realBidder.getBalance() < amount) {
             throw new RuntimeException("Not enough balance");
@@ -70,7 +76,7 @@ public class BidService {
             - Highest bidder cũ được hoàn currentPrice
         */
         if (auction.getHighestBidder() != null) {
-            Bidder oldHighestBidder = auction.getHighestBidder();
+            User oldHighestBidder = auction.getHighestBidder();
             userService.deposit(oldHighestBidder.getId(), auction.getCurrentPrice());
         }
 
@@ -134,7 +140,7 @@ public class BidService {
         return transaction;
     }
 
-    public Bidder getHighestBidder(String auctionId) {
+    public User getHighestBidder(String auctionId) {
         Auction auction = findAuctionOrThrow(auctionId);
         return auction.getHighestBidder();
     }
@@ -153,8 +159,12 @@ public class BidService {
         return getTotalBids(auctionId) > 0;
     }
 
-    public boolean isHighestBidder(String auctionId, Bidder bidder) {
+    public boolean isHighestBidder(String auctionId, User bidder) {
         if (bidder == null) {
+            return false;
+        }
+
+        if (!bidder.hasRole(UserRole.BIDDER)) {
             return false;
         }
 

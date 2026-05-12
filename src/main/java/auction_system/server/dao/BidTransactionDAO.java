@@ -1,8 +1,8 @@
 package auction_system.server.dao;
 
-import auction_system.model.BidTransaction;
-import auction_system.model.Bidder;
-import auction_system.model.User;
+import auction_system.server.model.BidTransaction;
+import auction_system.server.model.User;
+import auction_system.server.model.UserRole;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,6 +21,10 @@ public class BidTransactionDAO {
 
     /*
         Lưu một bid transaction vào database.
+
+        Lưu ý mới:
+        - bidder không còn là object Bidder nữa
+        - bidder là User có role BIDDER
     */
     public void save(String auctionId, BidTransaction transaction) {
         String sql = "INSERT INTO bid_transactions(id, auction_id, bidder_id, amount, timestamp) " +
@@ -28,6 +32,14 @@ public class BidTransactionDAO {
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            if (transaction.getBidder() == null) {
+                throw new RuntimeException("Bidder cannot be null");
+            }
+
+            if (!transaction.getBidder().hasRole(UserRole.BIDDER)) {
+                throw new RuntimeException("Bidder must have BIDDER role");
+            }
 
             statement.setString(1, transaction.getId());
             statement.setString(2, auctionId);
@@ -126,13 +138,26 @@ public class BidTransactionDAO {
         double amount = resultSet.getDouble("amount");
         long timestamp = resultSet.getLong("timestamp");
 
-        User user = userDAO.findById(bidderId);
+        /*
+            Trước đây:
+            - lấy User
+            - kiểm tra instanceof Bidder
+            - ép kiểu Bidder
 
-        if (!(user instanceof Bidder)) {
+            Bây giờ:
+            - lấy User
+            - kiểm tra user có role BIDDER không
+            - không ép kiểu nữa
+        */
+        User bidder = userDAO.findById(bidderId);
+
+        if (bidder == null) {
             throw new RuntimeException("Bidder not found");
         }
 
-        Bidder bidder = (Bidder) user;
+        if (!bidder.hasRole(UserRole.BIDDER)) {
+            throw new RuntimeException("User does not have BIDDER role");
+        }
 
         BidTransaction transaction = new BidTransaction(bidder, amount);
 

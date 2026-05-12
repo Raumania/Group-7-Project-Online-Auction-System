@@ -1,11 +1,11 @@
 package auction_system.server.factory;
 
-import auction_system.model.Art;
-import auction_system.model.Electronics;
-import auction_system.model.Item;
-import auction_system.model.ItemType;
-import auction_system.model.Seller;
-import auction_system.model.Vehicle;
+import auction_system.server.model.Art;
+import auction_system.server.model.Electronics;
+import auction_system.server.model.Item;
+import auction_system.server.model.ItemType;
+import auction_system.server.model.Seller;
+import auction_system.server.model.Vehicle;
 
 public class ItemFactory {
 

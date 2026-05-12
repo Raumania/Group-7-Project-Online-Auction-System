@@ -1,4 +1,4 @@
-package auction_system.model;
+package auction_system.server.model;
 
 public class Art extends Item {
 
@@ -6,11 +6,11 @@ public class Art extends Item {
     private int year;
 
     public Art(String name, String description, double startingPrice,
-               Seller owner, String artist, int year) {
+               User owner, String artist, int year) {
 
         super(name, description, startingPrice, owner, ItemType.ART);
 
-        if (artist == null || artist.isEmpty()) {
+        if (artist == null || artist.trim().isEmpty()) {
             throw new RuntimeException("Artist cannot be empty");
         }
 

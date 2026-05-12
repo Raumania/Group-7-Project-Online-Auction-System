@@ -1,11 +1,6 @@
 package auction_system.server.dao;
 
-import auction_system.model.Auction;
-import auction_system.model.AuctionStatus;
-import auction_system.model.Bidder;
-import auction_system.model.Item;
-import auction_system.model.Seller;
-import auction_system.model.User;
+import auction_system.server.model.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,6 +28,12 @@ public class AuctionDAO {
         - current_price = item.getStartingPrice()
         - highest_bidder_id = null
         - status = OPEN
+
+        Lưu ý mới:
+        - seller_id vẫn là id của user
+        - user đó phải có role SELLER
+        - highest_bidder_id vẫn là id của user
+        - user đó phải có role BIDDER
     */
     public void save(Auction auction) {
         String sql = "INSERT INTO auctions(id, item_id, seller_id, current_price, highest_bidder_id, status) " +
@@ -40,6 +41,19 @@ public class AuctionDAO {
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            if (auction.getSeller() == null) {
+                throw new RuntimeException("Seller cannot be null");
+            }
+
+            if (!auction.getSeller().hasRole(UserRole.SELLER)) {
+                throw new RuntimeException("Seller must have SELLER role");
+            }
+
+            if (auction.getHighestBidder() != null &&
+                    !auction.getHighestBidder().hasRole(UserRole.BIDDER)) {
+                throw new RuntimeException("Highest bidder must have BIDDER role");
+            }
 
             statement.setString(1, auction.getId());
             statement.setString(2, auction.getItem().getId());
@@ -161,6 +175,11 @@ public class AuctionDAO {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
+            if (auction.getHighestBidder() != null &&
+                    !auction.getHighestBidder().hasRole(UserRole.BIDDER)) {
+                throw new RuntimeException("Highest bidder must have BIDDER role");
+            }
+
             statement.setDouble(1, auction.getCurrentPrice());
 
             if (auction.getHighestBidder() == null) {
@@ -218,13 +237,24 @@ public class AuctionDAO {
             throw new RuntimeException("Item not found for auction");
         }
 
-        User sellerUser = userDAO.findById(sellerId);
+        /*
+            Trước đây:
+            User sellerUser = userDAO.findById(sellerId);
+            if (!(sellerUser instanceof Seller)) ...
+            Seller seller = (Seller) sellerUser;
 
-        if (!(sellerUser instanceof Seller)) {
+            Bây giờ:
+            seller là User có role SELLER.
+        */
+        User seller = userDAO.findById(sellerId);
+
+        if (seller == null) {
             throw new RuntimeException("Seller not found for auction");
         }
 
-        Seller seller = (Seller) sellerUser;
+        if (!seller.hasRole(UserRole.SELLER)) {
+            throw new RuntimeException("Seller user does not have SELLER role");
+        }
 
         Auction auction = new Auction(item, seller);
 
@@ -237,15 +267,25 @@ public class AuctionDAO {
 
         /*
             highest_bidder_id có thể null nếu chưa ai bid.
+
+            Trước đây:
+            kiểm tra instanceof Bidder rồi ép kiểu Bidder.
+
+            Bây giờ:
+            highest bidder là User có role BIDDER.
         */
         if (highestBidderId != null) {
-            User bidderUser = userDAO.findById(highestBidderId);
+            User bidder = userDAO.findById(highestBidderId);
 
-            if (!(bidderUser instanceof Bidder)) {
+            if (bidder == null) {
                 throw new RuntimeException("Highest bidder not found for auction");
             }
 
-            auction.setHighestBidder((Bidder) bidderUser);
+            if (!bidder.hasRole(UserRole.BIDDER)) {
+                throw new RuntimeException("Highest bidder user does not have BIDDER role");
+            }
+
+            auction.setHighestBidder(bidder);
         }
 
         return auction;

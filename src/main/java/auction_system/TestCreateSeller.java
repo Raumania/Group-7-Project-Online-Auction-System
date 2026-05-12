@@ -1,6 +1,6 @@
 package auction_system;
 
-import auction_system.model.Seller;
+import auction_system.server.model.Seller;
 import auction_system.server.service.UserService;
 
 public class TestCreateSeller {
@@ -8,7 +8,7 @@ public class TestCreateSeller {
         UserService userService = new UserService();
 
         Seller seller = userService.createSeller(
-                "seller1",
+                "duy",
                 "123456",
                 "seller1@gmail.com"
         );

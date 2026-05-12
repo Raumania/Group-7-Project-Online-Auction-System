@@ -1,8 +1,8 @@
 package auction_system;
 
-import auction_system.model.Electronics;
-import auction_system.model.Seller;
-import auction_system.model.User;
+import auction_system.server.model.Electronics;
+import auction_system.server.model.Seller;
+import auction_system.server.model.User;
 import auction_system.server.service.ItemService;
 import auction_system.server.service.UserService;
 

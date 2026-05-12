@@ -2,7 +2,7 @@ package auction_system.client;
 
 import com.google.gson.Gson;
 import auction_system.server.common.protocol.*;
-import auction_system.model.*;
+import auction_system.server.model.*;
 
 import java.io.*;
 import java.net.Socket;

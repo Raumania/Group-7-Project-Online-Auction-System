@@ -1,9 +1,10 @@
 package auction_system.server.service;
 
-import auction_system.model.Auction;
-import auction_system.model.Item;
-import auction_system.model.Seller;
 import auction_system.server.dao.AuctionDAO;
+import auction_system.server.model.Auction;
+import auction_system.server.model.Item;
+import auction_system.server.model.User;
+import auction_system.server.model.UserRole;
 
 import java.util.List;
 
@@ -34,14 +35,25 @@ public class AuctionService {
 
     /*
         Tạo auction mới.
+
+        Trước đây:
+        - seller là Seller
+
+        Bây giờ:
+        - seller là User
+        - User này phải có role SELLER
     */
-    public Auction createAuction(Item item, Seller seller) {
+    public Auction createAuction(Item item, User seller) {
         if (item == null) {
             throw new RuntimeException("Item cannot be null");
         }
 
         if (seller == null) {
             throw new RuntimeException("Seller cannot be null");
+        }
+
+        if (!seller.hasRole(UserRole.SELLER)) {
+            throw new RuntimeException("Seller must have SELLER role");
         }
 
         if (item.getOwner() == null) {

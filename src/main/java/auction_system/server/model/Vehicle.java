@@ -1,4 +1,4 @@
-package auction_system.model;
+package auction_system.server.model;
 
 public class Vehicle extends Item {
 
@@ -6,11 +6,11 @@ public class Vehicle extends Item {
     private int year;
 
     public Vehicle(String name, String description, double startingPrice,
-                   Seller owner, String brand, int year) {
+                   User owner, String brand, int year) {
 
         super(name, description, startingPrice, owner, ItemType.VEHICLE);
 
-        if (brand == null || brand.isEmpty()) {
+        if (brand == null || brand.trim().isEmpty()) {
             throw new RuntimeException("Brand cannot be empty");
         }
 

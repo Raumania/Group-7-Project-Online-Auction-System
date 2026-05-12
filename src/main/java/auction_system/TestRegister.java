@@ -1,7 +1,7 @@
 package auction_system;
 
-import auction_system.model.Bidder;
-import auction_system.model.User;
+import auction_system.server.model.Bidder;
+import auction_system.server.model.User;
 import auction_system.server.service.UserService;
 
 public class TestRegister {

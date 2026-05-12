@@ -19,7 +19,7 @@ public final class Action {
 
     /** Lấy danh sách các phiên đấu giá đang mở (chưa kết thúc) */
     public static final String GET_OPEN_AUCTIONS = "GET_OPEN_AUCTIONS";
-
+    public static final String GET_ALL_AUCTIONS = "GET_ALL_AUCTIONS";
     /** Lấy chi tiết một phiên đấu giá theo ID */
     public static final String GET_AUCTION_DETAIL = "GET_AUCTION_DETAIL";
 

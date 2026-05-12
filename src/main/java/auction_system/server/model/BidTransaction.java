@@ -1,18 +1,36 @@
-package auction_system.model;
+package auction_system.server.model;
 
 import auction_system.util.IdGenerator;
 
 public class BidTransaction extends Entity {
 
-    private Bidder bidder;
+    /*
+        Trước đây bidder là Bidder.
+
+        Bây giờ:
+        - User không còn chia cứng thành Bidder/Seller nữa
+        - Một User có thể có nhiều role
+        - Vì vậy bidder là User
+        - Nhưng User này bắt buộc phải có role BIDDER
+    */
+    private User bidder;
+
     private double amount;
     private long timestamp;
 
-    public BidTransaction(Bidder bidder, double amount) {
+    public BidTransaction(User bidder, double amount) {
         super();
 
         if (bidder == null) {
             throw new RuntimeException("Bidder cannot be null");
+        }
+
+        /*
+            Không dùng instanceof Bidder nữa.
+            Kiểm tra bằng role.
+        */
+        if (!bidder.hasRole(UserRole.BIDDER)) {
+            throw new RuntimeException("Bidder must have BIDDER role");
         }
 
         if (amount <= 0) {
@@ -25,7 +43,7 @@ public class BidTransaction extends Entity {
         this.timestamp = System.currentTimeMillis();
     }
 
-    public Bidder getBidder() {
+    public User getBidder() {
         return bidder;
     }
 

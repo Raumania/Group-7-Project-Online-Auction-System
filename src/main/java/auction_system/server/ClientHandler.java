@@ -1,70 +1,88 @@
 package auction_system.server;
 
-import com.google.gson.Gson;
 import auction_system.server.common.protocol.*;
-import auction_system.server.service.AuctionService;
-import auction_system.model.*;
+import auction_system.server.controller.RequestHandler;
+import auction_system.server.controller.LoginController;
+import auction_system.server.controller.RegisterController;
+import auction_system.server.controller.AuctionController;
+import auction_system.server.controller.BidController;
+import com.google.gson.Gson;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientHandler implements Runnable {
 
     private final Socket socket;
     private final Gson gson = new Gson();
-    private final AuctionService service;
+    private final Map<String, RequestHandler> handlers = new ConcurrentHashMap<>();
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
-        // Dùng Singleton để tránh tạo nhiều instance không cần thiết
-        this.service = AuctionService.getInstance();
+        initHandlers();
+    }
+
+    private void initHandlers() {
+        handlers.put(Action.LOGIN, new LoginController());
+        AuctionController auctionController = new AuctionController();
+        handlers.put(Action.REGISTER, new RegisterController());
+        handlers.put(Action.GET_ALL_AUCTIONS, auctionController);
+        handlers.put(Action.GET_AUCTION_DETAIL, auctionController);
+        handlers.put(Action.CREATE_AUCTION, auctionController);
+        handlers.put(Action.CLOSE_AUCTION, auctionController);
+        handlers.put(Action.PLACE_BID, new BidController());
     }
 
     @Override
     public void run() {
-        // Dùng try-with-resources tự động đóng BufferedReader và PrintWriter
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-            String line;
-            while ((line = in.readLine()) != null) {
+        // SỬA: Đồng bộ dùng DataInputStream và DataOutputStream như Client
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+             DataOutputStream out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()))) {
+
+            // Dùng vòng lặp vô hạn, readUTF() sẽ quăng lỗi EOFException khi Client đóng kết nối
+            while (true) {
+                String line;
+
+                try {
+                    // SỬA: Đọc bằng readUTF() để khớp với out.writeUTF() của Client
+                    line = in.readUTF();
+                } catch (EOFException e) {
+                    // Client ngắt kết nối
+                    System.out.println("Client disconnected.");
+                    break;
+                }
+
+                System.out.println("Received: " + line);
                 Request req = gson.fromJson(line, Request.class);
-                Response res = handle(req);
-                out.println(gson.toJson(res));
+
+                RequestHandler handler = handlers.get(req.getAction());
+                Response res;
+
+                if (handler != null) {
+                    res = handler.handle(req);
+                } else {
+                    res = new Response("ERROR", "type", null, "Unknown action: " + req.getAction());
+                }
+
+                String jsonResponse = gson.toJson(res);
+
+                // SỬA: Gửi đi bằng writeUTF() để khớp với in.readUTF() của Client
+                out.writeUTF(jsonResponse);
+                out.flush();
             }
 
         } catch (IOException e) {
             System.err.println("ClientHandler IO error: " + e.getMessage());
         } finally {
-            // Đảm bảo socket luôn được đóng
             try {
-                if (socket != null && !socket.isClosed()) {
+                if (socket != null && !socket.isClosed())
                     socket.close();
-                }
             } catch (IOException e) {
                 System.err.println("Error closing socket: " + e.getMessage());
             }
-        }
-    }
-
-    private Response handle(Request req) {
-        try {
-            switch (req.getAction()) {
-                case Action.CREATE_AUCTION:
-                    CreateAuctionData data = gson.fromJson(req.getData(), CreateAuctionData.class);
-                    Auction auction = service.createAuction(data.getItem(), data.getSeller());
-                    return new Response("SUCCESS", gson.toJson(auction), "Auction created");
-
-                case Action.GET_ALL:
-                    List<Auction> list = service.getAllAuctions();
-                    return new Response("SUCCESS", gson.toJson(list), "List returned");
-
-                default:
-                    return new Response("ERROR", null, "Unknown action");
-            }
-        } catch (Exception e) {
-            return new Response("ERROR", null, e.getMessage());
         }
     }
 }

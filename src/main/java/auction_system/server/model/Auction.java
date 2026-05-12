@@ -1,4 +1,4 @@
-package auction_system.model;
+package auction_system.server.model;
 
 import auction_system.server.observer.AuctionObserver;
 import auction_system.util.IdGenerator;
@@ -8,14 +8,33 @@ import java.util.List;
 
 public class Auction extends Entity {
     private Item item;
-    private Seller seller;
+
+    /*
+        Trước đây seller là Seller.
+
+        Bây giờ:
+        - User không còn chia cứng thành Seller/Bidder nữa
+        - Một User có thể có nhiều role
+        - Vì vậy seller là User
+        - Nhưng User này bắt buộc phải có role SELLER
+    */
+    private User seller;
+
     private double currentPrice;
-    private Bidder highestBidder;
+
+    /*
+        Trước đây highestBidder là Bidder.
+
+        Bây giờ highestBidder là User,
+        nhưng User này phải có role BIDDER.
+    */
+    private User highestBidder;
+
     private List<BidTransaction> bidHistory;
     private AuctionStatus status;
     private List<AuctionObserver> observers;
 
-    public Auction(Item item, Seller seller) {
+    public Auction(Item item, User seller) {
         super();
 
         if (item == null) {
@@ -24,6 +43,14 @@ public class Auction extends Entity {
 
         if (seller == null) {
             throw new RuntimeException("Seller cannot be null");
+        }
+
+        /*
+            Không dùng instanceof Seller nữa.
+            Kiểm tra bằng role.
+        */
+        if (!seller.hasRole(UserRole.SELLER)) {
+            throw new RuntimeException("Seller must have SELLER role");
         }
 
         this.id = IdGenerator.generationAuctionId();
@@ -89,10 +116,22 @@ public class Auction extends Entity {
 
         synchronized để tránh trường hợp nhiều bidder đặt giá cùng lúc
         làm currentPrice bị sai.
+
+        Trước đây:
+        placeBid(Bidder bidder, double amount)
+
+        Bây giờ:
+        placeBid(User bidder, double amount)
+
+        User này phải có role BIDDER.
     */
-    public synchronized void placeBid(Bidder bidder, double amount) {
+    public synchronized void placeBid(User bidder, double amount) {
         if (bidder == null) {
             throw new RuntimeException("Bidder cannot be null");
+        }
+
+        if (!bidder.hasRole(UserRole.BIDDER)) {
+            throw new RuntimeException("Bidder must have BIDDER role");
         }
 
         if (!canPlaceBid()) {
@@ -176,7 +215,7 @@ public class Auction extends Entity {
         return item;
     }
 
-    public Seller getSeller() {
+    public User getSeller() {
         return seller;
     }
 
@@ -184,7 +223,7 @@ public class Auction extends Entity {
         return currentPrice;
     }
 
-    public Bidder getHighestBidder() {
+    public User getHighestBidder() {
         return highestBidder;
     }
 
@@ -211,7 +250,11 @@ public class Auction extends Entity {
         this.currentPrice = currentPrice;
     }
 
-    public void setHighestBidder(Bidder highestBidder) {
+    public void setHighestBidder(User highestBidder) {
+        if (highestBidder != null && !highestBidder.hasRole(UserRole.BIDDER)) {
+            throw new RuntimeException("Highest bidder must have BIDDER role");
+        }
+
         this.highestBidder = highestBidder;
     }
 

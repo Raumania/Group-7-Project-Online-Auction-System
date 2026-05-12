@@ -1,4 +1,4 @@
-package auction_system.model;
+package auction_system.server.model;
 
 public enum UserRole {
     ADMIN,

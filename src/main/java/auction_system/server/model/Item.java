@@ -1,15 +1,26 @@
-package auction_system.model;
+package auction_system.server.model;
 
-import auction_system.model.Entity;
 import auction_system.util.IdGenerator;
 
 public abstract class Item extends Entity {
     protected String name;
     protected String description;
     protected double startingPrice;
-    protected  Seller owner;
+
+    /*
+        Trước đây owner là Seller.
+
+        Bây giờ:
+        - User không còn chia cứng thành Seller/Bidder nữa
+        - Một User có thể có nhiều role
+        - Vì vậy owner là User
+        - Nhưng User này bắt buộc phải có role SELLER
+    */
+    protected User owner;
+
     protected ItemType type;
-    public Item(String name, String description, double startingPrice, Seller owner, ItemType type) {
+
+    public Item(String name, String description, double startingPrice, User owner, ItemType type) {
         super();
 
         if (name == null || name.trim().isEmpty()) {
@@ -26,6 +37,14 @@ public abstract class Item extends Entity {
 
         if (owner == null) {
             throw new RuntimeException("Owner cannot be null");
+        }
+
+        /*
+            Owner phải là user có quyền SELLER.
+            Không dùng instanceof Seller nữa.
+        */
+        if (!owner.hasRole(UserRole.SELLER)) {
+            throw new RuntimeException("Owner must have SELLER role");
         }
 
         if (type == null) {
@@ -48,16 +67,18 @@ public abstract class Item extends Entity {
         return description;
     }
 
-    public Seller getOwner(){
+    public User getOwner() {
         return owner;
     }
+
     public double getStartingPrice() {
         return startingPrice;
     }
 
-    public ItemType getType(){
+    public ItemType getType() {
         return type;
     }
+
     @Override
     public String toString() {
         return "Item{id='" + id + "', name='" + name + "', startingPrice=" + startingPrice + "}";

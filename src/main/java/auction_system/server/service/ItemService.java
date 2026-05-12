@@ -1,11 +1,7 @@
 package auction_system.server.service;
 
-import auction_system.model.Art;
-import auction_system.model.Electronics;
-import auction_system.model.Item;
-import auction_system.model.Seller;
-import auction_system.model.Vehicle;
 import auction_system.server.dao.ItemDAO;
+import auction_system.server.model.*;
 
 public class ItemService {
 
@@ -19,15 +15,20 @@ public class ItemService {
         Tạo item loại Electronics.
 
         Service sẽ:
-        1. Kiểm tra seller có null không
-        2. Tạo object Electronics
-        3. Gọi ItemDAO để lưu vào database
-        4. Trả item vừa tạo về
+        1. Kiểm tra owner có null không
+        2. Kiểm tra owner có role SELLER không
+        3. Tạo object Electronics
+        4. Gọi ItemDAO để lưu vào database
+        5. Trả item vừa tạo về
     */
     public Electronics createElectronics(String name, String description, double startingPrice,
-                                         Seller owner, String brand, String model) {
+                                         User owner, String brand, String model) {
         if (owner == null) {
             throw new RuntimeException("Owner cannot be null");
+        }
+
+        if (!owner.hasRole(UserRole.SELLER)) {
+            throw new RuntimeException("Owner must have SELLER role");
         }
 
         Electronics electronics = new Electronics(
@@ -48,9 +49,13 @@ public class ItemService {
         Tạo item loại Art.
     */
     public Art createArt(String name, String description, double startingPrice,
-                         Seller owner, String artist, int year) {
+                         User owner, String artist, int year) {
         if (owner == null) {
             throw new RuntimeException("Owner cannot be null");
+        }
+
+        if (!owner.hasRole(UserRole.SELLER)) {
+            throw new RuntimeException("Owner must have SELLER role");
         }
 
         Art art = new Art(
@@ -71,9 +76,13 @@ public class ItemService {
         Tạo item loại Vehicle.
     */
     public Vehicle createVehicle(String name, String description, double startingPrice,
-                                 Seller owner, String brand, int year) {
+                                 User owner, String brand, int year) {
         if (owner == null) {
             throw new RuntimeException("Owner cannot be null");
+        }
+
+        if (!owner.hasRole(UserRole.SELLER)) {
+            throw new RuntimeException("Owner must have SELLER role");
         }
 
         Vehicle vehicle = new Vehicle(

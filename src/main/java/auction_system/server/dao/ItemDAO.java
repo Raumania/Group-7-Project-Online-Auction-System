@@ -1,11 +1,6 @@
 package auction_system.server.dao;
 
-import auction_system.model.Art;
-import auction_system.model.Electronics;
-import auction_system.model.Item;
-import auction_system.model.ItemType;
-import auction_system.model.Seller;
-import auction_system.model.User;
+import auction_system.server.model.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,6 +22,10 @@ public class ItemDAO {
         - Electronics
         - Art
         - Vehicle
+
+        Lưu ý mới:
+        - owner không còn bắt buộc là object Seller nữa
+        - owner bây giờ là User có role SELLER
     */
     public void save(Item item) {
         String sql = "INSERT INTO items(id, name, description, starting_price, owner_id, type, brand, model, artist, year) " +
@@ -34,6 +33,18 @@ public class ItemDAO {
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            /*
+                Kiểm tra owner phải có role SELLER.
+                Vì bây giờ không dùng instanceof Seller nữa.
+            */
+            if (item.getOwner() == null) {
+                throw new RuntimeException("Owner cannot be null");
+            }
+
+            if (!item.getOwner().hasRole(UserRole.SELLER)) {
+                throw new RuntimeException("Owner must have SELLER role");
+            }
 
             statement.setString(1, item.getId());
             statement.setString(2, item.getName());
@@ -55,7 +66,7 @@ public class ItemDAO {
                 statement.setString(8, null);
                 statement.setString(9, art.getArtist());
                 statement.setInt(10, art.getYear());
-            } else if (item instanceof auction_system.model.Vehicle vehicle) {
+            } else if (item instanceof Vehicle vehicle) {
                 statement.setString(7, vehicle.getBrand());
                 statement.setString(8, null);
                 statement.setString(9, null);
@@ -113,18 +124,26 @@ public class ItemDAO {
 
         /*
             Lấy owner từ bảng users.
-        */
-        User user = userDAO.findById(ownerId);
 
-        if (user == null) {
+            Trước đây:
+            - lấy User
+            - kiểm tra instanceof Seller
+            - ép kiểu Seller
+
+            Bây giờ:
+            - lấy User
+            - kiểm tra user có role SELLER không
+            - không ép kiểu Seller nữa
+        */
+        User owner = userDAO.findById(ownerId);
+
+        if (owner == null) {
             throw new RuntimeException("Owner not found");
         }
 
-        if (!(user instanceof Seller)) {
+        if (!owner.hasRole(UserRole.SELLER)) {
             throw new RuntimeException("Owner is not seller");
         }
-
-        Seller owner = (Seller) user;
 
         ItemType type = ItemType.valueOf(typeText);
 
@@ -135,7 +154,7 @@ public class ItemDAO {
         } else if (type == ItemType.ART) {
             item = new Art(name, description, startingPrice, owner, artist, year);
         } else if (type == ItemType.VEHICLE) {
-            item = new auction_system.model.Vehicle(name, description, startingPrice, owner, brand, year);
+            item = new Vehicle(name, description, startingPrice, owner, brand, year);
         } else {
             throw new RuntimeException("Invalid item type");
         }

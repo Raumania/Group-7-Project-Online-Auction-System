@@ -1,6 +1,6 @@
 package auction_system;
 
-import auction_system.model.*;
+import auction_system.server.model.*;
 import auction_system.server.service.*;
 
 public class TestFullAuctionFlow {
@@ -11,18 +11,19 @@ public class TestFullAuctionFlow {
         BidService bidService = new BidService();
 
         Seller seller = userService.createSeller(
-                "seller_full_1",
+                "phong",
                 "123456",
                 "seller_full_1@gmail.com"
         );
 
         Bidder bidder = userService.createBidder(
-                "bidder_full_1",
+                "mo",
                 "123456",
                 "bidder_full_1@gmail.com"
         );
-
+        Bidder bidder1=userService.createBidder("bach","123456","duacbanh@gmail.com");
         userService.deposit(bidder.getId(), 5000);
+        userService.deposit(bidder1.getId(),36000);
 
         Electronics item = itemService.createElectronics(
                 "Laptop Full Test",
@@ -38,6 +39,9 @@ public class TestFullAuctionFlow {
         auctionService.startAuction(auction.getId());
 
         bidService.placeBid(auction.getId(), bidder, 1500);
+        bidService.placeBid(auction.getId(),bidder1,1600);
+        bidService.placeBid(auction.getId(), bidder, 1800);
+        bidService.placeBid(auction.getId(),bidder1,2000);
 
         auctionService.closeAuction(auction.getId());
 

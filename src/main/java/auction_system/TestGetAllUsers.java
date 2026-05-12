@@ -1,6 +1,6 @@
 package auction_system;
 
-import auction_system.model.User;
+import auction_system.server.model.User;
 import auction_system.server.service.UserService;
 
 import java.util.List;
