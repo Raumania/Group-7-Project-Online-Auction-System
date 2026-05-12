@@ -1,5 +1,7 @@
 package auction_system.server.model;
 
+import auction_system.server.exception.ItemInformationException;
+
 public class Electronics extends Item {
 
     private String brand;
@@ -11,11 +13,11 @@ public class Electronics extends Item {
         super(name, description, startingPrice, owner, ItemType.ELECTRONICS);
 
         if (brand == null || brand.trim().isEmpty()) {
-            throw new RuntimeException("Brand cannot be empty");
+            throw new ItemInformationException("Brand cannot be empty");
         }
 
         if (model == null || model.trim().isEmpty()) {
-            throw new RuntimeException("Model cannot be empty");
+            throw new ItemInformationException("Model cannot be empty");
         }
 
         this.brand = brand;

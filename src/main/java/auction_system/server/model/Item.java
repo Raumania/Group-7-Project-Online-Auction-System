@@ -1,6 +1,7 @@
 package auction_system.server.model;
 
-import auction_system.util.IdGenerator;
+import auction_system.server.exception.AuthorizationException;
+import auction_system.server.exception.ItemInformationException;
 
 public abstract class Item extends Entity {
     protected String name;
@@ -24,19 +25,19 @@ public abstract class Item extends Entity {
         super();
 
         if (name == null || name.trim().isEmpty()) {
-            throw new RuntimeException("Item name cannot be null or empty");
+            throw new ItemInformationException("Item name cannot be null or empty");
         }
 
         if (description == null || description.trim().isEmpty()) {
-            throw new RuntimeException("Item description cannot be null or empty");
+            throw new ItemInformationException("Item description cannot be null or empty");
         }
 
         if (startingPrice <= 0) {
-            throw new RuntimeException("Starting price must be greater than 0");
+            throw new ItemInformationException("Starting price must be greater than 0");
         }
 
         if (owner == null) {
-            throw new RuntimeException("Owner cannot be null");
+            throw new ItemInformationException("Owner cannot be null");
         }
 
         /*
@@ -44,17 +45,23 @@ public abstract class Item extends Entity {
             Không dùng instanceof Seller nữa.
         */
         if (!owner.hasRole(UserRole.SELLER)) {
-            throw new RuntimeException("Owner must have SELLER role");
+            throw new AuthorizationException("Owner must have SELLER role");
         }
 
         if (type == null) {
-            throw new RuntimeException("Item type cannot be null");
+            throw new NullPointerException("Item type cannot be null");
         }
 
         this.name = name;
         this.description = description;
         this.startingPrice = startingPrice;
-        this.id = IdGenerator.generationItemId();
+
+        /*
+            Item id bây giờ do MySQL AUTO_INCREMENT sinh ra.
+            ItemDAO.save(item) sẽ lấy generated id rồi set lại vào item.
+        */
+        this.id = null;
+
         this.owner = owner;
         this.type = type;
     }

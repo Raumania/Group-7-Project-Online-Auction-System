@@ -1,17 +1,13 @@
 package auction_system.server.controller;
 
+import auction_system.server.model.User;
 import auction_system.server.common.protocol.Action;
 import auction_system.server.common.protocol.RegisterData;
 import auction_system.server.common.protocol.Request;
 import auction_system.server.common.protocol.Response;
-import auction_system.server.model.User;
-import auction_system.server.model.UserRole;
 import auction_system.server.service.UserService;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class RegisterController implements RequestHandler {
 
@@ -39,42 +35,40 @@ public class RegisterController implements RequestHandler {
             }
 
             /*
-                Bây giờ không còn data.getRole() nữa.
-                Vì 1 user có thể có nhiều role,
-                nên dùng data.getRoles().
+                Bây giờ RegisterData chỉ còn:
+                - fullname
+                - username
+                - password
+
+                Không còn email.
+                Không còn roles từ client.
+
+                Role mặc định BIDDER,SELLER sẽ được gán trong UserService.
             */
-            if (data.getRoles() == null || data.getRoles().isEmpty()) {
-                throw new RuntimeException("Roles cannot be empty");
+            if (data.getFullname() == null || data.getFullname().trim().isEmpty()) {
+                throw new RuntimeException("Fullname cannot be empty");
             }
 
-            /*
-                Chuyển Set<String> roles từ client
-                thành Set<UserRole> để dùng trong model.
-            */
-            Set<UserRole> roles = new HashSet<>();
+            if (data.getUsername() == null || data.getUsername().trim().isEmpty()) {
+                throw new RuntimeException("Username cannot be empty");
+            }
 
-            for (String roleText : data.getRoles()) {
-                if (roleText == null || roleText.trim().isEmpty()) {
-                    throw new RuntimeException("Role cannot be empty");
-                }
-
-                try {
-                    UserRole role = UserRole.valueOf(roleText.trim().toUpperCase());
-                    roles.add(role);
-                } catch (IllegalArgumentException e) {
-                    throw new RuntimeException("Invalid role: " + roleText);
-                }
+            if (data.getPassword() == null || data.getPassword().trim().isEmpty()) {
+                throw new RuntimeException("Password cannot be empty");
             }
 
             /*
                 Không còn createBidder / createSeller theo nhánh if nữa.
-                Bây giờ gọi registerUser và truyền nhiều role vào.
+                Không còn truyền roles từ client nữa.
+
+                User mới mặc định có cả:
+                - BIDDER
+                - SELLER
             */
             User user = userService.registerUser(
+                    data.getFullname(),
                     data.getUsername(),
-                    data.getPassword(),
-                    data.getEmail(),
-                    roles
+                    data.getPassword()
             );
 
             /*

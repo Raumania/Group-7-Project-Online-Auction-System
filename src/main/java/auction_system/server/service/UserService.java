@@ -16,7 +16,29 @@ public class UserService {
     }
 
     /*
-        Tạo User mới.
+        Tạo User mới với role mặc định.
+
+        Bây giờ:
+        - Khi đăng ký tài khoản bình thường
+        - User mặc định có cả 2 role:
+            + BIDDER: được đặt giá
+            + SELLER: được đăng bán item
+
+        Client không cần gửi role nữa.
+        Client cũng không cần gửi email nữa.
+        Thay email bằng fullname.
+    */
+    public User registerUser(String fullname, String username, String password) {
+        return registerUser(
+                fullname,
+                username,
+                password,
+                Set.of(UserRole.BIDDER, UserRole.SELLER)
+        );
+    }
+
+    /*
+        Tạo User mới với roles tùy chỉnh.
 
         Trước đây:
         - createSeller(...) tạo Seller
@@ -29,8 +51,13 @@ public class UserService {
         - ví dụ: BIDDER, SELLER
         - kiểm tra username đã tồn tại chưa
         - lưu vào database qua UserDAO
+
+        Hàm này vẫn giữ lại để:
+        - tạo ADMIN
+        - tạo user chỉ có 1 role nếu cần
+        - test custom role
     */
-    public User registerUser(String username, String password, String email, Set<UserRole> roles) {
+    public User registerUser(String fullname, String username, String password, Set<UserRole> roles) {
         User existingUser = userDAO.findByUsername(username);
 
         if (existingUser != null) {
@@ -41,7 +68,7 @@ public class UserService {
             throw new RuntimeException("User must have at least one role");
         }
 
-        User user = new User(username, password, email, roles);
+        User user = new User(fullname, username, password, roles);
 
         userDAO.save(user);
 
@@ -56,11 +83,11 @@ public class UserService {
         Nhưng bản chất bây giờ không tạo Seller object nữa,
         mà tạo User có role SELLER.
     */
-    public User createSeller(String username, String password, String email) {
+    public User createSeller(String fullname, String username, String password) {
         return registerUser(
+                fullname,
                 username,
                 password,
-                email,
                 Set.of(UserRole.SELLER)
         );
     }
@@ -73,11 +100,11 @@ public class UserService {
         Nhưng bản chất bây giờ không tạo Bidder object nữa,
         mà tạo User có role BIDDER.
     */
-    public User createBidder(String username, String password, String email) {
+    public User createBidder(String fullname, String username, String password) {
         return registerUser(
+                fullname,
                 username,
                 password,
-                email,
                 Set.of(UserRole.BIDDER)
         );
     }
@@ -87,13 +114,40 @@ public class UserService {
 
         Dùng khi 1 tài khoản vừa có thể đấu giá,
         vừa có thể đăng bán sản phẩm.
+
+        Thực ra hàm này bây giờ giống registerUser(fullname, username, password).
+        Giữ lại để code dễ đọc.
     */
-    public User createBidderAndSeller(String username, String password, String email) {
+    public User createBidderAndSeller(String fullname, String username, String password) {
+        return registerUser(fullname, username, password);
+    }
+
+    /*
+        Tạo Admin.
+
+        Không nên cho mọi user mặc định là ADMIN.
+        Admin nên tạo riêng bằng hàm này hoặc bằng seed data.
+    */
+    public User createAdmin(String fullname, String username, String password) {
         return registerUser(
+                fullname,
                 username,
                 password,
-                email,
-                Set.of(UserRole.BIDDER, UserRole.SELLER)
+                Set.of(UserRole.ADMIN)
+        );
+    }
+
+    /*
+        Tạo Admin có cả quyền BIDDER và SELLER.
+
+        Dùng nếu bạn muốn admin cũng có thể mua/bán.
+    */
+    public User createFullAdmin(String fullname, String username, String password) {
+        return registerUser(
+                fullname,
+                username,
+                password,
+                Set.of(UserRole.ADMIN, UserRole.BIDDER, UserRole.SELLER)
         );
     }
 

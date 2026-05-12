@@ -1,5 +1,9 @@
 package auction_system.server.model;
 
+import auction_system.server.exception.AuthorizationException;
+import auction_system.server.exception.InvalidBidException;
+import auction_system.server.exception.ItemInformationException;
+import auction_system.server.exception.StatusException;
 import auction_system.server.observer.AuctionObserver;
 import auction_system.util.IdGenerator;
 
@@ -38,11 +42,11 @@ public class Auction extends Entity {
         super();
 
         if (item == null) {
-            throw new RuntimeException("Item cannot be null");
+            throw new NullPointerException("Item cannot be null");
         }
 
         if (seller == null) {
-            throw new RuntimeException("Seller cannot be null");
+            throw new NullPointerException("Seller cannot be null");
         }
 
         /*
@@ -50,7 +54,7 @@ public class Auction extends Entity {
             Kiểm tra bằng role.
         */
         if (!seller.hasRole(UserRole.SELLER)) {
-            throw new RuntimeException("Seller must have SELLER role");
+            throw new AuthorizationException("Seller must have SELLER role");
         }
 
         this.id = IdGenerator.generationAuctionId();
@@ -127,19 +131,19 @@ public class Auction extends Entity {
     */
     public synchronized void placeBid(User bidder, double amount) {
         if (bidder == null) {
-            throw new RuntimeException("Bidder cannot be null");
+            throw new NullPointerException("Bidder cannot be null");
         }
 
         if (!bidder.hasRole(UserRole.BIDDER)) {
-            throw new RuntimeException("Bidder must have BIDDER role");
+            throw new AuthorizationException("Bidder must have BIDDER role");
         }
 
         if (!canPlaceBid()) {
-            throw new RuntimeException("Auction is not open for bidding");
+            throw new StatusException("Auction is not open for bidding");
         }
 
         if (amount <= currentPrice) {
-            throw new RuntimeException("Bid must be higher than current price");
+            throw new InvalidBidException("Bid must be higher than current price");
         }
 
         currentPrice = amount;
@@ -163,7 +167,7 @@ public class Auction extends Entity {
     */
     public synchronized void startAuction() {
         if (status != AuctionStatus.OPEN) {
-            throw new RuntimeException("Cannot start auction from status " + status);
+            throw new StatusException("Cannot start auction from status " + status);
         }
 
         status = AuctionStatus.RUNNING;
@@ -175,11 +179,11 @@ public class Auction extends Entity {
     */
     public synchronized void closeAuction() {
         if (status == AuctionStatus.FINISHED) {
-            throw new RuntimeException("Auction already finished");
+            throw new StatusException("Auction already finished");
         }
 
         if (status == AuctionStatus.CANCELLED) {
-            throw new RuntimeException("Auction already cancelled");
+            throw new StatusException("Auction already cancelled");
         }
 
         status = AuctionStatus.FINISHED;
@@ -200,11 +204,11 @@ public class Auction extends Entity {
     */
     public synchronized void cancelAuction() {
         if (status == AuctionStatus.FINISHED) {
-            throw new RuntimeException("Cannot cancel finished auction");
+            throw new StatusException("Cannot cancel finished auction");
         }
 
         if (status == AuctionStatus.CANCELLED) {
-            throw new RuntimeException("Auction already cancelled");
+            throw new StatusException("Auction already cancelled");
         }
 
         status = AuctionStatus.CANCELLED;
@@ -244,7 +248,7 @@ public class Auction extends Entity {
     */
     public void setCurrentPrice(double currentPrice) {
         if (currentPrice < item.getStartingPrice()) {
-            throw new RuntimeException("Current price cannot be lower than starting price");
+            throw new ItemInformationException("Current price cannot be lower than starting price");
         }
 
         this.currentPrice = currentPrice;
@@ -252,7 +256,7 @@ public class Auction extends Entity {
 
     public void setHighestBidder(User highestBidder) {
         if (highestBidder != null && !highestBidder.hasRole(UserRole.BIDDER)) {
-            throw new RuntimeException("Highest bidder must have BIDDER role");
+            throw new AuthorizationException("Highest bidder must have BIDDER role");
         }
 
         this.highestBidder = highestBidder;
@@ -260,7 +264,7 @@ public class Auction extends Entity {
 
     public void setStatus(AuctionStatus status) {
         if (status == null) {
-            throw new RuntimeException("Auction status cannot be null");
+            throw new StatusException("Auction status cannot be null");
         }
 
         this.status = status;

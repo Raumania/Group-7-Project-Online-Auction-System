@@ -1,5 +1,7 @@
 package auction_system.server.model;
 
+import auction_system.server.exception.AuthorizationException;
+import auction_system.server.exception.InvalidBidException;
 import auction_system.util.IdGenerator;
 
 public class BidTransaction extends Entity {
@@ -22,7 +24,7 @@ public class BidTransaction extends Entity {
         super();
 
         if (bidder == null) {
-            throw new RuntimeException("Bidder cannot be null");
+            throw new NullPointerException("Bidder cannot be null");
         }
 
         /*
@@ -30,11 +32,11 @@ public class BidTransaction extends Entity {
             Kiểm tra bằng role.
         */
         if (!bidder.hasRole(UserRole.BIDDER)) {
-            throw new RuntimeException("Bidder must have BIDDER role");
+            throw new AuthorizationException("Bidder must have BIDDER role");
         }
 
         if (amount <= 0) {
-            throw new RuntimeException("Amount must be positive");
+            throw new InvalidBidException("Amount must be positive");
         }
 
         this.id = IdGenerator.generationBidTransactionId();

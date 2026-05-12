@@ -3,10 +3,7 @@ package auction_system.server.dao;
 import auction_system.server.model.User;
 import auction_system.server.model.UserRole;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -17,65 +14,44 @@ public class UserDAO {
     /*
         Hàm save dùng để lưu 1 User vào bảng users trong MySQL.
 
-        Bảng users cũ của bạn đang có các cột:
-        id, username, password, email, role
+        Bảng users hiện tại:
+        id INT AUTO_INCREMENT PRIMARY KEY
+        fullname
+        username
+        password
+        roles
+        balance
 
-        Sau khi sửa sang mô hình 1 user có nhiều role:
-
-        Bảng users sẽ lưu thông tin chính của user:
-        id, username, password, email, balance
-
-        Bảng user_roles sẽ lưu các role của user:
-        user_id, role
-
-        Ví dụ:
-        users:
-        U001, chuong, 123456, chuong@gmail.com, 5000
-
-        user_roles:
-        U001, BIDDER
-        U001, SELLER
+        Không còn email.
+        Không còn bảng user_roles.
     */
     public void save(User user) {
-        String sql = "INSERT INTO users(id, username, password, email, balance) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users(fullname, username, password, roles, balance) VALUES (?, ?, ?, ?, ?)";
 
-        /*
-            try-with-resources:
-            Sau khi chạy xong, Connection và PreparedStatement sẽ tự đóng.
-            Như vậy tránh bị rò rỉ kết nối database.
-        */
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            /*
-                Gán dữ liệu vào từng dấu ? trong câu SQL.
-
-                ? thứ 1 -> id
-                ? thứ 2 -> username
-                ? thứ 3 -> password
-                ? thứ 4 -> email
-                ? thứ 5 -> balance
-
-                Role không còn lưu trực tiếp trong bảng users nữa.
-                Role sẽ được lưu ở bảng user_roles.
-            */
-            statement.setString(1, user.getId());
+            statement.setString(1, user.getFullname());
             statement.setString(2, user.getUsername());
             statement.setString(3, user.getPassword());
-            statement.setString(4, user.getEmail());
+            statement.setString(4, rolesToString(user.getRoles()));
             statement.setDouble(5, user.getBalance());
 
-            /*
-                executeUpdate dùng cho các lệnh:
-                INSERT, UPDATE, DELETE.
-            */
             statement.executeUpdate();
 
             /*
-                Sau khi lưu thông tin user vào bảng users,
-                ta tiếp tục lưu danh sách role của user vào bảng user_roles.
+                Lấy id AUTO_INCREMENT do MySQL tự sinh.
+                Vì Entity.id trong Java đang là String,
+                nên convert int -> String.
             */
-            saveRoles(user.getId(), user.getRoles());
+            ResultSet generatedKeys = statement.getGeneratedKeys();
+
+            if (generatedKeys.next()) {
+                int generatedId = generatedKeys.getInt(1);
+                user.setId(String.valueOf(generatedId));
+            } else {
+                throw new RuntimeException("Cannot get generated user id");
+            }
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot save user", e);
@@ -83,49 +59,45 @@ public class UserDAO {
     }
 
     /*
-        Hàm saveRoles dùng để lưu nhiều role của 1 user.
+        Chuyển Set<UserRole> thành String để lưu vào cột roles.
 
-        Ví dụ user có id là U001 và có roles:
-        BIDDER, SELLER
-
-        Thì bảng user_roles sẽ có 2 dòng:
-        U001 BIDDER
-        U001 SELLER
+        Ví dụ:
+        [BIDDER, SELLER] -> "BIDDER,SELLER"
     */
-    private void saveRoles(String userId, Set<UserRole> roles) {
-        String sql = "INSERT INTO user_roles(user_id, role) VALUES (?, ?)";
+    private String rolesToString(Set<UserRole> roles) {
+        StringBuilder result = new StringBuilder();
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            for (UserRole role : roles) {
-                /*
-                    ? thứ 1 -> user_id
-                    ? thứ 2 -> role
-                */
-                statement.setString(1, userId);
-
-                /*
-                    role là enum UserRole.
-                    .name() chuyển enum thành String.
-
-                    Ví dụ:
-                    UserRole.BIDDER.name() -> "BIDDER"
-                */
-                statement.setString(2, role.name());
-
-                /*
-                    addBatch dùng để gom nhiều câu INSERT lại.
-                    Sau vòng lặp sẽ chạy executeBatch một lần.
-                */
-                statement.addBatch();
+        for (UserRole role : roles) {
+            if (result.length() > 0) {
+                result.append(",");
             }
 
-            statement.executeBatch();
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Cannot save user roles", e);
+            result.append(role.name());
         }
+
+        return result.toString();
+    }
+
+    /*
+        Chuyển String trong database thành Set<UserRole>.
+
+        Ví dụ:
+        "BIDDER,SELLER" -> Set gồm BIDDER và SELLER
+    */
+    private Set<UserRole> stringToRoles(String rolesText) {
+        Set<UserRole> roles = new HashSet<>();
+
+        if (rolesText == null || rolesText.trim().isEmpty()) {
+            return roles;
+        }
+
+        String[] parts = rolesText.split(",");
+
+        for (String part : parts) {
+            roles.add(UserRole.valueOf(part.trim()));
+        }
+
+        return roles;
     }
 
     /*
@@ -141,22 +113,10 @@ public class UserDAO {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            /*
-                Gán username vào dấu ? trong câu SQL.
-            */
             statement.setString(1, username);
 
-            /*
-                executeQuery dùng cho SELECT.
-                Kết quả trả về là ResultSet.
-            */
             ResultSet resultSet = statement.executeQuery();
 
-            /*
-                resultSet.next():
-                - true nếu có 1 dòng dữ liệu
-                - false nếu không tìm thấy user
-            */
             if (resultSet.next()) {
                 return mapResultSetToUser(resultSet);
             }
@@ -170,6 +130,10 @@ public class UserDAO {
 
     /*
         Hàm findById dùng để tìm user theo id.
+
+        users.id trong MySQL là INT AUTO_INCREMENT.
+        Entity.id trong Java vẫn là String.
+        Vì vậy khi query phải parse String -> int.
     */
     public User findById(String id) {
         String sql = "SELECT * FROM users WHERE id = ?";
@@ -177,7 +141,7 @@ public class UserDAO {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setString(1, id);
+            statement.setInt(1, Integer.parseInt(id));
 
             ResultSet resultSet = statement.executeQuery();
 
@@ -195,44 +159,23 @@ public class UserDAO {
     /*
         Hàm update dùng để cập nhật thông tin user trong database.
 
-        Ví dụ dùng khi:
-        - đổi email
-        - đổi password
-        - đổi username
-        - đổi role
-        - đổi balance
-
-        Vì bây giờ 1 user có nhiều role nên:
-        - thông tin chính cập nhật trong bảng users
-        - role cập nhật trong bảng user_roles
-
-        Cách làm đơn giản:
-        1. UPDATE bảng users
-        2. Xóa role cũ của user trong bảng user_roles
-        3. Insert lại danh sách role mới
+        Không còn email.
+        roles nằm trực tiếp trong bảng users.
     */
     public void update(User user) {
-        String sql = "UPDATE users SET username = ?, password = ?, email = ?, balance = ? WHERE id = ?";
+        String sql = "UPDATE users SET fullname = ?, username = ?, password = ?, roles = ?, balance = ? WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setString(1, user.getUsername());
-            statement.setString(2, user.getPassword());
-            statement.setString(3, user.getEmail());
-            statement.setDouble(4, user.getBalance());
-            statement.setString(5, user.getId());
+            statement.setString(1, user.getFullname());
+            statement.setString(2, user.getUsername());
+            statement.setString(3, user.getPassword());
+            statement.setString(4, rolesToString(user.getRoles()));
+            statement.setDouble(5, user.getBalance());
+            statement.setInt(6, Integer.parseInt(user.getId()));
 
             statement.executeUpdate();
-
-            /*
-                Cập nhật lại roles.
-
-                Vì role nằm ở bảng user_roles,
-                nên ta xóa role cũ trước rồi lưu role mới sau.
-            */
-            deleteRolesByUserId(user.getId());
-            saveRoles(user.getId(), user.getRoles());
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot update user", e);
@@ -242,34 +185,20 @@ public class UserDAO {
     /*
         Hàm deleteById dùng để xóa user theo id.
 
-        Vì user_roles có khóa ngoại user_id trỏ về users.id,
-        nên nên xóa role của user trước,
-        sau đó mới xóa user.
+        Không còn bảng user_roles,
+        nên chỉ cần xóa trong bảng users.
     */
     public boolean deleteById(String id) {
-        try {
-            /*
-                Xóa các role của user trước.
-            */
-            deleteRolesByUserId(id);
+        String sql = "DELETE FROM users WHERE id = ?";
 
-            String sql = "DELETE FROM users WHERE id = ?";
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            try (Connection connection = DatabaseConnection.getConnection();
-                 PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, Integer.parseInt(id));
 
-                // thay dau ? thu nhat bang id
-                statement.setString(1, id);
+            int affectedRows = statement.executeUpdate();
 
-                /*
-                    Chỉ gọi executeUpdate 1 lần.
-                    Code cũ của bạn đang gọi executeUpdate 2 lần,
-                    như vậy dễ bị sai logic.
-                */
-                int affectedRows = statement.executeUpdate();
-
-                return affectedRows > 0;
-            }
+            return affectedRows > 0;
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot delete user", e);
@@ -277,79 +206,10 @@ public class UserDAO {
     }
 
     /*
-        Hàm deleteRolesByUserId dùng để xóa toàn bộ role của 1 user.
-
-        Dùng khi:
-        - update lại role
-        - delete user
-    */
-    private void deleteRolesByUserId(String userId) {
-        String sql = "DELETE FROM user_roles WHERE user_id = ?";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setString(1, userId);
-            statement.executeUpdate();
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Cannot delete user roles", e);
-        }
-    }
-
-    /*
-        Hàm findRolesByUserId dùng để lấy danh sách role của 1 user.
-
-        Ví dụ bảng user_roles có:
-
-        user_id     role
-        U001        BIDDER
-        U001        SELLER
-
-        Thì hàm này trả về:
-        Set<UserRole> gồm BIDDER và SELLER.
-    */
-    private Set<UserRole> findRolesByUserId(String userId) {
-        String sql = "SELECT role FROM user_roles WHERE user_id = ?";
-
-        Set<UserRole> roles = new HashSet<>();
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setString(1, userId);
-
-            ResultSet resultSet = statement.executeQuery();
-
-            while (resultSet.next()) {
-                String roleText = resultSet.getString("role");
-
-                /*
-                    Chuyển String role trong database thành enum UserRole.
-
-                    "BIDDER" -> UserRole.BIDDER
-                    "SELLER" -> UserRole.SELLER
-                    "ADMIN"  -> UserRole.ADMIN
-                */
-                UserRole role = UserRole.valueOf(roleText);
-                roles.add(role);
-            }
-
-            return roles;
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Cannot find user roles", e);
-        }
-    }
-
-    /*
         Hàm updateBalance dùng để cập nhật số dư của user.
 
-        Dùng khi:
-        - nạp tiền
-        - rút tiền
-        - đặt bid
-        - thanh toán
+        Vì users.id là INT,
+        nên userId cần parse sang int.
     */
     public boolean updateBalance(String userId, double newBalance) {
         String sql = "UPDATE users SET balance = ? WHERE id = ?";
@@ -358,7 +218,7 @@ public class UserDAO {
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setDouble(1, newBalance);
-            statement.setString(2, userId);
+            statement.setInt(2, Integer.parseInt(userId));
 
             int affectedRows = statement.executeUpdate();
 
@@ -373,64 +233,34 @@ public class UserDAO {
         Hàm mapResultSetToUser dùng để chuyển dữ liệu từ database
         thành object User trong Java.
 
-        Ví dụ database có dòng trong bảng users:
+        Ví dụ database có dòng:
 
-        id       username    password    email              balance
-        U001     chuong      123456      chuong@gmail.com   5000
+        id    fullname        username    password    roles           balance
+        1     Nguyen Van A    chuong      123456      BIDDER,SELLER   5000
 
-        Và bảng user_roles có:
-
-        user_id     role
-        U001        BIDDER
-        U001        SELLER
-
-        Hàm này sẽ tạo ra object:
-        new User("chuong", "123456", "chuong@gmail.com", roles)
-
-        Trong đó roles gồm:
-        BIDDER, SELLER
+        Hàm này sẽ tạo:
+        new User("Nguyen Van A", "chuong", "123456", roles)
     */
     private User mapResultSetToUser(ResultSet resultSet) throws SQLException {
-        String id = resultSet.getString("id");
+        int id = resultSet.getInt("id");
+        String fullname = resultSet.getString("fullname");
         String username = resultSet.getString("username");
         String password = resultSet.getString("password");
-        String email = resultSet.getString("email");
+        String rolesText = resultSet.getString("roles");
         double balance = resultSet.getDouble("balance");
 
-        /*
-            Role không còn lấy từ cột role trong bảng users nữa.
+        Set<UserRole> roles = stringToRoles(rolesText);
 
-            Code cũ:
-            String roleText = resultSet.getString("role");
-            UserRole role = UserRole.valueOf(roleText);
-
-            Code mới:
-            Lấy toàn bộ role từ bảng user_roles.
-        */
-        Set<UserRole> roles = findRolesByUserId(id);
-
-        /*
-            Nếu database không có role nào cho user này,
-            thì dữ liệu đang bị lỗi vì mỗi user nên có ít nhất 1 role.
-        */
         if (roles == null || roles.isEmpty()) {
             throw new RuntimeException("User has no role");
         }
 
-        /*
-            Vì User không còn là abstract class nữa,
-            nên có thể tạo trực tiếp object User.
-        */
-        User user = new User(username, password, email, roles);
+        User user = new User(fullname, username, password, roles);
 
         /*
-            Rất quan trọng:
-
-            Khi new User, constructor sẽ tự sinh id mới.
-            Nhưng user này đang lấy từ database ra,
-            nên mình phải set lại id cũ trong database.
+            MySQL id là int, Entity.id là String.
         */
-        user.setId(id);
+        user.setId(String.valueOf(id));
         user.setBalance(balance);
 
         return user;
