@@ -1,0 +1,105 @@
+/* TÔNG MÀU MỚI: XÁM SÁNG VÀ TEAL */
+
+.viewport-container {
+    -fx-background-color: #F1F5F9; /* Xám nhạt nền */
+}
+
+/* HEADER */
+.advisor-header {
+    -fx-background-color: #FFFFFF; /* Trắng */
+    -fx-background-radius: 15;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 5);
+}
+
+.header-title {
+    -fx-text-fill: #1E293B; /* Xám đậm */
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.header-subtitle {
+    -fx-text-fill: #64748B; /* Xám vừa */
+    -fx-font-size: 12px;
+}
+
+.status-online {
+    -fx-text-fill: #14B8A6; /* Xanh Teal */
+    -fx-font-weight: bold;
+}
+
+/* KHUNG CHAT */
+.chat-container {
+    -fx-background-color: #FFFFFF; /* Trắng */
+    -fx-background-radius: 15;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 5);
+}
+
+.message-scroll {
+    -fx-background-color: transparent;
+}
+.message-scroll .viewport {
+    -fx-background-color: transparent;
+}
+
+/* BONG BÓNG TIN NHẮN */
+.bubble-ai {
+    -fx-background-color: #475569; /* Xám đậm advisor */
+    -fx-background-radius: 15 15 15 0;
+    -fx-padding: 12;
+    -fx-max-width: 500;
+}
+.bubble-ai .bubble-text {
+    -fx-text-fill: #FFFFFF; /* Trắng */
+}
+
+.bubble-user {
+    -fx-background-color: #14B8A6; /* Xanh Teal user */
+    -fx-background-radius: 15 15 0 15;
+    -fx-padding: 12;
+    -fx-max-width: 500;
+}
+.bubble-user .bubble-text {
+    -fx-text-fill: #FFFFFF; /* Trắng */
+}
+
+.bubble-text {
+    -fx-font-size: 14px;
+    -fx-line-spacing: 5px;
+}
+
+/* Ô NHẬP LIỆU */
+.input-area {
+    -fx-background-color: #F8FAFC; /* Xám rất nhạt */
+    -fx-padding: 8;
+    -fx-background-radius: 10;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.chat-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: #1E293B; /* Xám đậm */
+    -fx-prompt-text-fill: #94A3B8; /* Xám nhạt prompt */
+    -fx-font-size: 14px;
+}
+
+.btn-icon {
+    -fx-background-color: transparent;
+    -fx-text-fill: #64748B; /* Xám vừa */
+    -fx-font-size: 18px;
+    -fx-cursor: hand;
+}
+.btn-icon:hover {
+    -fx-text-fill: #14B8A6; /* Xanh Teal hover */
+}
+
+.btn-send {
+    -fx-background-color: #14B8A6; /* Xanh Teal */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 8 20;
+    -fx-cursor: hand;
+}
+.btn-send:hover {
+    -fx-background-color: #0D9488; /* Teal đậm hover */
+}

@@ -96,6 +96,7 @@
                                 </GridPane>
                             </children>
                         </VBox>
+
                         <Separator />
 
                         <VBox spacing="15.0">

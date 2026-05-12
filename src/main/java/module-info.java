@@ -6,6 +6,7 @@ module com.auction_system {
     requires java.sql;
     requires jdk.jdi;
     requires com.google.gson;
+    requires javafx.graphics;
 
     opens auction_system.client.controller to javafx.fxml;
     opens auction_system.client to javafx.fxml;

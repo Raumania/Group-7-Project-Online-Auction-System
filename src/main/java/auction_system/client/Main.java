@@ -8,13 +8,12 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.net.Socket;
 
 public class Main extends Application {
     public void start(Stage stage) throws IOException {
-        SocketClient.getInstance().connect("10.11.217.112",3636);
+//        SocketClient.getInstance().connect("localhost",3636);
 
-        Parent root = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/fxml/mainAuction.fxml"));
         Scene scene = new Scene(root);
 
         stage.setScene(scene);

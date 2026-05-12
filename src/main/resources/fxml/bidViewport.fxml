@@ -20,7 +20,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox minHeight="0.0" spacing="5.0" styleClass="viewport-background" stylesheets="@../css/bidViewport.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.BidViewportController">
+<VBox minHeight="0.0" spacing="5.0" styleClass="viewport-background" stylesheets="@../css/bidViewport.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.BidViewportController">
 
     <!-- Bóp gọn Padding ngoài cùng -->
     <padding>

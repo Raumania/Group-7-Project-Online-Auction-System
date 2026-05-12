@@ -20,16 +20,20 @@ public class MainAuctionController implements Initializable{
     private StackPane viewport;
     private VBox listViewport;
     private VBox sellerViewport;
+    private VBox AIViewport;
 
     public void initialize(URL location, ResourceBundle resources) {
         try {
             ViewSingleton.getInstance().setViewport(viewport);
             FXMLLoader listLoader = new FXMLLoader();
             FXMLLoader sellerLoader = new FXMLLoader();
-            listLoader.setLocation(getClass().getResource("/fxml/listViewport.fxml"));
+            FXMLLoader AILoader = new FXMLLoader();
+            listLoader.setLocation(getClass().getResource("/fxml/ListViewport.fxml"));
             sellerLoader.setLocation(getClass().getResource("/fxml/sellerViewport.fxml"));
+            AILoader.setLocation(getClass().getResource("/fxml/AIViewport.fxml"));
             listViewport = listLoader.load();
             sellerViewport = sellerLoader.load();
+            AIViewport = AILoader.load();
             viewport.getChildren().setAll(listViewport);
         }
         catch (IOException e) {
@@ -45,7 +49,10 @@ public class MainAuctionController implements Initializable{
     void sellerViewportBtn(ActionEvent event) throws IOException{
         viewport.getChildren().setAll(sellerViewport);
     }
-
+    @FXML
+    void AIViewportBtn(ActionEvent event) {
+        viewport.getChildren().setAll(AIViewport);
+    }
     @FXML
     void logoutBtn(ActionEvent event) {
         Node node = viewport;
