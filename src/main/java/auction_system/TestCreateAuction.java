@@ -1,3 +1,4 @@
+/*
 package auction_system;
 
 import auction_system.client.AuctionClient;
@@ -53,4 +54,4 @@ public class TestCreateAuction {
             }
         }
     }
-}
+}*/

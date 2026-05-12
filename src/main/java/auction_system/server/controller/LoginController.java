@@ -36,7 +36,6 @@ public class LoginController implements RequestHandler {
 
             User user = userService.login(loginData.getUsername(), loginData.getPassword());
             if (user != null) {
-                user.setPassword(null);
                 return new Response("SUCCESS", "LOGIN", user, "Login successful");
             } else {
                 return new Response("ERROR", "LOGIN", null, "Invalid username or password");

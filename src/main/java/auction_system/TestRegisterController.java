@@ -1,3 +1,4 @@
+/*
 package auction_system;
 
 import auction_system.server.common.protocol.*;
@@ -31,4 +32,4 @@ public class TestRegisterController {
         System.out.println("Message: " + response.getMessage());
         System.out.println("Data: " + response.getData());
     }
-}
+}*/

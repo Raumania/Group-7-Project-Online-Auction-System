@@ -1,3 +1,4 @@
+/*
 package auction_system;
 
 import auction_system.client.Utils.ViewUtils;
@@ -23,3 +24,4 @@ public class Main extends Application {
         launch(args);
     }
 }
+*/
