@@ -1,5 +1,7 @@
 package auction_system.server.model;
 
+import auction_system.server.exception.ItemInformationException;
+
 public class Art extends Item {
 
     private String artist;
@@ -11,11 +13,11 @@ public class Art extends Item {
         super(name, description, startingPrice, owner, ItemType.ART);
 
         if (artist == null || artist.trim().isEmpty()) {
-            throw new RuntimeException("Artist cannot be empty");
+            throw new ItemInformationException("Artist cannot be empty");
         }
 
         if (year <= 0) {
-            throw new RuntimeException("Year must be valid");
+            throw new ItemInformationException("Year must be valid");
         }
 
         this.artist = artist;

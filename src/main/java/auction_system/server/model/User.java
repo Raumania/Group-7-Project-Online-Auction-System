@@ -1,5 +1,7 @@
 package auction_system.server.model;
 
+import auction_system.server.exception.UserInformationException;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,19 +16,19 @@ public class User extends Entity {
         super();
 
         if (fullname == null || fullname.trim().isEmpty()) {
-            throw new RuntimeException("Fullname cannot be null or empty");
+            throw new UserInformationException("Fullname cannot be null or empty");
         }
 
         if (username == null || username.trim().isEmpty()) {
-            throw new RuntimeException("Username cannot be null or empty");
+            throw new UserInformationException("Username cannot be null or empty");
         }
 
         if (password == null || password.trim().isEmpty()) {
-            throw new RuntimeException("Password cannot be null or empty");
+            throw new UserInformationException("Password cannot be null or empty");
         }
 
         if (roles == null || roles.isEmpty()) {
-            throw new RuntimeException("User roles cannot be null or empty");
+            throw new UserInformationException("User roles cannot be null or empty");
         }
 
         this.fullname = fullname;
@@ -50,7 +52,7 @@ public class User extends Entity {
 
     public void setFullname(String fullname) {
         if (fullname == null || fullname.trim().isEmpty()) {
-            throw new RuntimeException("Fullname cannot be null or empty");
+            throw new UserInformationException("Fullname cannot be null or empty");
         }
         this.fullname = fullname;
     }
@@ -76,22 +78,22 @@ public class User extends Entity {
 
     public void addRole(UserRole role) {
         if (role == null) {
-            throw new RuntimeException("User role cannot be null");
+            throw new UserInformationException("User role cannot be null");
         }
         roles.add(role);
     }
 
     public void removeRole(UserRole role) {
         if (role == null) {
-            throw new RuntimeException("User role cannot be null");
+            throw new UserInformationException("User role cannot be null");
         }
 
         if (!roles.contains(role)) {
-            throw new RuntimeException("User does not have this role");
+            throw new UserInformationException("User does not have this role");
         }
 
         if (roles.size() == 1) {
-            throw new RuntimeException("User must have at least one role");
+            throw new UserInformationException("User must have at least one role");
         }
 
         roles.remove(role);
@@ -99,21 +101,21 @@ public class User extends Entity {
 
     public void setRoles(Set<UserRole> roles) {
         if (roles == null || roles.isEmpty()) {
-            throw new RuntimeException("User roles cannot be null or empty");
+            throw new UserInformationException("User roles cannot be null or empty");
         }
         this.roles = new HashSet<>(roles);
     }
 
     public void setUsername(String username) {
         if (username == null || username.trim().isEmpty()) {
-            throw new RuntimeException("Username cannot be null or empty");
+            throw new UserInformationException("Username cannot be null or empty");
         }
         this.username = username;
     }
 
     public void setPassword(String password) {
         if (password != null && password.trim().isEmpty()) {
-            throw new RuntimeException("Password cannot be empty");
+            throw new UserInformationException("Password cannot be empty");
         }
         this.password = password;
     }
@@ -124,25 +126,25 @@ public class User extends Entity {
 
     public void setBalance(double balance) {
         if (balance < 0) {
-            throw new RuntimeException("Balance cannot be negative");
+            throw new UserInformationException("Balance cannot be negative");
         }
         this.balance = balance;
     }
 
     public void deposit(double amount) {
         if (amount <= 0) {
-            throw new RuntimeException("Deposit amount must be greater than 0");
+            throw new UserInformationException("Deposit amount must be greater than 0");
         }
         this.balance += amount;
     }
 
     public void withdraw(double amount) {
         if (amount <= 0) {
-            throw new RuntimeException("Withdraw amount must be greater than 0");
+            throw new UserInformationException("Withdraw amount must be greater than 0");
         }
 
         if (amount > balance) {
-            throw new RuntimeException("Not enough balance");
+            throw new UserInformationException("Not enough balance");
         }
 
         this.balance -= amount;
