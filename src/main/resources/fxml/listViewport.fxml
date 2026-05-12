@@ -8,26 +8,26 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox stylesheets="@../css/mainAuction.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.ListViewportController">
+<VBox stylesheets="@../css/mainAuction.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.ListViewportController">
    <children>
       <HBox spacing="15.0">
          <children>
             <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                <children>
                   <Label styleClass="text-muted" text="Categories" />
-                  <ComboBox maxWidth="1.7976931348623157E308" promptText="All Categories" styleClass="combo-box-filter" />
+                  <ComboBox fx:id="categoryComboBox" maxWidth="1.7976931348623157E308" onAction="#handleFilterChange" prefWidth="250.0" promptText="All Categories" styleClass="combo-box-filter" />
                </children>
             </VBox>
             <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                <children>
                   <Label styleClass="text-muted" text="Status" />
-                  <ComboBox maxWidth="1.7976931348623157E308" promptText="All Status" styleClass="combo-box-filter" />
+                  <ComboBox fx:id="statusComboBox" maxWidth="1.7976931348623157E308" onAction="#handleFilterChange" prefWidth="250.0" promptText="All Status" styleClass="combo-box-filter" />
                </children>
             </VBox>
             <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                <children>
                   <Label styleClass="text-muted" text="Sort By" />
-                  <ComboBox maxWidth="1.7976931348623157E308" promptText="Ending Soon" styleClass="combo-box-filter" />
+                  <ComboBox fx:id="sortByComboBox" maxWidth="1.7976931348623157E308" onAction="#handleFilterChange" prefWidth="250.0" promptText="Ending Soon" styleClass="combo-box-filter" />
                </children>
             </VBox>
          </children>

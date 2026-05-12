@@ -114,19 +114,45 @@
     -fx-font-weight: bold;
     -fx-padding: 10;
 }
-.toggle-btn-primary {
-    -fx-background-color: #2b78e4;
-    -fx-text-fill: white;
-    -fx-background-radius: 15;
-}
-.btn-outline-danger {
-    -fx-background-color: white;
-    -fx-border-color: #dc3545;
-    -fx-border-radius: 5;
-    -fx-text-fill: #dc3545;
-    -fx-padding: 8;
+.btn-place-bid:hover {
+    -fx-background-color: #218838;
 }
 
+.btn-place-bid:pressed {
+    -fx-background-color: #1e7e34;
+    -fx-text-fill: rgba(255, 255, 255, 0.8);
+    -fx-translate-y: 1px;
+}
+
+/* Trạng thái mặc định (OFF) - Nền trắng, viền XANH, chữ XANH */
+.toggle-auto-bid {
+    -fx-background-color: white;
+    -fx-border-color: #28a745;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-text-fill: #28a745;
+    -fx-padding: 8 15;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+/* Hiệu ứng lướt chuột khi đang OFF - Nền phớt xanh */
+.toggle-auto-bid:hover {
+    -fx-background-color: #e8f5e9;
+}
+
+/* ======================================= */
+/* Trạng thái khi lún xuống (ON) - Nền trắng, viền ĐỎ, chữ ĐỎ */
+.toggle-auto-bid:selected {
+    -fx-background-color: white;
+    -fx-border-color: #dc3545;
+    -fx-text-fill: #dc3545;
+}
+
+/* Hiệu ứng lướt chuột khi đang ON - Nền phớt đỏ */
+.toggle-auto-bid:selected:hover {
+    -fx-background-color: #f8d7da;
+}
 /* Info & Security Boxes */
 .info-box {
     -fx-background-color: #e8f0fe;
@@ -157,4 +183,23 @@
 .line-border-vbox {
     -fx-border-color: #e0e0e0;
     -fx-border-width: 1;
+}
+.status-default {
+    -fx-text-fill: #6c757d;
+    -fx-font-style: italic;
+    -fx-font-size: 12px;
+}
+
+/* Khi đặt giá thành công - Chữ Xanh lá đậm */
+.status-success {
+    -fx-text-fill: #28a745;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+/* Khi báo lỗi (ví dụ: giá quá thấp) - Chữ Đỏ đậm */
+.status-error {
+    -fx-text-fill: #dc3545;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
 }

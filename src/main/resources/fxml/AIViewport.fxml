@@ -35,7 +35,7 @@
         <VBox spacing="15.0" styleClass="chat-container" VBox.vgrow="ALWAYS">
             <padding><Insets bottom="15.0" left="15.0" right="15.0" top="15.0" /></padding>
             <children>
-                <ScrollPane fitToWidth="true" styleClass="message-scroll" VBox.vgrow="ALWAYS">
+                <ScrollPane fx:id="chatScrollPane" fitToWidth="true" styleClass="message-scroll" VBox.vgrow="ALWAYS">
                     <content>
                         <VBox fx:id="messageContainer" spacing="20.0" styleClass="message-vbox">
                             <children>
@@ -53,16 +53,23 @@
                     </content>
                 </ScrollPane>
 
-                <HBox spacing="10.0" styleClass="input-area">
+                <Label fx:id="imageStatusLabel" managed="false" style="-fx-text-fill: #2ecc71; -fx-font-size: 13px; -fx-font-weight: bold;" text="📷 Image Attached" visible="false">
+                    <VBox.margin>
+                        <Insets bottom="-10.0" left="5.0" />
+                    </VBox.margin>
+                </Label>
+
+                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-area">
                     <children>
-                        <Button mnemonicParsing="false" styleClass="btn-icon">
-                     <graphic>
-                        <ImageView fitHeight="32.0" fitWidth="32.0" pickOnBounds="true" preserveRatio="true">
-                           <image>
-                              <Image url="@../images/icon/image.png" />
-                           </image>
-                        </ImageView>
-                     </graphic></Button>
+                        <Button mnemonicParsing="false" onAction="#handleAttachImage" styleClass="btn-icon">
+                            <graphic>
+                                <ImageView fitHeight="28.0" fitWidth="28.0" pickOnBounds="true" preserveRatio="true">
+                                    <image>
+                                        <Image url="@../images/icon/image.png" />
+                                    </image>
+                                </ImageView>
+                            </graphic>
+                        </Button>
                         <TextField fx:id="chatInput" promptText="Type your message or ask about an item..." styleClass="chat-field" HBox.hgrow="ALWAYS" />
                         <Button mnemonicParsing="false" onAction="#handleSendMessage" styleClass="btn-send" text="Send" />
                     </children>

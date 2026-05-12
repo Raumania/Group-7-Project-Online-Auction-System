@@ -20,27 +20,23 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox minHeight="0.0" spacing="5.0" styleClass="viewport-background" stylesheets="@../css/bidViewport.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.BidViewportController">
+<VBox minHeight="0.0" spacing="5.0" styleClass="viewport-background" stylesheets="@../css/bidViewport.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.BidViewportController">
 
-    <!-- Bóp gọn Padding ngoài cùng -->
     <padding>
         <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
     </padding>
 
     <children>
 
-        <!-- MAIN CONTENT -->
         <HBox minHeight="0.0" spacing="15.0" VBox.vgrow="ALWAYS">
             <children>
 
-                <!-- ================= CỘT TRÁI ================= -->
                 <VBox minHeight="0.0" spacing="8.0" style="-fx-padding: 10;" styleClass="card-container" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
                     <children>
-                  <Button mnemonicParsing="false" onAction="#handleBackToDetail" styleClass="btn-back" text="&lt; Back to list" />
+                        <Button mnemonicParsing="false" onAction="#handleBackToDetail" styleClass="btn-back" text="&lt; Back to list" />
 
                         <HBox minHeight="-Infinity" spacing="15.0" styleClass="line-border-vbox">
                             <children>
-                                <!-- Ép ảnh nhỏ xuống 80x80 để dồn diện tích cho Biểu đồ bên dưới -->
                                 <ImageView fitHeight="151.0" fitWidth="192.0" pickOnBounds="true" preserveRatio="true">
                                     <image>
                                         <Image url="@../images/items/iphone%2036%20pro%20max.png" />
@@ -53,7 +49,7 @@
                                         <ColumnConstraints halignment="RIGHT" hgrow="SOMETIMES" minWidth="10.0" percentWidth="60.0" />
                                     </columnConstraints>
                                     <rowConstraints>
-                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                         <RowConstraints minHeight="10.0" prefHeight="20.0" vgrow="SOMETIMES" />
                                         <RowConstraints minHeight="10.0" prefHeight="20.0" vgrow="SOMETIMES" />
                                         <RowConstraints minHeight="10.0" prefHeight="20.0" vgrow="SOMETIMES" />
@@ -68,57 +64,56 @@
                                         <Label styleClass="text-bold" text="\$120,000.00" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                                         <Label styleClass="text-muted" text="📈 Minimum increment:" GridPane.rowIndex="4" />
                                         <Label styleClass="text-bold" text="\$500.00" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                              <Label styleClass="text-muted" text="Product:" />
-                              <Label styleClass="text-bold" text="Iphone 36 pro max" GridPane.columnIndex="1" />
+                                        <Label styleClass="text-muted" text="Product:" />
+                                        <Label styleClass="text-bold" text="Iphone 36 pro max" GridPane.columnIndex="1" />
                                     </children>
                                 </GridPane>
                             </children>
-                     <padding>
-                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                     </padding>
+                            <padding>
+                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                            </padding>
                         </HBox>
-                  <VBox styleClass="line-border-vbox">
-                     <children>
-      
-                                    <VBox minHeight="0.0" spacing="0.0">
-                                  <children>
-                                      <Label minHeight="-Infinity" styleClass="section-title" text="Bidding Chart" />
-                                      <!-- Min height 0 để được phép co lại ở màn nhỏ -->
-                                      <LineChart minHeight="0.0" titleSide="BOTTOM" VBox.vgrow="ALWAYS">
-                                          <xAxis>
-                                              <CategoryAxis label="Time" side="BOTTOM" />
-                                          </xAxis>
-                                          <yAxis>
-                                              <NumberAxis label="Price (USD)" side="LEFT" />
-                                          </yAxis>
-                                      </LineChart>
-                                  </children>
-                              </VBox>
-      
-                                    <VBox minHeight="0.0" spacing="2.0">
-                                  <children>
-                                      <Label minHeight="-Infinity" styleClass="section-title" text="Bidding History" />
-                                      <TableView minHeight="0.0" VBox.vgrow="ALWAYS">
-                                          <columns>
-                                              <TableColumn editable="false" prefWidth="40.0" sortable="false" text="#" />
-                                              <TableColumn editable="false" prefWidth="120.0" sortable="false" text="User" />
-                                              <TableColumn editable="false" prefWidth="130.0" sortable="false" text="Bid Amount (USD)" />
-                                              <TableColumn editable="false" prefWidth="110.0" sortable="false" text="Time" />
-                                          </columns>
-                                          <columnResizePolicy>
-                                              <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-                                          </columnResizePolicy>
-                                      </TableView>
-                                  </children>
-                              </VBox>
-                     </children>
-                     <VBox.margin>
-                        <Insets />
-                     </VBox.margin>
-                     <padding>
-                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                     </padding>
-                  </VBox>
+                        <VBox styleClass="line-border-vbox">
+                            <children>
+
+                                <VBox minHeight="0.0" spacing="0.0">
+                                    <children>
+                                        <Label minHeight="-Infinity" styleClass="section-title" text="Bidding Chart" />
+                                        <LineChart minHeight="0.0" titleSide="BOTTOM" VBox.vgrow="ALWAYS">
+                                            <xAxis>
+                                                <CategoryAxis label="Time" side="BOTTOM" />
+                                            </xAxis>
+                                            <yAxis>
+                                                <NumberAxis label="Price (USD)" side="LEFT" />
+                                            </yAxis>
+                                        </LineChart>
+                                    </children>
+                                </VBox>
+
+                                <VBox minHeight="0.0" spacing="2.0">
+                                    <children>
+                                        <Label minHeight="-Infinity" styleClass="section-title" text="Bidding History" />
+                                        <TableView minHeight="0.0" VBox.vgrow="ALWAYS">
+                                            <columns>
+                                                <TableColumn editable="false" prefWidth="40.0" sortable="false" text="#" />
+                                                <TableColumn editable="false" prefWidth="120.0" sortable="false" text="User" />
+                                                <TableColumn editable="false" prefWidth="130.0" sortable="false" text="Bid Amount (USD)" />
+                                                <TableColumn editable="false" prefWidth="110.0" sortable="false" text="Time" />
+                                            </columns>
+                                            <columnResizePolicy>
+                                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                            </columnResizePolicy>
+                                        </TableView>
+                                    </children>
+                                </VBox>
+                            </children>
+                            <VBox.margin>
+                                <Insets />
+                            </VBox.margin>
+                            <padding>
+                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                            </padding>
+                        </VBox>
 
                         <HBox alignment="CENTER_LEFT" minHeight="-Infinity" spacing="8.0">
                             <children>
@@ -134,12 +129,9 @@
                     </children>
                 </VBox>
 
-                <!-- ================= CỘT PHẢI ================= -->
-                <!-- Giảm chiều rộng một chút (340px) và ép spacing xuống 8.0 -->
                 <VBox minHeight="0.0" minWidth="340.0" prefWidth="340.0" spacing="8.0">
                     <children>
 
-                        <!-- Card 1: Giá hiện tại -->
                         <VBox alignment="CENTER" minHeight="-Infinity" spacing="0.0" style="-fx-padding: 8;" styleClass="card-container-bordered">
                             <children>
                                 <Label styleClass="text-muted" text="Highest current bid" />
@@ -148,55 +140,60 @@
                             </children>
                         </VBox>
 
-                        <!-- Card 2: Đặt giá thủ công -->
                         <VBox minHeight="-Infinity" spacing="6.0" style="-fx-padding: 8;" styleClass="card-container-bordered">
                             <children>
-                        <HBox alignment="CENTER" prefWidth="107.0" spacing="10.0" styleClass="status-badge-container">
-                           <children>
-                              <Label styleClass="status-dot" text="●" />
-                              <Label styleClass="status-text" text="RUNNING" />
-                           </children>
-                        </HBox>
-                        <VBox alignment="CENTER">
-                           <children>
-                              <Label styleClass="header-text" text="Ends in:" />
-                              <Label styleClass="header-timer" text="02 : 15 : 30" />
-                              <Label styleClass="header-subtext" text="(HH : MM : SS)" />
-                           </children>
-                        </VBox>
+                                <HBox alignment="CENTER" prefWidth="107.0" spacing="10.0" styleClass="status-badge-container">
+                                    <children>
+                                        <Label styleClass="status-dot" text="●" />
+                                        <Label styleClass="status-text" text="RUNNING" />
+                                    </children>
+                                </HBox>
+                                <VBox alignment="CENTER">
+                                    <children>
+                                        <Label styleClass="header-text" text="Ends in:" />
+                                        <Label styleClass="header-timer" text="02 : 15 : 30" />
+                                        <Label styleClass="header-subtext" text="(HH : MM : SS)" />
+                                    </children>
+                                </VBox>
                             </children>
                         </VBox>
 
-                        <!-- Card 3: Auto Bidding (TỐI ƯU CỰC MẠNH Ở ĐÂY) -->
                         <VBox minHeight="-Infinity" spacing="6.0" style="-fx-padding: 8;" styleClass="card-container-bordered" VBox.vgrow="ALWAYS">
                             <children>
-                        <Label styleClass="text-bold" text="Place your bid" />
-                        <TextField promptText="Enter your bid..." styleClass="input-transparent" />
+                                <Label styleClass="text-bold" text="Place your bid" />
+
                                 <HBox alignment="CENTER_LEFT" styleClass="input-group">
                                     <children>
                                         <Label styleClass="text-muted" text="USD" />
+                                        <TextField fx:id="bidField" promptText="Enter your bid..." styleClass="input-transparent" />
                                     </children>
                                 </HBox>
-                        <Button maxWidth="1.7976931348623157E308" style="-fx-padding: 6;" styleClass="btn-place-bid" text="🔨 PLACE BID" />
-                        <Label alignment="CENTER" maxWidth="1.7976931348623157E308" style="-fx-font-size: 10px;" styleClass="text-muted" text="Min increment: $500" />
-                        <Separator prefWidth="200.0" />
+
+                                <HBox alignment="CENTER_LEFT" spacing="5.0">
+                                    <children>
+                                        <Label styleClass="text-muted" text="Status:" />
+                                        <Label fx:id="bidStatusLabel" styleClass="status-default" text="Ready" />
+                                    </children>
+                                </HBox>
+                                <Button maxWidth="1.7976931348623157E308" onAction="#placeBidAction" style="-fx-padding: 6;" styleClass="btn-place-bid" text="🔨 PLACE BID" />
+                                <Label alignment="CENTER" maxWidth="1.7976931348623157E308" style="-fx-font-size: 10px;" styleClass="text-muted" text="Min increment: $500" />
+                                <Separator prefWidth="200.0" />
+
                                 <HBox alignment="CENTER_LEFT">
                                     <children>
                                         <Label styleClass="security-title" text="Auto Bidding" />
                                         <Region HBox.hgrow="ALWAYS" />
-                                        <ToggleButton mnemonicParsing="false" selected="true" styleClass="toggle-btn-primary" text="ON" />
                                     </children>
                                 </HBox>
 
-                                <!-- CHÌA KHÓA: Chuyển 2 ô nhập liệu lên CÙNG 1 HÀNG ngang -->
                                 <HBox spacing="10.0">
                                     <children>
                                         <VBox prefWidth="319.0" spacing="2.0" HBox.hgrow="ALWAYS">
                                             <children>
                                                 <Label styleClass="text-muted" text="Max bid (USD)" />
-                                                <TextField prefHeight="35.0" promptText="180,000" styleClass="input-standard" />
+                                                <TextField fx:id="maxBidField" prefHeight="35.0" promptText="180,000" styleClass="input-standard" />
                                                 <Label styleClass="text-muted" text="Increment" />
-                                    <TextField prefHeight="35.0" promptText="180,000" styleClass="input-standard" />
+                                                <TextField fx:id="incrementField" prefHeight="35.0" promptText="180,000" styleClass="input-standard" />
                                             </children>
                                         </VBox>
                                     </children>
@@ -209,10 +206,8 @@
                                     </children>
                                 </HBox>
 
-                                <!-- Đẩy nút Cancel xuống đáy nếu màn hình to ra -->
-                                <Region minHeight="0.0" VBox.vgrow="ALWAYS" />
-
-                                <Button maxWidth="1.7976931348623157E308" style="-fx-padding: 6;" styleClass="btn-outline-danger" text="Cancel Auto Bidding" />
+                                <Region minHeight="0.0" onDragDetected="#switchAutoBid" VBox.vgrow="ALWAYS" />
+                                <ToggleButton fx:id="autoBidToggle" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#switchAutoBid" styleClass="toggle-auto-bid" text="Enable Auto Bidding" />
                             </children>
                         </VBox>
 

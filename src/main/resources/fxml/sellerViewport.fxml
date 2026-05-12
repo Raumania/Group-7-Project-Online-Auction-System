@@ -9,14 +9,16 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="15.0" styleClass="viewport-container" stylesheets="@../css/sellerViewport.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.SellerViewportController">
+<VBox spacing="15.0" styleClass="viewport-container" stylesheets="@../css/sellerViewport.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.SellerViewportController">
     <padding>
         <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
     </padding>
@@ -27,19 +29,19 @@
             <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                <children>
                   <Label styleClass="text-muted" text="Categories" />
-                  <ComboBox maxWidth="1.7976931348623157E308" promptText="All Categories" styleClass="combo-box-filter" />
+                  <ComboBox fx:id="categoryComboBox" maxWidth="1.7976931348623157E308" onAction="#handleFilterChange" prefWidth="250.0" promptText="All Categories" styleClass="combo-box-filter" />
                </children>
             </VBox>
             <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                <children>
                   <Label styleClass="text-muted" text="Status" />
-                  <ComboBox maxWidth="1.7976931348623157E308" promptText="All Status" styleClass="combo-box-filter" />
+                  <ComboBox fx:id="statusComboBox" maxWidth="1.7976931348623157E308" onAction="#handleFilterChange" prefWidth="250.0" promptText="All Status" styleClass="combo-box-filter" />
                </children>
             </VBox>
             <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                <children>
                   <Label styleClass="text-muted" text="Sort By" />
-                  <ComboBox maxWidth="1.7976931348623157E308" promptText="Ending Soon" styleClass="combo-box-filter" />
+                  <ComboBox fx:id="sortByComboBox" maxWidth="1.7976931348623157E308" onAction="#handleFilterChange" prefWidth="250.0" promptText="Ending Soon" styleClass="combo-box-filter" />
                </children>
             </VBox>
          </children>
@@ -106,22 +108,26 @@
                                 </VBox>
                             </children>
                         </GridPane>
-
-                        <VBox alignment="CENTER" prefWidth="200.0" spacing="10.0" styleClass="image-upload-box">
-                            <children>
-                                <Label style="-fx-font-size: 24px;" text="📸" />
-                                <Label styleClass="upload-text" text="Image" />
-                            </children>
-                        </VBox>
+                  <StackPane onMouseClicked="#handleSelectImage">
+                     <children>
+                        <ImageView fx:id="productImageView" fitHeight="200.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true" />
+      
+                              <VBox fx:id="imageVbox" alignment="CENTER" prefWidth="200.0" spacing="10.0" styleClass="image-upload-box">
+                                  <children>
+                                      <Label style="-fx-font-size: 24px;" text="📸" />
+                                      <Label styleClass="upload-text" text="Image" />
+                                  </children>
+                              </VBox>
+                     </children>
+                  </StackPane>
                     </children>
                 </HBox>
 
                 <HBox alignment="CENTER" spacing="15.0">
                     <children>
                         <Button onAction="#handleAdd" prefHeight="35.0" prefWidth="110.0" styleClass="btn, btn-add" text="+ Add" />
-                        <Button onAction="#handleUpdate" prefHeight="35.0" prefWidth="110.0" styleClass="btn, btn-update" text="Update" />
-                        <Button onAction="#handleClear" prefHeight="35.0" prefWidth="110.0" styleClass="btn, btn-clear" text="Clear" />
-                        <Button onAction="#handleDelete" prefHeight="35.0" prefWidth="110.0" styleClass="btn, btn-delete" text="Delete" />
+                        <Button onAction="#handleEdit" prefHeight="35.0" prefWidth="110.0" styleClass="btn, btn-clear" text="✏ Edit" />
+                        <Button onAction="#handleDelete" prefHeight="35.0" prefWidth="110.0" styleClass="btn, btn-delete" text="✖ Delete" />
                     </children>
                 </HBox>
             </children>
