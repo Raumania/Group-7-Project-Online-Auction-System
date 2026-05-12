@@ -25,6 +25,7 @@ public class BidTransactionDAO {
         Lưu ý mới:
         - bidder không còn là object Bidder nữa
         - bidder là User có role BIDDER
+        - bidder_id trong database là INT vì users.id là INT AUTO_INCREMENT
     */
     public void save(String auctionId, BidTransaction transaction) {
         String sql = "INSERT INTO bid_transactions(id, auction_id, bidder_id, amount, timestamp) " +
@@ -42,8 +43,19 @@ public class BidTransactionDAO {
             }
 
             statement.setString(1, transaction.getId());
+
+            /*
+                auction_id vẫn là String/VARCHAR
+                vì Auction.id hiện vẫn dùng IdGenerator.
+            */
             statement.setString(2, auctionId);
-            statement.setString(3, transaction.getBidder().getId());
+
+            /*
+                bidder_id là INT trong database.
+                Entity.id trong Java vẫn là String nên parse sang int.
+            */
+            statement.setInt(3, Integer.parseInt(transaction.getBidder().getId()));
+
             statement.setDouble(4, transaction.getAmount());
             statement.setLong(5, transaction.getTimestamp());
 
@@ -134,7 +146,14 @@ public class BidTransactionDAO {
     */
     private BidTransaction mapResultSetToBidTransaction(ResultSet resultSet) throws SQLException {
         String id = resultSet.getString("id");
-        String bidderId = resultSet.getString("bidder_id");
+
+        /*
+            bidder_id trong database là INT.
+            UserDAO.findById đang nhận String,
+            nên convert int -> String.
+        */
+        String bidderId = String.valueOf(resultSet.getInt("bidder_id"));
+
         double amount = resultSet.getDouble("amount");
         long timestamp = resultSet.getLong("timestamp");
 

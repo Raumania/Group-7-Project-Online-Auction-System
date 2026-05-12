@@ -1,23 +1,21 @@
 package auction_system.server.common.protocol;
 
-import java.util.List;
-
 public class RegisterData {
+    private String fullname;
     private String username;
     private String password;
-    private String email;
-
-    // Nhiều role: BIDDER, SELLER, ADMIN
-    private List<String> roles;
 
     public RegisterData() {
     }
 
-    public RegisterData(String username, String password, String email, List<String> roles) {
+    public RegisterData(String fullname, String username, String password) {
+        this.fullname = fullname;
         this.username = username;
         this.password = password;
-        this.email = email;
-        this.roles = roles;
+    }
+
+    public String getFullname() {
+        return fullname;
     }
 
     public String getUsername() {
@@ -26,13 +24,5 @@ public class RegisterData {
 
     public String getPassword() {
         return password;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public List<String> getRoles() {
-        return roles;
     }
 }

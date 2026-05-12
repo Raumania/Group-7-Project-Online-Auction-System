@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,10 +31,10 @@ public class AuctionDAO {
         - status = OPEN
 
         Lưu ý mới:
-        - seller_id vẫn là id của user
-        - user đó phải có role SELLER
-        - highest_bidder_id vẫn là id của user
-        - user đó phải có role BIDDER
+        - item_id là INT vì items.id là INT AUTO_INCREMENT
+        - seller_id là INT vì users.id là INT AUTO_INCREMENT
+        - highest_bidder_id là INT vì users.id là INT AUTO_INCREMENT
+        - trong Java Entity.id vẫn là String nên khi lưu phải parse sang int
     */
     public void save(Auction auction) {
         String sql = "INSERT INTO auctions(id, item_id, seller_id, current_price, highest_bidder_id, status) " +
@@ -56,14 +57,27 @@ public class AuctionDAO {
             }
 
             statement.setString(1, auction.getId());
-            statement.setString(2, auction.getItem().getId());
-            statement.setString(3, auction.getSeller().getId());
+
+            /*
+                item_id là INT trong database.
+            */
+            statement.setInt(2, Integer.parseInt(auction.getItem().getId()));
+
+            /*
+                seller_id là INT trong database.
+            */
+            statement.setInt(3, Integer.parseInt(auction.getSeller().getId()));
+
             statement.setDouble(4, auction.getCurrentPrice());
 
+            /*
+                highest_bidder_id có thể null.
+                Nếu null thì dùng setNull với Types.INTEGER.
+            */
             if (auction.getHighestBidder() == null) {
-                statement.setString(5, null);
+                statement.setNull(5, Types.INTEGER);
             } else {
-                statement.setString(5, auction.getHighestBidder().getId());
+                statement.setInt(5, Integer.parseInt(auction.getHighestBidder().getId()));
             }
 
             statement.setString(6, auction.getStatus().name());
@@ -77,6 +91,8 @@ public class AuctionDAO {
 
     /*
         Tìm auction theo id.
+
+        auction.id hiện vẫn là VARCHAR/String vì Auction vẫn dùng IdGenerator.
     */
     public Auction findById(String id) {
         String sql = "SELECT * FROM auctions WHERE id = ?";
@@ -182,10 +198,13 @@ public class AuctionDAO {
 
             statement.setDouble(1, auction.getCurrentPrice());
 
+            /*
+                highest_bidder_id là INT trong database.
+            */
             if (auction.getHighestBidder() == null) {
-                statement.setString(2, null);
+                statement.setNull(2, Types.INTEGER);
             } else {
-                statement.setString(2, auction.getHighestBidder().getId());
+                statement.setInt(2, Integer.parseInt(auction.getHighestBidder().getId()));
             }
 
             statement.setString(3, auction.getStatus().name());
@@ -202,6 +221,8 @@ public class AuctionDAO {
 
     /*
         Xóa auction theo id.
+
+        auction.id hiện vẫn là VARCHAR/String.
     */
     public boolean deleteById(String id) {
         String sql = "DELETE FROM auctions WHERE id = ?";
@@ -225,10 +246,35 @@ public class AuctionDAO {
     */
     private Auction mapResultSetToAuction(ResultSet resultSet) throws SQLException {
         String id = resultSet.getString("id");
-        String itemId = resultSet.getString("item_id");
-        String sellerId = resultSet.getString("seller_id");
+
+        /*
+            item_id là INT trong database.
+            ItemDAO.findById đang nhận String,
+            nên convert int -> String.
+        */
+        String itemId = String.valueOf(resultSet.getInt("item_id"));
+
+        /*
+            seller_id là INT trong database.
+            UserDAO.findById đang nhận String,
+            nên convert int -> String.
+        */
+        String sellerId = String.valueOf(resultSet.getInt("seller_id"));
+
         double currentPrice = resultSet.getDouble("current_price");
-        String highestBidderId = resultSet.getString("highest_bidder_id");
+
+        /*
+            highest_bidder_id có thể null.
+            resultSet.getInt(...) nếu gặp NULL sẽ trả 0,
+            nên phải kiểm tra resultSet.wasNull().
+        */
+        String highestBidderId = null;
+        int highestBidderInt = resultSet.getInt("highest_bidder_id");
+
+        if (!resultSet.wasNull()) {
+            highestBidderId = String.valueOf(highestBidderInt);
+        }
+
         String statusText = resultSet.getString("status");
 
         Item item = itemDAO.findById(itemId);

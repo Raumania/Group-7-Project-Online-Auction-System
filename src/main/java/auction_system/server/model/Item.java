@@ -1,7 +1,5 @@
 package auction_system.server.model;
 
-import auction_system.util.IdGenerator;
-
 public abstract class Item extends Entity {
     protected String name;
     protected String description;
@@ -54,7 +52,13 @@ public abstract class Item extends Entity {
         this.name = name;
         this.description = description;
         this.startingPrice = startingPrice;
-        this.id = IdGenerator.generationItemId();
+
+        /*
+            Item id bây giờ do MySQL AUTO_INCREMENT sinh ra.
+            ItemDAO.save(item) sẽ lấy generated id rồi set lại vào item.
+        */
+        this.id = null;
+
         this.owner = owner;
         this.type = type;
     }
