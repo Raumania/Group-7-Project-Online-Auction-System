@@ -63,6 +63,5 @@ public class AuctionTest {
     void testItemInfo () {
         User no_one = null;
         assertThrowsExactly(ItemInformationException.class, () -> {new Electronics("phone", "Flagship", 36, no_one, "apple", "iphone 16");});
-
     }
 }

@@ -1,6 +1,9 @@
 package auction_system.server.service;
 
 import auction_system.server.dao.AuctionDAO;
+import auction_system.server.exception.AuthorizationException;
+import auction_system.server.exception.ItemInformationException;
+import auction_system.server.exception.UserInformationException;
 import auction_system.server.model.Auction;
 import auction_system.server.model.Item;
 import auction_system.server.model.User;
@@ -45,19 +48,19 @@ public class AuctionService {
     */
     public Auction createAuction(Item item, User seller) {
         if (item == null) {
-            throw new RuntimeException("Item cannot be null");
+            throw new NullPointerException("Item cannot be null");
         }
 
         if (seller == null) {
-            throw new RuntimeException("Seller cannot be null");
+            throw new NullPointerException("Seller cannot be null");
         }
 
         if (!seller.hasRole(UserRole.SELLER)) {
-            throw new RuntimeException("Seller must have SELLER role");
+            throw new AuthorizationException("Seller must have SELLER role");
         }
 
         if (item.getOwner() == null) {
-            throw new RuntimeException("Item must have owner");
+            throw new ItemInformationException("Item must have owner");
         }
 
         /*
@@ -65,7 +68,7 @@ public class AuctionService {
             So sánh id chắc hơn.
         */
         if (!item.getOwner().getId().equals(seller.getId())) {
-            throw new RuntimeException("Seller does not own this item");
+            throw new AuthorizationException("Seller does not own this item");
         }
 
         Auction auction = new Auction(item, seller);
@@ -80,13 +83,13 @@ public class AuctionService {
     */
     public Auction getAuctionById(String id) {
         if (id == null || id.trim().isEmpty()) {
-            throw new RuntimeException("Auction id cannot be null or empty");
+            throw new NullPointerException("Auction id cannot be null or empty");
         }
 
         Auction auction = auctionDAO.findById(id);
 
         if (auction == null) {
-            throw new RuntimeException("Auction not found");
+            throw new NullPointerException("Auction not found");
         }
 
         return auction;
