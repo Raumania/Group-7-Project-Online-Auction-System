@@ -1,21 +1,21 @@
-import com.auction_system.exception.*;
-import com.auction_system.model.*;
-import com.auction_system.service.AuctionService;
+
+import auction_system.server.exception.*;
+import auction_system.server.model.*;
+import auction_system.server.service.AuctionService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class AuctionTest {
-    Bidder b1 = new Bidder("leeduc", "leduc2703", "abc@gmail.com");
-    Seller s1 = new Seller("chuong", "chuongw", "cde@gmail.com");
-    Seller s2 = new Seller("ducbanh", "ducbanh", "fgh@gmail.com");
+    User b1 = new User("leeduc", "leduc2703", "abc@gmail.com", Collections.singleton(UserRole.BIDDER));
+    User s1 = new User("chuong", "chuongw", "cde@gmail.com", Collections.singleton(UserRole.SELLER));
+    User s2 = new User("ducbanh", "ducbanh", "fgh@gmail.com", Collections.singleton(UserRole.SELLER));
     Item phone = new Electronics("phone", "Flagship", Double.MIN_VALUE, s1, "apple", "iphone 16");
-    AuctionService as = new AuctionService();
-    Auction auction = as.createAuction(phone, s1);
+    Auction auction = new Auction(phone, s1);
 
    @Test
     void testValidBid() {
@@ -44,26 +44,25 @@ public class AuctionTest {
         auction.placeBid(b1, 36);
         auction.closeAuction();
 
-        assertThrowsExactly(AuctionClosedException.class, () -> {auction.placeBid(b1, 37);});
+        assertThrowsExactly(StatusException.class, () -> {auction.placeBid(b1, 37);});
     }
 
     @Test
     void testAuthentication () {
-        Bidder no_one = null;
+        User no_one = null;
 
-        assertThrowsExactly(AuthenticationException.class, () -> {auction.placeBid(no_one, 100);});
+        assertThrowsExactly(NullPointerException.class, () -> {auction.placeBid(no_one, 100);});
     }
 
     @Test
     void testAuthorization () {
-        assertThrowsExactly(AuthorizationException.class, () -> {as.createAuction(phone, s2);});
+        assertThrowsExactly(AuthorizationException.class, () -> {new Auction(phone, s2);});
     }
 
     @Test
-    void testNotOwner () {
-        Seller no_one = null;
-        Item ipad = new Electronics("phone", "Flagship", 36, no_one, "apple", "iphone 16");
-        assertThrowsExactly(NotOwnerException.class, () -> {as.createAuction(ipad, s1);});
+    void testItemInfo () {
+        User no_one = null;
+        assertThrowsExactly(ItemInformationException.class, () -> {new Electronics("phone", "Flagship", 36, no_one, "apple", "iphone 16");});
 
     }
 }

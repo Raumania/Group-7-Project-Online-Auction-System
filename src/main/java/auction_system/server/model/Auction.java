@@ -149,7 +149,7 @@ public class Auction extends Entity {
             throw new StatusException("Auction is not open for bidding");
         }
 
-        if (amount <= currentPrice) {
+        if (amount <= currentPrice && highestBidder != null) {
             throw new InvalidBidException("Bid must be higher than current price");
         }
 
