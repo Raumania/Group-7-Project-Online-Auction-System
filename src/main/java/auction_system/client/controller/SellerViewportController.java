@@ -40,30 +40,35 @@ public class SellerViewportController implements Initializable {
     @FXML private TextArea txtDescription;
     @FXML private TextField txtProductName;
     @FXML private TextField txtStartPrice;
-    @FXML private ImageView productImageView; // Cái ImageView để hiển thị ảnh sau khi chọn
+    @FXML private ImageView productImageView;
     @FXML private VBox imageVbox;
-    private File selectedImageFile; // Lưu biến này để lát nữa gửi lên Server
 
+    private File selectedImageFile;
+
+    @Override
     public void initialize(URL url, ResourceBundle rb)  {
-        //add category
+        // Category cho form Add Product
         ObservableList<String> cbOptions = FXCollections.observableArrayList(
-                 "Electronics", "Art","Vehicle"
+                "Electronics", "Art","Vehicle"
         );
         cbCategory.setItems(cbOptions);
         cbCategory.getSelectionModel().selectFirst();
-        //Categories
+
+        // Filter Categories
         ObservableList<String> categoryOptions = FXCollections.observableArrayList(
                 "All Category", "Electronics", "Art","Vehicle"
         );
         categoryComboBox.setItems(categoryOptions);
         categoryComboBox.getSelectionModel().selectFirst();
-        //Status
+
+        // Filter Status
         ObservableList<String> statusOptions = FXCollections.observableArrayList(
                 "All Status", "OPEN", "RUNNING","FINISHED","PAID/CANCELED"
         );
         statusComboBox.setItems(statusOptions);
         statusComboBox.getSelectionModel().selectFirst();
-        //Sortby
+
+        // Filter Sortby
         ObservableList<String> sortByOptions = FXCollections.observableArrayList(
                 "Newest","Oldest"
         );
@@ -73,27 +78,51 @@ public class SellerViewportController implements Initializable {
 
     @FXML
     void handleAdd(ActionEvent event) {
-
+        // Logic thêm sản phẩm vào database
     }
 
     @FXML
     void handleEdit(ActionEvent event) {
-
+        // Logic sửa sản phẩm
     }
 
     @FXML
     void handleDelete(ActionEvent event) {
-
+        // Logic xóa sản phẩm
     }
 
     @FXML
     void handleFilterChange(ActionEvent event) {
-
+        // Logic khi thay đổi bộ lọc
     }
 
     @FXML
     void refreshTable(ActionEvent event) {
+        // Logic tải lại danh sách productTable
+    }
 
+    // HÀM MỚI ĐƯỢC THÊM VÀO ĐỂ XÓA TRẮNG FORM ADD PRODUCT
+    @FXML
+    void refreshAddProduct(ActionEvent event) {
+        // Xóa nội dung các TextField, TextArea
+        txtProductName.clear();
+        txtStartPrice.clear();
+        txtDescription.clear();
+
+        // Xóa ngày tháng đã chọn
+        dpEndTime.setValue(null);
+
+        // Trả ComboBox danh mục về giá trị đầu tiên
+        cbCategory.getSelectionModel().selectFirst();
+
+        // Xóa ảnh đã chọn
+        productImageView.setImage(null);
+
+        // Bật lại hiển thị cho VBox chứa biểu tượng Upload Image
+        imageVbox.setVisible(true);
+
+        // Reset file ảnh đã lưu trong biến
+        selectedImageFile = null;
     }
 
     @FXML
@@ -113,8 +142,8 @@ public class SellerViewportController implements Initializable {
             productImageView.setFitWidth(200);
             productImageView.setPreserveRatio(true);
 
+            // Ẩn VBox biểu tượng đi khi đã có ảnh
             imageVbox.setVisible(false);
         }
     }
-
 }

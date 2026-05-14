@@ -28,7 +28,7 @@ public class AuthService {
     public boolean checkLogin(User user) {
         Request request = new Request(MessageType.LOGIN, gson.toJson(user));
         SocketClient.getInstance().send(request);
-        Response<User> response = SocketClient.getInstance().receive();
+        Response response = SocketClient.getInstance().receive();
         if(response.getStatus().equals("SUCCESS")) {
             return true;
         }

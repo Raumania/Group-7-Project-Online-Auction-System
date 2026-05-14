@@ -77,7 +77,13 @@
         <!-- PHẦN 2: FORM QUẢN LÝ (Gọn gàng ở dưới) -->
         <VBox minHeight="280.0" spacing="15.0" styleClass="content-card">
             <children>
-                <Label styleClass="section-title" text="🏷 Product Management" />
+            <HBox>
+               <children>
+                      <Label styleClass="section-title" text="🏷 Product Management" />
+                  <Region HBox.hgrow="ALWAYS" />
+                  <Button mnemonicParsing="false" onAction="#refreshAddProduct" styleClass="btn-refresh" text="Refresh" />
+               </children>
+            </HBox>
                 <HBox spacing="20.0" VBox.vgrow="NEVER">
                     <children>
                         <GridPane hgap="15.0" vgap="12.0" HBox.hgrow="ALWAYS">

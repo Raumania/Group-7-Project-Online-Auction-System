@@ -11,9 +11,9 @@ import java.io.*;
 import java.net.Socket;
 
 public class SocketClient {
+    //Singleton for socket client
     private static SocketClient instance;
     private SocketClient() {};
-
     public static SocketClient getInstance() {
         if(instance == null) {
             instance = new SocketClient();
@@ -21,6 +21,7 @@ public class SocketClient {
         return instance;
     }
 
+    //core of socket client in below
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
@@ -49,10 +50,10 @@ public class SocketClient {
         }
     }
 
-    public <T> Response<T> receive() {
+    public Response receive() {
         try {
             String json = in.readUTF();
-            return gson.fromJson(json, new TypeToken<Response<T>>(){}.getType());
+            return gson.fromJson(json,Response.class);
         }
         catch (IOException e) {
             e.printStackTrace();
