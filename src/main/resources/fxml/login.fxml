@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<StackPane alignment="BOTTOM_LEFT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.LoginController">
+<StackPane alignment="BOTTOM_LEFT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.LoginController">
    <children>
       <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" stylesheets="@../css/login.css">
          <children>
@@ -24,13 +24,14 @@
                   </Label>
                   <VBox layoutX="170.0" layoutY="200.0" spacing="25.0">
                      <children>
-                        <TextField fx:id="fullnameTextField" prefHeight="45.0" prefWidth="300.0" promptText="Full name" style="-fx-font-size: 16px;" styleClass="textfield" />
-                        <TextField fx:id="usernameTextField" prefHeight="45.0" prefWidth="300.0" promptText="Username" style="-fx-font-size: 16px;" styleClass="textfield" />
-                        <PasswordField fx:id="passwordTextField" prefHeight="45.0" prefWidth="300.0" promptText="Password" style="-fx-font-size: 16px;" styleClass="textfield" />
-                        <PasswordField fx:id="confirmPasswordTextField" prefHeight="45.0" prefWidth="300.0" promptText="Password" style="-fx-font-size: 16px;" styleClass="textfield" />
+                        <TextField fx:id="registerFullnameTextField" prefHeight="45.0" prefWidth="300.0" promptText="Full name" style="-fx-font-size: 16px;" styleClass="textfield" />
+                        <TextField fx:id="registerUsernameTextField" prefHeight="45.0" prefWidth="300.0" promptText="Username" style="-fx-font-size: 16px;" styleClass="textfield" />
+                        <PasswordField fx:id="registerPasswordTextField" prefHeight="45.0" prefWidth="300.0" promptText="Password" style="-fx-font-size: 16px;" styleClass="textfield" />
+                        <PasswordField fx:id="registerConfirmPasswordTextField" prefHeight="45.0" prefWidth="300.0" promptText="Password" style="-fx-font-size: 16px;" styleClass="textfield" />
                      </children>
                   </VBox>
-                  <Button layoutX="170.0" layoutY="510.0" mnemonicParsing="false" onAction="#registerBtn" prefHeight="50.0" prefWidth="300.0" style="-fx-font-size: 18px; -fx-font-weight: bold;" styleClass="login-btn" text="Sign Up" />
+                  <Button fx:id="registerBtn" layoutX="170.0" layoutY="510.0" mnemonicParsing="false" onAction="#registerBtnAction" prefHeight="50.0" prefWidth="300.0" style="-fx-font-size: 18px; -fx-font-weight: bold;" styleClass="login-btn" text="Sign Up" />
+                  <Label fx:id="RegisterStatusLabel" layoutX="170.0" layoutY="471.0" styleClass="error-label" />
                </children>
             </AnchorPane>
 
@@ -43,12 +44,12 @@
                   </Label>
                   <VBox layoutX="170.0" layoutY="260.0" spacing="30.0">
                      <children>
-                        <TextField fx:id="usernameTextField" prefHeight="45.0" prefWidth="300.0" promptText="Username" style="-fx-font-size: 16px;" styleClass="textfield" stylesheets="@../css/login.css" />
-                        <PasswordField fx:id="passwordTextField" prefHeight="45.0" prefWidth="300.0" promptText="Password" style="-fx-font-size: 16px;" styleClass="textfield" />
+                        <TextField fx:id="LoginUsernameTextField" prefHeight="45.0" prefWidth="300.0" promptText="Username" style="-fx-font-size: 16px;" styleClass="textfield" stylesheets="@../css/login.css" />
+                        <PasswordField fx:id="LoginPasswordTextField" prefHeight="45.0" prefWidth="300.0" promptText="Password" style="-fx-font-size: 16px;" styleClass="textfield" />
                      </children>
                   </VBox>
-                  <Button layoutX="170.0" layoutY="440.0" mnemonicParsing="false" onAction="#loginBtn" prefHeight="50.0" prefWidth="300.0" style="-fx-font-size: 18px; -fx-font-weight: bold;" styleClass="login-btn" stylesheets="@../css/login.css" text="Login" />
-                  <Label fx:id="statusLabel" layoutX="170.0" layoutY="401.0" styleClass="error-label" />
+                  <Button layoutX="170.0" layoutY="440.0" mnemonicParsing="false" onAction="#loginBtnAction" prefHeight="50.0" prefWidth="300.0" style="-fx-font-size: 18px; -fx-font-weight: bold;" styleClass="login-btn" stylesheets="@../css/login.css" text="Login" />
+                  <Label fx:id="LoginStatusLabel" layoutX="170.0" layoutY="401.0" styleClass="error-label" />
                </children>
             </AnchorPane>
 

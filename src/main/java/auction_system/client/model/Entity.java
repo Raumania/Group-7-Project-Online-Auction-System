@@ -4,10 +4,6 @@ public abstract class Entity {
     protected String id;
     protected long createdAt;
 
-    public Entity() {
-        this.createdAt = System.currentTimeMillis();
-    }
-
     public String getId() {
         return id;
     }

@@ -39,11 +39,12 @@ public class SocketClient {
         }
     }
 
-    public void send(Request request) {
+    public <T> void send(Request<T> request) {
         try {
             String json = gson.toJson(request);
             out.writeUTF(json);
             out.flush();
+            System.out.println(json);
         }
         catch(IOException e) {
             e.printStackTrace();
