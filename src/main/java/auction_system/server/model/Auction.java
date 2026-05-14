@@ -7,38 +7,24 @@ import auction_system.server.exception.StatusException;
 import auction_system.server.observer.AuctionObserver;
 import auction_system.util.IdGenerator;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Auction extends Entity {
     private Item item;
-
-    /*
-        Trước đây seller là Seller.
-
-        Bây giờ:
-        - User không còn chia cứng thành Seller/Bidder nữa
-        - Một User có thể có nhiều role
-        - Vì vậy seller là User
-        - Nhưng User này bắt buộc phải có role SELLER
-    */
     private User seller;
-
     private double currentPrice;
-
-    /*
-        Trước đây highestBidder là Bidder.
-
-        Bây giờ highestBidder là User,
-        nhưng User này phải có role BIDDER.
-    */
     private User highestBidder;
-
     private List<BidTransaction> bidHistory;
     private AuctionStatus status;
     private List<AuctionObserver> observers;
+    private final ReentrantLock lock = new ReentrantLock();
+    private final LocalDateTime startTime =  LocalDateTime.now();
+    private final LocalDateTime endTime;
 
-    public Auction(Item item, User seller) {
+    public Auction(Item item, User seller, long time) {
         super();
 
         if (item == null) {
@@ -48,11 +34,6 @@ public class Auction extends Entity {
         if (seller == null) {
             throw new NullPointerException("Seller cannot be null");
         }
-
-        /*
-            Không dùng instanceof Seller nữa.
-            Kiểm tra bằng role.
-        */
         if (!seller.hasRole(UserRole.SELLER)) {
             throw new AuthorizationException("Seller must have SELLER role");
         }
@@ -63,8 +44,10 @@ public class Auction extends Entity {
         this.currentPrice = item.getStartingPrice();
         this.highestBidder = null;
         this.bidHistory = new ArrayList<>();
-        this.status = AuctionStatus.OPEN;
+        this.status = AuctionStatus.SCHEDULED;
         this.observers = new ArrayList<>();
+        this.endTime = startTime.plusMinutes(time);
+
     }
 
     /*
@@ -83,14 +66,7 @@ public class Auction extends Entity {
     public void removeObserver(AuctionObserver observer) {
         observers.remove(observer);
     }
-
     /*
-        Bạn đang dùng tên detach cũng được.
-        Mình giữ lại để không lỗi code cũ nếu bạn đã gọi detach().
-    */
-    public void detach(AuctionObserver observer) {
-        removeObserver(observer);
-    }
 
     /*
         Gửi thông báo cho tất cả observer.
@@ -101,20 +77,28 @@ public class Auction extends Entity {
         }
     }
 
-    /*
-        Kiểm tra auction có cho đặt bid không.
-
-        Vì bạn có cả OPEN và RUNNING:
-        - OPEN: vừa tạo, có thể cho bid luôn
-        - RUNNING: đã start, cũng cho bid
-
-        Nếu sau này bạn muốn chặt chẽ hơn,
-        có thể chỉ cho bid khi status == RUNNING.
-    */
-    private boolean canPlaceBid() {
-        return status == AuctionStatus.OPEN || status == AuctionStatus.RUNNING;
+    private void updateStatusInternal() {
+        if (status == AuctionStatus.SCHEDULED || status == AuctionStatus.RUNNING) {
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isBefore(startTime)) {
+                status = AuctionStatus.SCHEDULED;
+            } else if (now.isBefore(endTime)) {
+                status = AuctionStatus.RUNNING;
+            } else {
+                status = AuctionStatus.FINISHED;
+            }
+        }
     }
 
+    // Public method có lock (cho Scheduler gọi)
+    public void updateStatus() {
+        lock.lock();
+        try {
+            updateStatusInternal();
+        } finally {
+            lock.unlock();
+        }
+    }
     /*
         Đặt giá mới cho auction.
 
@@ -129,33 +113,44 @@ public class Auction extends Entity {
 
         User này phải có role BIDDER.
     */
-    public synchronized void placeBid(User bidder, double amount) {
-        if (bidder == null) {
-            throw new NullPointerException("Bidder cannot be null");
-        }
+    public void placeBid(User bidder, double amount) {
 
-        if (!bidder.hasRole(UserRole.BIDDER)) {
-            throw new AuthorizationException("Bidder must have BIDDER role");
-        }
+        lock.lock();
 
-        if (!canPlaceBid()) {
-            throw new StatusException("Auction is not open for bidding");
-        }
+        try {
+            updateStatusInternal();
 
-        if (amount <= currentPrice && highestBidder != null) {
-            throw new InvalidBidException("Bid must be higher than current price");
-        }
+            if (bidder == null) {
+                throw new NullPointerException("Bidder cannot be null");
+            }
+            if (seller.getId().equals(bidder.getId())) {
+                throw new AuthorizationException("Seller cannot bid");
+            }
 
-        currentPrice = amount;
-        highestBidder = bidder;
+            if (!bidder.hasRole(UserRole.BIDDER)) {
+                throw new AuthorizationException("Bidder must have BIDDER role");
+            }
 
-        BidTransaction transaction = new BidTransaction(bidder, amount);
-        bidHistory.add(transaction);
+            if (status != AuctionStatus.RUNNING) {
+                throw new StatusException("Auction is not open for bidding");
+            }
+
+            if (amount <= currentPrice && highestBidder != null) {
+                throw new InvalidBidException("Bid must be higher than current price");
+            }
+
+            currentPrice = amount;
+            highestBidder = bidder;
+
+            BidTransaction transaction = new BidTransaction(bidder, amount);
+            bidHistory.add(transaction);
+
+            notifyObservers("New bid: " + amount + " by " + bidder.getUsername());
+        } finally {lock.unlock();}
 
         System.out.println("New bid " + amount + " by " + bidder.getUsername());
-        notifyObservers("New bid: " + amount + " by " + bidder.getUsername());
-    }
 
+    }
     /*
         Bắt đầu auction.
 
@@ -166,7 +161,7 @@ public class Auction extends Entity {
         để không làm hỏng logic test cũ của bạn.
     */
     public synchronized void startAuction() {
-        if (status != AuctionStatus.OPEN) {
+        if (status != AuctionStatus.SCHEDULED) {
             throw new StatusException("Cannot start auction from status " + status);
         }
 

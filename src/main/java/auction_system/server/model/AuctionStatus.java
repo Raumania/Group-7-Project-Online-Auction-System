@@ -1,8 +1,9 @@
 package auction_system.server.model;
 
 public enum AuctionStatus {
-    OPEN,
+    SCHEDULED,
     RUNNING,
     FINISHED,
-    CANCELLED
+    CANCELLED,
+    PAID
 }
