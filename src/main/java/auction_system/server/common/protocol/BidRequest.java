@@ -1,4 +1,4 @@
-package auction_system.server.model;
+package auction_system.server.common.protocol;
 
 public class BidRequest {
     private int itemId;
