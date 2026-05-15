@@ -111,7 +111,7 @@ public class AuctionController implements RequestHandler {
             }
 
             // Tạo phiên đấu giá với startingPrice
-            Auction auction = auctionService.createAuction(item, seller, req.getStartingPrice());
+            Auction auction = auctionService.createAuction(item, seller, req.getStartingPrice(),req.getStartingTime(),req.getEndingTime());
 
             return new Response("SUCCESS", "AUCTION", auction, "Auction created");
 

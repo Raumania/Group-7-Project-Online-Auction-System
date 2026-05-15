@@ -3,12 +3,12 @@ package auction_system.server.service;
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.exception.AuthorizationException;
 import auction_system.server.exception.ItemInformationException;
-import auction_system.server.exception.UserInformationException;
 import auction_system.server.model.Auction;
 import auction_system.server.model.Item;
 import auction_system.server.model.User;
 import auction_system.server.model.UserRole;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class AuctionService {
@@ -39,10 +39,17 @@ public class AuctionService {
     /*
         Tạo auction mới.
 
-        CẬP NHẬT: Thêm tham số double startingPrice vì giá khởi điểm
-        bây giờ được quản lý ở Auction thay vì Item.
+        Theo DB mới:
+        - Auction tạo trước trong bảng auctions
+        - Sau đó Item được lưu vào bảng items với items.id = auctions.id
+        - startingTime và endingTime nằm ở bảng auctions
     */
-    public Auction createAuction(Item item, User seller, double startingPrice) {
+    public Auction createAuction(Item item,
+                                 User seller,
+                                 double startingPrice,
+                                 LocalDateTime startingTime,
+                                 LocalDateTime endingTime) {
+
         if (item == null) {
             throw new NullPointerException("Item cannot be null");
         }
@@ -67,12 +74,33 @@ public class AuctionService {
             throw new RuntimeException("Starting price must be greater than 0");
         }
 
+        if (startingTime == null) {
+            throw new NullPointerException("Starting time cannot be null");
+        }
+
+        if (endingTime == null) {
+            throw new NullPointerException("Ending time cannot be null");
+        }
+
+        if (!endingTime.isAfter(startingTime)) {
+            throw new RuntimeException("Ending time must be after starting time");
+        }
+
         /*
-            CẬP NHẬT: Dùng constructor 3 tham số để tạo mới Auction
+            Tạo object Auction.
+            currentPrice có thể để null trong constructor Auction
+            để biểu thị chưa có ai bid.
         */
         Auction auction = new Auction(item, seller, startingPrice);
 
-        auctionDAO.save(auction);
+        /*
+            Lưu auction trước.
+            AuctionDAO sẽ:
+            1. INSERT auctions
+            2. Lấy generated auction id
+            3. INSERT items với id = auctionId
+        */
+        auctionDAO.save(auction, startingTime, endingTime);
 
         return auction;
     }
@@ -102,7 +130,7 @@ public class AuctionService {
     }
 
     /*
-        Lấy auction đang OPEN hoặc RUNNING.
+        Lấy auction đang RUNNING.
     */
     public List<Auction> getOpenAuctions() {
         return auctionDAO.findOpenAuctions();
@@ -155,6 +183,8 @@ public class AuctionService {
 
     /*
         Xóa auction.
+        Vì items có ON DELETE CASCADE,
+        xóa auction thì item tương ứng cũng tự bị xóa.
     */
     public void removeAuction(String id) {
         if (id == null || id.trim().isEmpty()) {
