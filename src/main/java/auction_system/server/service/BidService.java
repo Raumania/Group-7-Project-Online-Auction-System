@@ -24,23 +24,9 @@ public class BidService {
     }
 
     /*
-        Đặt bid.
-
-        Luồng:
-        1. Lấy auction từ database.
-        2. Kiểm tra bidder.
-        3. Kiểm tra số tiền bid.
-        4. Kiểm tra số dư bidder.
-        5. Gọi auction.placeBid().
-        6. Lấy bid transaction mới nhất trong object auction.
-        7. Lưu bid transaction vào database.
-        8. Update auction trong database.
-
-        Lưu ý mới:
-        - bidder không còn là Bidder object nữa
-        - bidder là User có role BIDDER
+        CẬP NHẬT: Đổi tham số String auctionId thành int auctionId.
     */
-    public void placeBid(String auctionId, User bidder, double amount) {
+    public void placeBid(int auctionId, User bidder, double amount) {
         Auction auction = findAuctionOrThrow(auctionId);
 
         if (bidder == null) {
@@ -55,10 +41,6 @@ public class BidService {
             throw new RuntimeException("Bid amount must be greater than 0");
         }
 
-        /*
-            Lấy bidder mới nhất từ database để kiểm tra balance.
-            Tránh trường hợp object bidder truyền vào bị cũ.
-        */
         User realBidder = userService.getUserById(bidder.getId());
 
         if (!realBidder.hasRole(UserRole.BIDDER)) {
@@ -69,47 +51,24 @@ public class BidService {
             throw new RuntimeException("Not enough balance");
         }
 
-        /*
-            Nếu có highestBidder cũ thì hoàn tiền cho người đó.
-            Đây là cách đơn giản cho project:
-            - Bidder mới bị trừ amount
-            - Highest bidder cũ được hoàn currentPrice
-        */
         if (auction.getHighestBidder() != null) {
             User oldHighestBidder = auction.getHighestBidder();
             userService.deposit(oldHighestBidder.getId(), auction.getCurrentPrice());
         }
 
-        /*
-            Trừ tiền bidder mới.
-        */
         userService.withdraw(realBidder.getId(), amount);
 
-        /*
-            Cập nhật object auction:
-            - currentPrice
-            - highestBidder
-            - bidHistory
-        */
         auction.placeBid(realBidder, amount);
 
-        /*
-            Lấy bid mới nhất trong bidHistory.
-        */
         List<BidTransaction> bidHistory = auction.getBidHistory();
         BidTransaction latestTransaction = bidHistory.get(bidHistory.size() - 1);
 
         /*
-            Lưu bid transaction.
+            Lưu bid transaction với auctionId kiểu int.
+            Hãy chắc chắn rằng BidTransactionDAO.save() cũng đã được cập nhật để nhận int.
         */
         bidTransactionDAO.save(auctionId, latestTransaction);
 
-        /*
-            Update auction:
-            - current_price
-            - highest_bidder_id
-            - status
-        */
         boolean updated = auctionDAO.update(auction);
 
         if (!updated) {
@@ -117,18 +76,12 @@ public class BidService {
         }
     }
 
-    /*
-        Lấy lịch sử bid từ database.
-    */
-    public List<BidTransaction> getBidHistory(String auctionId) {
+    public List<BidTransaction> getBidHistory(int auctionId) {
         findAuctionOrThrow(auctionId);
         return bidTransactionDAO.findByAuctionId(auctionId);
     }
 
-    /*
-        Lấy bid gần nhất từ database.
-    */
-    public BidTransaction getLatestBid(String auctionId) {
+    public BidTransaction getLatestBid(int auctionId) {
         findAuctionOrThrow(auctionId);
 
         BidTransaction transaction = bidTransactionDAO.findLatestByAuctionId(auctionId);
@@ -140,26 +93,26 @@ public class BidService {
         return transaction;
     }
 
-    public User getHighestBidder(String auctionId) {
+    public User getHighestBidder(int auctionId) {
         Auction auction = findAuctionOrThrow(auctionId);
         return auction.getHighestBidder();
     }
 
-    public double getCurrentPrice(String auctionId) {
+    public double getCurrentPrice(int auctionId) {
         Auction auction = findAuctionOrThrow(auctionId);
         return auction.getCurrentPrice();
     }
 
-    public int getTotalBids(String auctionId) {
+    public int getTotalBids(int auctionId) {
         findAuctionOrThrow(auctionId);
         return bidTransactionDAO.countByAuctionId(auctionId);
     }
 
-    public boolean hasBids(String auctionId) {
+    public boolean hasBids(int auctionId) {
         return getTotalBids(auctionId) > 0;
     }
 
-    public boolean isHighestBidder(String auctionId, User bidder) {
+    public boolean isHighestBidder(int auctionId, User bidder) {
         if (bidder == null) {
             return false;
         }
@@ -177,21 +130,23 @@ public class BidService {
         return auction.getHighestBidder().getId().equals(bidder.getId());
     }
 
-    public boolean auctionExists(String auctionId) {
-        if (auctionId == null || auctionId.trim().isEmpty()) {
+    public boolean auctionExists(int auctionId) {
+        // int không thể null, nên chỉ cần check <= 0
+        if (auctionId <= 0) {
             return false;
         }
 
-        return auctionDAO.findById(auctionId) != null;
+        // Chuyển int sang String để gọi DAO cũ
+        return auctionDAO.findById(String.valueOf(auctionId)) != null;
     }
 
-    //bọc Service nhưng thêm phan kiểm tra lỗi
-    private Auction findAuctionOrThrow(String auctionId) {
-        if (auctionId == null || auctionId.trim().isEmpty()) {
-            throw new RuntimeException("Auction id cannot be null or empty");
+    private Auction findAuctionOrThrow(int auctionId) {
+        if (auctionId <= 0) {
+            throw new RuntimeException("Auction id must be greater than 0");
         }
 
-        Auction auction = auctionService.getAuctionById(auctionId);
+        // Chuyển int sang String để gọi Service cũ
+        Auction auction = auctionService.getAuctionById(String.valueOf(auctionId));
 
         if (auction == null) {
             throw new RuntimeException("Auction not found");

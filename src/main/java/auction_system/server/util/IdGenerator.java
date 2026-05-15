@@ -1,4 +1,4 @@
-package auction_system.util;
+package auction_system.server.util;
 import java.util.UUID;
 public class IdGenerator {
     private IdGenerator(){}

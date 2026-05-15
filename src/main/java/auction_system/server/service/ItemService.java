@@ -2,6 +2,7 @@ package auction_system.server.service;
 
 import auction_system.server.dao.ItemDAO;
 import auction_system.server.model.*;
+import java.time.LocalDateTime;
 
 public class ItemService {
 
@@ -13,89 +14,40 @@ public class ItemService {
 
     /*
         Tạo item loại Electronics.
-
-        Service sẽ:
-        1. Kiểm tra owner có null không
-        2. Kiểm tra owner có role SELLER không
-        3. Tạo object Electronics
-        4. Gọi ItemDAO để lưu vào database
-        5. Trả item vừa tạo về
+        CẬP NHẬT: Nhận thời gian bắt đầu/kết thúc, loại bỏ brand/model.
     */
-    public Electronics createElectronics(String name, String description, double startingPrice,
-                                         User owner, String brand, String model) {
-        if (owner == null) {
-            throw new RuntimeException("Owner cannot be null");
-        }
+    public Electronics createElectronics(String name, String description, User owner,
+                                         LocalDateTime startingTime, LocalDateTime endingTime) {
+        validateSeller(owner);
 
-        if (!owner.hasRole(UserRole.SELLER)) {
-            throw new RuntimeException("Owner must have SELLER role");
-        }
-
-        Electronics electronics = new Electronics(
-                name,
-                description,
-                startingPrice,
-                owner,
-                brand,
-                model
-        );
-
+        Electronics electronics = new Electronics(name, description, owner, startingTime, endingTime);
         itemDAO.save(electronics);
-
         return electronics;
     }
 
     /*
         Tạo item loại Art.
+        CẬP NHẬT: Nhận thời gian bắt đầu/kết thúc, loại bỏ artist/year.
     */
-    public Art createArt(String name, String description, double startingPrice,
-                         User owner, String artist, int year) {
-        if (owner == null) {
-            throw new RuntimeException("Owner cannot be null");
-        }
+    public Art createArt(String name, String description, User owner,
+                         LocalDateTime startingTime, LocalDateTime endingTime) {
+        validateSeller(owner);
 
-        if (!owner.hasRole(UserRole.SELLER)) {
-            throw new RuntimeException("Owner must have SELLER role");
-        }
-
-        Art art = new Art(
-                name,
-                description,
-                startingPrice,
-                owner,
-                artist,
-                year
-        );
-
+        Art art = new Art(name, description, owner, startingTime, endingTime);
         itemDAO.save(art);
-
         return art;
     }
 
     /*
         Tạo item loại Vehicle.
+        CẬP NHẬT: Nhận thời gian bắt đầu/kết thúc, loại bỏ brand/year.
     */
-    public Vehicle createVehicle(String name, String description, double startingPrice,
-                                 User owner, String brand, int year) {
-        if (owner == null) {
-            throw new RuntimeException("Owner cannot be null");
-        }
+    public Vehicle createVehicle(String name, String description, User owner,
+                                 LocalDateTime startingTime, LocalDateTime endingTime) {
+        validateSeller(owner);
 
-        if (!owner.hasRole(UserRole.SELLER)) {
-            throw new RuntimeException("Owner must have SELLER role");
-        }
-
-        Vehicle vehicle = new Vehicle(
-                name,
-                description,
-                startingPrice,
-                owner,
-                brand,
-                year
-        );
-
+        Vehicle vehicle = new Vehicle(name, description, owner, startingTime, endingTime);
         itemDAO.save(vehicle);
-
         return vehicle;
     }
 
@@ -104,11 +56,21 @@ public class ItemService {
     */
     public Item getItemById(String id) {
         Item item = itemDAO.findById(id);
-
         if (item == null) {
             throw new RuntimeException("Item not found");
         }
-
         return item;
+    }
+
+    /*
+        Hàm phụ để kiểm tra quyền Seller (tránh lặp code)
+    */
+    private void validateSeller(User owner) {
+        if (owner == null) {
+            throw new RuntimeException("Owner cannot be null");
+        }
+        if (!owner.hasRole(UserRole.SELLER)) {
+            throw new RuntimeException("Owner must have SELLER role");
+        }
     }
 }

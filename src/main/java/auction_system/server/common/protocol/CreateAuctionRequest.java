@@ -1,27 +1,25 @@
 package auction_system.server.common.protocol;
 
+import java.time.LocalDateTime;
+
 public class CreateAuctionRequest {
     private String sellerId;
     private String itemType; // "ELECTRONICS", "ART", "VEHICLE"
 
-    // Thông tin chung
+    // Thông tin chung của sản phẩm
     private String name;
     private String description;
     private double startingPrice;
 
-    // Electronics
-    private String brand;
-    private String model;
+    // CẬP NHẬT: Thêm thời gian bắt đầu và kết thúc đấu giá
+    private LocalDateTime startingTime;
+    private LocalDateTime endingTime;
 
-    // Art
-    private String artist;
-    private int year;
-    private String material;      // tuỳ chọn
+    /*
+        LƯU Ý: Các trường brand, model, artist, year, material, licensePlate
+        đã được loại bỏ để khớp với cấu trúc tối giản của hệ thống.
+    */
 
-    // Vehicle
-    private String licensePlate;  // tuỳ chọn
-
-    // Constructor
     public CreateAuctionRequest() {}
 
     // Getters & Setters
@@ -40,21 +38,9 @@ public class CreateAuctionRequest {
     public double getStartingPrice() { return startingPrice; }
     public void setStartingPrice(double startingPrice) { this.startingPrice = startingPrice; }
 
-    public String getBrand() { return brand; }
-    public void setBrand(String brand) { this.brand = brand; }
+    public LocalDateTime getStartingTime() { return startingTime; }
+    public void setStartingTime(LocalDateTime startingTime) { this.startingTime = startingTime; }
 
-    public String getModel() { return model; }
-    public void setModel(String model) { this.model = model; }
-
-    public String getArtist() { return artist; }
-    public void setArtist(String artist) { this.artist = artist; }
-
-    public int getYear() { return year; }
-    public void setYear(int year) { this.year = year; }
-
-    public String getMaterial() { return material; }
-    public void setMaterial(String material) { this.material = material; }
-
-    public String getLicensePlate() { return licensePlate; }
-    public void setLicensePlate(String licensePlate) { this.licensePlate = licensePlate; }
+    public LocalDateTime getEndingTime() { return endingTime; }
+    public void setEndingTime(LocalDateTime endingTime) { this.endingTime = endingTime; }
 }

@@ -19,15 +19,15 @@ public class BidTransactionDAO {
         this.userDAO = new UserDAO();
     }
 
-    /*
-        Lưu một bid transaction vào database.
+    /* Lưu một bid transaction vào database.
 
         Lưu ý mới:
         - bidder không còn là object Bidder nữa
         - bidder là User có role BIDDER
         - bidder_id trong database là INT vì users.id là INT AUTO_INCREMENT
+        - auction_id bây giờ là INT
     */
-    public void save(String auctionId, BidTransaction transaction) {
+    public void save(int auctionId, BidTransaction transaction) {
         String sql = "INSERT INTO bid_transactions(id, auction_id, bidder_id, amount, timestamp) " +
                 "VALUES (?, ?, ?, ?, ?)";
 
@@ -45,10 +45,9 @@ public class BidTransactionDAO {
             statement.setString(1, transaction.getId());
 
             /*
-                auction_id vẫn là String/VARCHAR
-                vì Auction.id hiện vẫn dùng IdGenerator.
+                CẬP NHẬT: auction_id là INT trong database
             */
-            statement.setString(2, auctionId);
+            statement.setInt(2, auctionId);
 
             /*
                 bidder_id là INT trong database.
@@ -69,7 +68,7 @@ public class BidTransactionDAO {
     /*
         Lấy lịch sử bid của một auction.
     */
-    public List<BidTransaction> findByAuctionId(String auctionId) {
+    public List<BidTransaction> findByAuctionId(int auctionId) {
         String sql = "SELECT * FROM bid_transactions WHERE auction_id = ? ORDER BY timestamp ASC";
 
         List<BidTransaction> transactions = new ArrayList<>();
@@ -77,7 +76,8 @@ public class BidTransactionDAO {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setString(1, auctionId);
+            // CẬP NHẬT: setInt thay vì setString
+            statement.setInt(1, auctionId);
 
             ResultSet resultSet = statement.executeQuery();
 
@@ -96,13 +96,14 @@ public class BidTransactionDAO {
     /*
         Lấy bid mới nhất của auction.
     */
-    public BidTransaction findLatestByAuctionId(String auctionId) {
+    public BidTransaction findLatestByAuctionId(int auctionId) {
         String sql = "SELECT * FROM bid_transactions WHERE auction_id = ? ORDER BY timestamp DESC LIMIT 1";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setString(1, auctionId);
+            // CẬP NHẬT: setInt thay vì setString
+            statement.setInt(1, auctionId);
 
             ResultSet resultSet = statement.executeQuery();
 
@@ -120,13 +121,14 @@ public class BidTransactionDAO {
     /*
         Đếm tổng số bid của một auction.
     */
-    public int countByAuctionId(String auctionId) {
+    public int countByAuctionId(int auctionId) {
         String sql = "SELECT COUNT(*) FROM bid_transactions WHERE auction_id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setString(1, auctionId);
+            // CẬP NHẬT: setInt thay vì setString
+            statement.setInt(1, auctionId);
 
             ResultSet resultSet = statement.executeQuery();
 

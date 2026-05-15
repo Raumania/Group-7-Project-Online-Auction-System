@@ -1,41 +1,22 @@
 package auction_system.server.model;
 
-import auction_system.server.exception.ItemInformationException;
+import java.time.LocalDateTime;
 
 public class Art extends Item {
 
-    private String artist;
-    private int year;
+    /*
+        CẬP NHẬT: Loại bỏ artist và year.
+        Constructor bây giờ tập trung vào thông tin đấu giá và thời gian.
+    */
+    public Art(String name, String description, User owner,
+               LocalDateTime startingTime, LocalDateTime endingTime) {
 
-    public Art(String name, String description, double startingPrice,
-               User owner, String artist, int year) {
-
-        super(name, description, startingPrice, owner, ItemType.ART);
-
-        if (artist == null || artist.trim().isEmpty()) {
-            throw new ItemInformationException("Artist cannot be empty");
-        }
-
-        if (year <= 0) {
-            throw new ItemInformationException("Year must be valid");
-        }
-
-        this.artist = artist;
-        this.year = year;
-    }
-
-    public String getArtist() {
-        return artist;
-    }
-
-    public int getYear() {
-        return year;
+        // Truyền ItemType.ART và các thông tin thời gian vào lớp cha
+        super(name, description, owner, ItemType.ART, startingTime, endingTime);
     }
 
     @Override
     public String toString() {
-        return super.toString() +
-                ", artist='" + artist + '\'' +
-                ", year=" + year;
+        return "Art" + super.toString().substring(4);
     }
 }

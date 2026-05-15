@@ -1,6 +1,6 @@
 package auction_system.server.model;
 
-import auction_system.util.IdGenerator;
+import auction_system.server.util.IdGenerator;
 
 public abstract class Entity {
     protected String id;
