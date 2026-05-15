@@ -150,6 +150,8 @@ public class User extends Entity {
         this.balance -= amount;
     }
 
+
+
     @Override
     public String toString() {
         return "User{id='" + id +

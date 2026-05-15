@@ -5,6 +5,8 @@ import auction_system.server.exception.InvalidBidException;
 import auction_system.server.exception.ItemInformationException;
 import auction_system.server.exception.StatusException;
 import auction_system.server.observer.AuctionObserver;
+import auction_system.server.observer.BidEvent;
+import auction_system.server.observer.EventBus;
 import auction_system.util.IdGenerator;
 
 import java.time.LocalDateTime;
@@ -23,6 +25,7 @@ public class Auction extends Entity {
     private final ReentrantLock lock = new ReentrantLock();
     private final LocalDateTime startTime =  LocalDateTime.now();
     private final LocalDateTime endTime;
+    private final EventBus eventBus =  new EventBus();
 
     public Auction(Item item, User seller, long time) {
         super();
@@ -47,34 +50,6 @@ public class Auction extends Entity {
         this.status = AuctionStatus.SCHEDULED;
         this.observers = new ArrayList<>();
         this.endTime = startTime.plusMinutes(time);
-
-    }
-
-    /*
-        Thêm observer để nhận thông báo khi auction có thay đổi.
-        Ví dụ: có bid mới, auction kết thúc.
-    */
-    public void addObserver(AuctionObserver observer) {
-        if (observer != null && !observers.contains(observer)) {
-            observers.add(observer);
-        }
-    }
-
-    /*
-        Gỡ observer khỏi danh sách nhận thông báo.
-    */
-    public void removeObserver(AuctionObserver observer) {
-        observers.remove(observer);
-    }
-    /*
-
-    /*
-        Gửi thông báo cho tất cả observer.
-    */
-    private void notifyObservers(String message) {
-        for (AuctionObserver observer : observers) {
-            observer.update(this, message);
-        }
     }
 
     private void updateStatusInternal() {
@@ -114,7 +89,7 @@ public class Auction extends Entity {
         User này phải có role BIDDER.
     */
     public void placeBid(User bidder, double amount) {
-
+        BidEvent eventToPublish = null;
         lock.lock();
 
         try {
@@ -139,14 +114,29 @@ public class Auction extends Entity {
                 throw new InvalidBidException("Bid must be higher than current price");
             }
 
+            String previousBidderId = this.highestBidder.getId();
+            double previousPrice = this.currentPrice;
+
             currentPrice = amount;
             highestBidder = bidder;
+
+            eventToPublish = new BidEvent(
+                    id, bidder.getId(), previousBidderId,
+                    amount, previousPrice,
+                    LocalDateTime.now()
+            );
+
 
             BidTransaction transaction = new BidTransaction(bidder, amount);
             bidHistory.add(transaction);
 
-            notifyObservers("New bid: " + amount + " by " + bidder.getUsername());
-        } finally {lock.unlock();}
+        } finally {
+            lock.unlock();
+            if (eventToPublish != null) {
+
+                eventBus.publish(eventToPublish);
+            }
+        }
 
         System.out.println("New bid " + amount + " by " + bidder.getUsername());
 
@@ -166,7 +156,6 @@ public class Auction extends Entity {
         }
 
         status = AuctionStatus.RUNNING;
-        notifyObservers("Auction started");
     }
 
     /*
@@ -185,10 +174,8 @@ public class Auction extends Entity {
 
         if (highestBidder != null) {
             System.out.println("Winner " + highestBidder.getUsername());
-            notifyObservers("Auction finished. Winner: " + highestBidder.getUsername());
         } else {
             System.out.println("No bid placed");
-            notifyObservers("Auction finished with no bids.");
         }
     }
 
@@ -207,7 +194,6 @@ public class Auction extends Entity {
         }
 
         status = AuctionStatus.CANCELLED;
-        notifyObservers("Auction cancelled");
     }
 
     public Item getItem() {
