@@ -46,6 +46,11 @@ public final class Action {
     /** Đăng xuất */
     public static final String LOGOUT = "LOGOUT";
 
+    /** ĐĂNG KÝ NHẬN THÔNG BÁO */
+    public static final String SUBSCRIBE = "SUBSCRIBE";
+
+
+
     // ==================== QUẢN LÝ NGƯỜI DÙNG ====================
     /** Lấy thông tin người dùng hiện tại */
     public static final String GET_CURRENT_USER = "GET_CURRENT_USER";
