@@ -1,11 +1,6 @@
 package auction_system.server.factory;
 
-import auction_system.server.model.Art;
-import auction_system.server.model.Electronics;
-import auction_system.server.model.Item;
-import auction_system.server.model.ItemType;
-import auction_system.server.model.Seller;
-import auction_system.server.model.Vehicle;
+import auction_system.server.model.*;
 
 public class ItemFactory {
 
@@ -13,7 +8,7 @@ public class ItemFactory {
                                   String name,
                                   String description,
                                   double startingPrice,
-                                  Seller owner,
+                                  User owner,
                                   Object... extraParams) {
 
         if (type == null) {

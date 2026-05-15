@@ -56,6 +56,7 @@ public class AuctionController implements RequestHandler {
         return new Response("SUCCESS", "AUCTION", auction, "Auction detail");
     }
 
+
     private Response createAuction(Object dataObj) {
         try {
             // Parse CreateAuctionRequest từ Object/JsonElement

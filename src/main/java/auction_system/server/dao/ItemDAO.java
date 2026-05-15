@@ -111,10 +111,10 @@ public class ItemDAO {
                 throw new RuntimeException("Cannot get generated item id");
             }
 
-        } catch (SQLException e) {
-            throw new RuntimeException("Cannot save item", e);
-        }
-    }
+        }  catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Cannot save item: " + e.getMessage(), e);
+    }}
 
     /*
         Tìm item theo id.

@@ -1,38 +1,35 @@
 package auction_system;
 
-import auction_system.server.model.Bidder;
+import auction_system.server.common.protocol.*;
 import auction_system.server.model.User;
-import auction_system.server.service.UserService;
+import com.google.gson.Gson;
+import java.io.*;
+import java.net.Socket;
 
 public class TestLogin {
     public static void main(String[] args) {
-        UserService userService = new UserService();
+        String host = "localhost";
+        int port = 3636;
+        Gson gson = new Gson();
 
-        User user = userService.login("taixiu", "123456");
+        // ĐÚNG: Gán object trực tiếp
+        LoginData loginData = new LoginData("vana", "123456");
+        Request request = new Request("LOGIN", gson.toJsonTree(loginData));
+        String jsonRequest = gson.toJson(request);
+        System.out.println("Sending: " + jsonRequest);
 
-        System.out.println("Login successfully!");
-        System.out.println("Id: " + user.getId());
-        System.out.println("Username: " + user.getUsername());
-        System.out.println("Email: " + user.getEmail());
-        System.out.println("Role: " + user.getRole());
-        System.out.println("Balance: " + user.getBalance());
-        /*
-            Bước 2: nạp tiền cho bidder.
-            Hàm deposit sẽ:
-            - lấy user từ database
-            - cộng tiền vào balance
-            - update balance lại vào MySQL
-        */
-        userService.withdraw(user.getId(), 100);
+        try (Socket socket = new Socket(host, port);
+             DataOutputStream out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+             DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()))) {
 
-        /*
-            Bước 3: lấy lại user từ database để kiểm tra balance mới.
-        */
-        Bidder updatedBidder = (Bidder) userService.getUserById(user.getId());
+            out.writeUTF(jsonRequest);
+            out.flush();
 
-        System.out.println("After deposit:");
-        System.out.println("Id: " + updatedBidder.getId());
-        System.out.println("Username: " + updatedBidder.getUsername());
-        System.out.println("Balance: " + updatedBidder.getBalance());
+            String responseLine = in.readUTF();
+            System.out.println("Response: " + responseLine);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

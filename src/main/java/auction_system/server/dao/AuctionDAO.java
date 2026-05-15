@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,17 +32,18 @@ public class AuctionDAO {
         - status = OPEN
 
         Lưu ý mới:
+        - auction.id là INT AUTO_INCREMENT trong database
         - item_id là INT vì items.id là INT AUTO_INCREMENT
         - seller_id là INT vì users.id là INT AUTO_INCREMENT
         - highest_bidder_id là INT vì users.id là INT AUTO_INCREMENT
-        - trong Java Entity.id vẫn là String nên khi lưu phải parse sang int
+        - trong Java Entity.id vẫn là String nên khi lấy id từ DB thì convert int -> String
     */
     public void save(Auction auction) {
-        String sql = "INSERT INTO auctions(id, item_id, seller_id, current_price, highest_bidder_id, status) " +
-                "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO auctions(item_id, seller_id, current_price, highest_bidder_id, status) " +
+                "VALUES (?, ?, ?, ?, ?)";
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             if (auction.getSeller() == null) {
                 throw new RuntimeException("Seller cannot be null");
@@ -56,33 +58,44 @@ public class AuctionDAO {
                 throw new RuntimeException("Highest bidder must have BIDDER role");
             }
 
-            statement.setString(1, auction.getId());
-
             /*
                 item_id là INT trong database.
             */
-            statement.setInt(2, Integer.parseInt(auction.getItem().getId()));
+            statement.setInt(1, Integer.parseInt(auction.getItem().getId()));
 
             /*
                 seller_id là INT trong database.
             */
-            statement.setInt(3, Integer.parseInt(auction.getSeller().getId()));
+            statement.setInt(2, Integer.parseInt(auction.getSeller().getId()));
 
-            statement.setDouble(4, auction.getCurrentPrice());
+            statement.setDouble(3, auction.getCurrentPrice());
 
             /*
                 highest_bidder_id có thể null.
                 Nếu null thì dùng setNull với Types.INTEGER.
             */
             if (auction.getHighestBidder() == null) {
-                statement.setNull(5, Types.INTEGER);
+                statement.setNull(4, Types.INTEGER);
             } else {
-                statement.setInt(5, Integer.parseInt(auction.getHighestBidder().getId()));
+                statement.setInt(4, Integer.parseInt(auction.getHighestBidder().getId()));
             }
 
-            statement.setString(6, auction.getStatus().name());
+            statement.setString(5, auction.getStatus().name());
 
             statement.executeUpdate();
+
+            /*
+                Vì auction.id là AUTO_INCREMENT,
+                nên sau khi insert xong phải lấy id mà database vừa tự tạo.
+            */
+            ResultSet generatedKeys = statement.getGeneratedKeys();
+
+            if (generatedKeys.next()) {
+                int newId = generatedKeys.getInt(1);
+                auction.setId(String.valueOf(newId));
+            } else {
+                throw new RuntimeException("Cannot get generated auction id");
+            }
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot save auction", e);
@@ -92,7 +105,9 @@ public class AuctionDAO {
     /*
         Tìm auction theo id.
 
-        auction.id hiện vẫn là VARCHAR/String vì Auction vẫn dùng IdGenerator.
+        auction.id trong database hiện là INT AUTO_INCREMENT.
+        Nhưng trong Java Entity.id vẫn là String,
+        nên khi query phải parse String -> int.
     */
     public Auction findById(String id) {
         String sql = "SELECT * FROM auctions WHERE id = ?";
@@ -102,7 +117,7 @@ public class AuctionDAO {
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             //truyền giá trị vào dấu ? đầu tiên
-            statement.setString(1, id);
+            statement.setInt(1, Integer.parseInt(id));
 
             // sau khi gửi lệnh đến MySQL thì sẽ đc trả dữ liệu về 1 cái bảng theo kiểu 1 dòng
             ResultSet resultSet = statement.executeQuery();
@@ -208,7 +223,12 @@ public class AuctionDAO {
             }
 
             statement.setString(3, auction.getStatus().name());
-            statement.setString(4, auction.getId());
+
+            /*
+                auction.id là INT trong database.
+                Nhưng trong Java vẫn là String nên parse sang int.
+            */
+            statement.setInt(4, Integer.parseInt(auction.getId()));
 
             int affectedRows = statement.executeUpdate();
 
@@ -222,7 +242,7 @@ public class AuctionDAO {
     /*
         Xóa auction theo id.
 
-        auction.id hiện vẫn là VARCHAR/String.
+        auction.id trong database hiện là INT AUTO_INCREMENT.
     */
     public boolean deleteById(String id) {
         String sql = "DELETE FROM auctions WHERE id = ?";
@@ -230,7 +250,7 @@ public class AuctionDAO {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setString(1, id);
+            statement.setInt(1, Integer.parseInt(id));
 
             int affectedRows = statement.executeUpdate();
 
@@ -245,7 +265,12 @@ public class AuctionDAO {
         Chuyển một dòng trong bảng auctions thành object Auction.
     */
     private Auction mapResultSetToAuction(ResultSet resultSet) throws SQLException {
-        String id = resultSet.getString("id");
+        /*
+            id là INT trong database.
+            Nhưng Entity.id trong Java vẫn là String,
+            nên lấy ra bằng getInt rồi convert sang String.
+        */
+        String id = String.valueOf(resultSet.getInt("id"));
 
         /*
             item_id là INT trong database.

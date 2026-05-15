@@ -44,6 +44,13 @@ public class Auction extends Entity {
         if (seller == null) {
             throw new RuntimeException("Seller cannot be null");
         }
+        if (item.getOwner() == null) {
+            throw new RuntimeException("Item owner cannot be null");
+        }
+
+        if (!item.getOwner().getId().equals(seller.getId())) {
+            throw new RuntimeException("Seller does not own this item");
+        }
 
         /*
             Không dùng instanceof Seller nữa.
