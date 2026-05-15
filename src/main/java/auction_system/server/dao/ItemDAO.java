@@ -6,73 +6,77 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 public class ItemDAO {
 
-    private UserDAO userDAO;
+    private final UserDAO userDAO;
 
     public ItemDAO() {
         this.userDAO = new UserDAO();
     }
 
     /*
-        Lưu item vào bảng items: name, description, owner_id, type, starting_time, ending_time.
+        Dùng khi tạo auction trước, sau đó lưu item.
+        items.id = auctions.id
     */
-    public void save(Item item) {
-        // CẬP NHẬT: Chỉ còn 6 dấu ? tương ứng với các trường cốt lõi
-        String sql = "INSERT INTO items(name, description, owner_id, type, starting_time, ending_time) " +
-                "VALUES (?, ?, ?, ?, ?, ?)";
+    public void saveForAuction(Connection connection, String auctionId, Item item) {
+        String sql = """
+                INSERT INTO items(id, name, description, type)
+                VALUES (?, ?, ?, ?)
+                """;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            if (item.getOwner() == null) {
-                throw new RuntimeException("Owner cannot be null");
-            }
-
-            if (!item.getOwner().hasRole(UserRole.SELLER)) {
-                throw new RuntimeException("Owner must have SELLER role");
-            }
-
-            statement.setString(1, item.getName());
-            statement.setString(2, item.getDescription());
-            statement.setInt(3, Integer.parseInt(item.getOwner().getId()));
+            statement.setInt(1, Integer.parseInt(auctionId));
+            statement.setString(2, item.getName());
+            statement.setString(3, item.getDescription());
             statement.setString(4, item.getType().name());
-
-            // Lưu thời gian đấu giá
-            statement.setTimestamp(5, Timestamp.valueOf(item.getStartingTime()));
-            statement.setTimestamp(6, Timestamp.valueOf(item.getEndingTime()));
 
             statement.executeUpdate();
 
-            ResultSet generatedKeys = statement.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                int generatedId = generatedKeys.getInt(1);
-                item.setId(String.valueOf(generatedId));
-            } else {
-                throw new RuntimeException("Cannot get generated item id");
-            }
+            item.setId(auctionId);
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot save item", e);
+            throw new RuntimeException("Cannot save item for auction", e);
         }
     }
 
+    /*
+        Vì items.id = auctions.id,
+        nên tìm item theo auctionId.
+
+        Phải JOIN auctions để lấy:
+        - seller_id => owner
+        - starting_time
+        - ending_time
+    */
     public Item findById(String id) {
-        String sql = "SELECT * FROM items WHERE id = ?";
+        String sql = """
+                SELECT 
+                    i.id,
+                    i.name,
+                    i.description,
+                    i.type,
+                    a.seller_id,
+                    a.starting_time,
+                    a.ending_time
+                FROM items i
+                JOIN auctions a ON i.id = a.id
+                WHERE i.id = ?
+                """;
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, Integer.parseInt(id));
+
             ResultSet resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
                 return mapResultSetToItem(resultSet);
             }
+
             return null;
 
         } catch (SQLException e) {
@@ -84,25 +88,32 @@ public class ItemDAO {
         String id = String.valueOf(resultSet.getInt("id"));
         String name = resultSet.getString("name");
         String description = resultSet.getString("description");
-        String ownerId = String.valueOf(resultSet.getInt("owner_id"));
         String typeText = resultSet.getString("type");
 
-        // Lấy dữ liệu thời gian
-        LocalDateTime startingTime = resultSet.getTimestamp("starting_time").toLocalDateTime();
-        LocalDateTime endingTime = resultSet.getTimestamp("ending_time").toLocalDateTime();
+        String sellerId = String.valueOf(resultSet.getInt("seller_id"));
 
-        User owner = userDAO.findById(ownerId);
+        LocalDateTime startingTime = resultSet
+                .getTimestamp("starting_time")
+                .toLocalDateTime();
+
+        LocalDateTime endingTime = resultSet
+                .getTimestamp("ending_time")
+                .toLocalDateTime();
+
+        User owner = userDAO.findById(sellerId);
+
         if (owner == null) {
-            throw new RuntimeException("Owner not found");
+            throw new RuntimeException("Owner not found for item id = " + id);
+        }
+
+        if (!owner.hasRole(UserRole.SELLER)) {
+            throw new RuntimeException("Owner must have SELLER role");
         }
 
         ItemType type = ItemType.valueOf(typeText);
+
         Item item;
 
-        /*
-            LƯU Ý: Vì DB không còn lưu brand, year, model...
-            nên khi khởi tạo các object con, mình sẽ truyền giá trị mặc định (null hoặc 0).
-        */
         if (type == ItemType.ELECTRONICS) {
             item = new Electronics(name, description, owner, startingTime, endingTime);
         } else if (type == ItemType.ART) {
@@ -110,10 +121,11 @@ public class ItemDAO {
         } else if (type == ItemType.VEHICLE) {
             item = new Vehicle(name, description, owner, startingTime, endingTime);
         } else {
-            throw new RuntimeException("Invalid item type");
+            throw new RuntimeException("Invalid item type: " + typeText);
         }
 
         item.setId(id);
+
         return item;
     }
 }

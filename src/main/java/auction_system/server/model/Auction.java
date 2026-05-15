@@ -16,7 +16,7 @@ public class Auction extends Entity {
 
     // CẬP NHẬT: Thêm startingPrice
     private double startingPrice;
-    private double currentPrice;
+    private Double currentPrice;
     private User highestBidder;
 
     private List<BidTransaction> bidHistory;
@@ -46,10 +46,10 @@ public class Auction extends Entity {
         this.item = item;
         this.seller = seller;
         this.startingPrice = startingPrice;
-        this.currentPrice = startingPrice; // currentPrice ban đầu bằng startingPrice
+        this.currentPrice = null;
         this.highestBidder = null;
         this.bidHistory = new ArrayList<>();
-        this.status = AuctionStatus.OPEN;
+        this.status = AuctionStatus.RUNNING;
         this.observers = new ArrayList<>();
     }
 
@@ -77,7 +77,7 @@ public class Auction extends Entity {
         this.seller = seller;
         this.highestBidder = null;
         this.bidHistory = new ArrayList<>();
-        this.status = AuctionStatus.OPEN;
+        this.status = AuctionStatus.RUNNING;
         this.observers = new ArrayList<>();
     }
 
@@ -94,7 +94,6 @@ public class Auction extends Entity {
     public void detach(AuctionObserver observer) {
         removeObserver(observer);
     }
-
     private void notifyObservers(String message) {
         for (AuctionObserver observer : observers) {
             observer.update(this, message);
@@ -102,7 +101,7 @@ public class Auction extends Entity {
     }
 
     private boolean canPlaceBid() {
-        return status == AuctionStatus.OPEN || status == AuctionStatus.RUNNING;
+        return status == AuctionStatus.RUNNING;
     }
 
     public synchronized void placeBid(User bidder, double amount) {
@@ -133,7 +132,7 @@ public class Auction extends Entity {
     }
 
     public synchronized void startAuction() {
-        if (status != AuctionStatus.OPEN) {
+        if (status != AuctionStatus.RUNNING) {
             throw new StatusException("Cannot start auction from status " + status);
         }
 
@@ -192,7 +191,7 @@ public class Auction extends Entity {
         this.startingPrice = startingPrice;
     }
 
-    public double getCurrentPrice() {
+    public Double getCurrentPrice() {
         return currentPrice;
     }
 
