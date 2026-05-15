@@ -2,7 +2,7 @@ package auction_system.server.model;
 
 import auction_system.server.exception.AuthorizationException;
 import auction_system.server.exception.InvalidBidException;
-import auction_system.util.IdGenerator;
+import auction_system.server.util.IdGenerator;
 
 public class BidTransaction extends Entity {
 

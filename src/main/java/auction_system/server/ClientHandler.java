@@ -6,7 +6,7 @@ import auction_system.server.controller.LoginController;
 import auction_system.server.controller.RegisterController;
 import auction_system.server.controller.AuctionController;
 import auction_system.server.controller.BidController;
-import com.google.gson.Gson;
+import auction_system.server.util.GsonUtil;
 
 import java.io.*;
 import java.net.Socket;
@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ClientHandler implements Runnable {
 
     private final Socket socket;
-    private final Gson gson = new Gson();
     private final Map<String, RequestHandler> handlers = new ConcurrentHashMap<>();
 
     public ClientHandler(Socket socket) {
@@ -55,8 +54,8 @@ public class ClientHandler implements Runnable {
                     break;
                 }
 
-                System.out.println("Received: " + line);
-                Request req = gson.fromJson(line, Request.class);
+                System.out.println("Request: " + line);
+                Request req = GsonUtil.fromJson(line, Request.class);
 
                 RequestHandler handler = handlers.get(req.getAction());
                 Response res;
@@ -66,9 +65,8 @@ public class ClientHandler implements Runnable {
                 } else {
                     res = new Response("ERROR", "type", null, "Unknown action: " + req.getAction());
                 }
-
-                String jsonResponse = gson.toJson(res);
-
+                String jsonResponse = GsonUtil.toJson(res);
+                System.out.println("Respond: " + jsonResponse);
                 // SỬA: Gửi đi bằng writeUTF() để khớp với in.readUTF() của Client
                 out.writeUTF(jsonResponse);
                 out.flush();

@@ -6,12 +6,11 @@ import auction_system.server.common.protocol.RegisterData;
 import auction_system.server.common.protocol.Request;
 import auction_system.server.common.protocol.Response;
 import auction_system.server.service.UserService;
-import com.google.gson.Gson;
+import auction_system.server.util.GsonUtil;
 import com.google.gson.JsonElement;
 
 public class RegisterController implements RequestHandler {
 
-    private final Gson gson = new Gson();
     private final UserService userService = new UserService();
 
     @Override
@@ -28,10 +27,10 @@ public class RegisterController implements RequestHandler {
             Object dataObj = request.getData();
 
             if (dataObj instanceof JsonElement) {
-                data = gson.fromJson((JsonElement) dataObj, RegisterData.class);
+                data = GsonUtil.fromJson((JsonElement) dataObj, RegisterData.class);
             } else {
-                String json = gson.toJson(dataObj);
-                data = gson.fromJson(json, RegisterData.class);
+                String json = GsonUtil.toJson(dataObj);
+                data = GsonUtil.fromJson(json, RegisterData.class);
             }
 
             /*

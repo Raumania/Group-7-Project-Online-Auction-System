@@ -8,7 +8,7 @@ import auction_system.server.model.User;
 import auction_system.server.model.UserRole;
 import auction_system.server.service.BidService;
 import auction_system.server.service.UserService;
-import com.google.gson.Gson;
+import auction_system.server.util.GsonUtil;
 import com.google.gson.JsonElement;
 
 /**
@@ -17,7 +17,6 @@ import com.google.gson.JsonElement;
  */
 public class BidController implements RequestHandler {
 
-    private final Gson gson = new Gson();
     private final BidService bidService = new BidService();
     private final UserService userService = new UserService();
 
@@ -56,7 +55,7 @@ public class BidController implements RequestHandler {
             // Lấy giao dịch mới nhất để trả về (tuỳ chọn)
             var latestBid = bidService.getLatestBid(bidData.getAuctionId());
 
-            // Trả về object trực tiếp, không dùng gson.toJson()
+            // Trả về object trực tiếp, không dùng GsonUtil.toJson()
             return new Response("SUCCESS", "BIDDING", latestBid, "Bid placed successfully");
 
         } catch (Exception e) {
@@ -67,10 +66,10 @@ public class BidController implements RequestHandler {
     // Helper method chuyển Object/JsonElement thành đối tượng T
     private <T> T parseData(Object dataObj, Class<T> clazz) {
         if (dataObj instanceof JsonElement) {
-            return gson.fromJson((JsonElement) dataObj, clazz);
+            return GsonUtil.fromJson((JsonElement) dataObj, clazz);
         } else {
-            String json = gson.toJson(dataObj);
-            return gson.fromJson(json, clazz);
+            String json = GsonUtil.toJson(dataObj);
+            return GsonUtil.fromJson(json, clazz);
         }
     }
 }

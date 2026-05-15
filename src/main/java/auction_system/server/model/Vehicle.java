@@ -1,41 +1,23 @@
 package auction_system.server.model;
 
-import auction_system.server.exception.ItemInformationException;
+import java.time.LocalDateTime;
 
 public class Vehicle extends Item {
 
-    private String brand;
-    private int year;
+    /*
+        CẬP NHẬT: Loại bỏ hoàn toàn brand và year.
+        Chỉ giữ lại constructor để truyền thông tin về lớp cha Item.
+    */
+    public Vehicle(String name, String description, User owner,
+                   LocalDateTime startingTime, LocalDateTime endingTime) {
 
-    public Vehicle(String name, String description, double startingPrice,
-                   User owner, String brand, int year) {
-
-        super(name, description, startingPrice, owner, ItemType.VEHICLE);
-
-        if (brand == null || brand.trim().isEmpty()) {
-            throw new ItemInformationException("Brand cannot be empty");
-        }
-
-        if (year <= 0) {
-            throw new ItemInformationException("Year must be valid");
-        }
-
-        this.brand = brand;
-        this.year = year;
-    }
-
-    public String getBrand() {
-        return brand;
-    }
-
-    public int getYear() {
-        return year;
+        // Truyền ItemType.VEHICLE cùng thời gian đấu giá vào super
+        super(name, description, owner, ItemType.VEHICLE, startingTime, endingTime);
     }
 
     @Override
     public String toString() {
-        return super.toString() +
-                ", brand='" + brand + '\'' +
-                ", year=" + year;
+        // Trả về định dạng chung của Item, bắt đầu bằng tiền tố "Vehicle"
+        return "Vehicle" + super.toString().substring(4);
     }
 }

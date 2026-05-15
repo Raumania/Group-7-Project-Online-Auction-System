@@ -1,13 +1,18 @@
 package auction_system.server.factory;
 
 import auction_system.server.model.*;
+import java.time.LocalDateTime;
 
 public class ItemFactory {
 
+    /*
+        CẬP NHẬT: extraParams bây giờ sẽ chứa:
+        - index 0: LocalDateTime startingTime
+        - index 1: LocalDateTime endingTime
+    */
     public static Item createItem(ItemType type,
                                   String name,
                                   String description,
-                                  double startingPrice,
                                   User owner,
                                   Object... extraParams) {
 
@@ -23,68 +28,30 @@ public class ItemFactory {
             throw new RuntimeException("Item description cannot be null or empty");
         }
 
-        if (startingPrice <= 0) {
-            throw new RuntimeException("Starting price must be greater than 0");
-        }
-
         if (owner == null) {
             throw new RuntimeException("Owner cannot be null");
         }
 
+        // Kiểm tra xem đã truyền đủ 2 mốc thời gian chưa
+        if (extraParams.length < 2 || !(extraParams[0] instanceof LocalDateTime) || !(extraParams[1] instanceof LocalDateTime)) {
+            throw new RuntimeException("Starting time and Ending time (LocalDateTime) are required in extraParams");
+        }
+
+        LocalDateTime start = (LocalDateTime) extraParams[0];
+        LocalDateTime end = (LocalDateTime) extraParams[1];
+
         switch (type) {
             case ELECTRONICS:
-                if (extraParams.length < 2) {
-                    throw new RuntimeException("Electronics needs brand and model");
-                }
-
-                String electronicsBrand = (String) extraParams[0];
-                String electronicsModel = (String) extraParams[1];
-
-                return new Electronics(
-                        name,
-                        description,
-                        startingPrice,
-                        owner,
-                        electronicsBrand,
-                        electronicsModel
-                );
+                return new Electronics(name, description, owner, start, end);
 
             case ART:
-                if (extraParams.length < 2) {
-                    throw new RuntimeException("Art needs artist and year");
-                }
-
-                String artist = (String) extraParams[0];
-                int artYear = (int) extraParams[1];
-
-                return new Art(
-                        name,
-                        description,
-                        startingPrice,
-                        owner,
-                        artist,
-                        artYear
-                );
+                return new Art(name, description, owner, start, end);
 
             case VEHICLE:
-                if (extraParams.length < 2) {
-                    throw new RuntimeException("Vehicle needs brand and year");
-                }
-
-                String vehicleBrand = (String) extraParams[0];
-                int vehicleYear = (int) extraParams[1];
-
-                return new Vehicle(
-                        name,
-                        description,
-                        startingPrice,
-                        owner,
-                        vehicleBrand,
-                        vehicleYear
-                );
+                return new Vehicle(name, description, owner, start, end);
 
             default:
-                throw new RuntimeException("Invalid item type");
+                throw new RuntimeException("Invalid item type: " + type);
         }
     }
 }

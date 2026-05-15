@@ -1,60 +1,46 @@
-        package auction_system.server.common.protocol;
+package auction_system.server.common.protocol;
 
-        public class CreateAuctionRequest {
-            private String sellerId;
-            private String itemType; // "ELECTRONICS", "ART", "VEHICLE"
+import java.time.LocalDateTime;
 
-            // Thông tin chung
-            private String name;
-            private String description;
-            private double startingPrice;
+public class CreateAuctionRequest {
+    private String sellerId;
+    private String itemType; // "ELECTRONICS", "ART", "VEHICLE"
 
-            // Electronics
-            private String brand;
-            private String model;
+    // Thông tin chung của sản phẩm
+    private String name;
+    private String description;
+    private double startingPrice;
 
-            // Art
-            private String artist;
-            private int year;
-            private String material;      // tuỳ chọn
+    // CẬP NHẬT: Thêm thời gian bắt đầu và kết thúc đấu giá
+    private LocalDateTime startingTime;
+    private LocalDateTime endingTime;
 
-            // Vehicle
-            private String licensePlate;  // tuỳ chọn
+    /*
+        LƯU Ý: Các trường brand, model, artist, year, material, licensePlate
+        đã được loại bỏ để khớp với cấu trúc tối giản của hệ thống.
+    */
 
-            // Constructor
-            public CreateAuctionRequest() {}
+    public CreateAuctionRequest() {}
 
-            // Getters & Setters
-            public String getSellerId() { return sellerId; }
-            public void setSellerId(String sellerId) { this.sellerId = sellerId; }
+    // Getters & Setters
+    public String getSellerId() { return sellerId; }
+    public void setSellerId(String sellerId) { this.sellerId = sellerId; }
 
-            public String getItemType() { return itemType; }
-            public void setItemType(String itemType) { this.itemType = itemType; }
+    public String getItemType() { return itemType; }
+    public void setItemType(String itemType) { this.itemType = itemType; }
 
-            public String getName() { return name; }
-            public void setName(String name) { this.name = name; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-            public String getDescription() { return description; }
-            public void setDescription(String description) { this.description = description; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-            public double getStartingPrice() { return startingPrice; }
-            public void setStartingPrice(double startingPrice) { this.startingPrice = startingPrice; }
+    public double getStartingPrice() { return startingPrice; }
+    public void setStartingPrice(double startingPrice) { this.startingPrice = startingPrice; }
 
-            public String getBrand() { return brand; }
-            public void setBrand(String brand) { this.brand = brand; }
+    public LocalDateTime getStartingTime() { return startingTime; }
+    public void setStartingTime(LocalDateTime startingTime) { this.startingTime = startingTime; }
 
-            public String getModel() { return model; }
-            public void setModel(String model) { this.model = model; }
-
-            public String getArtist() { return artist; }
-            public void setArtist(String artist) { this.artist = artist; }
-
-            public int getYear() { return year; }
-            public void setYear(int year) { this.year = year; }
-
-            public String getMaterial() { return material; }
-            public void setMaterial(String material) { this.material = material; }
-
-            public String getLicensePlate() { return licensePlate; }
-            public void setLicensePlate(String licensePlate) { this.licensePlate = licensePlate; }
-        }
+    public LocalDateTime getEndingTime() { return endingTime; }
+    public void setEndingTime(LocalDateTime endingTime) { this.endingTime = endingTime; }
+}

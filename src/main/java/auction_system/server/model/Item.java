@@ -2,48 +2,36 @@ package auction_system.server.model;
 
 import auction_system.server.exception.AuthorizationException;
 import auction_system.server.exception.ItemInformationException;
+import java.time.LocalDateTime; // Import để xử lý thời gian
 
 public abstract class Item extends Entity {
     protected String name;
     protected String description;
-    protected double startingPrice;
-
-    /*
-        Trước đây owner là Seller.
-
-        Bây giờ:
-        - User không còn chia cứng thành Seller/Bidder nữa
-        - Một User có thể có nhiều role
-        - Vì vậy owner là User
-        - Nhưng User này bắt buộc phải có role SELLER
-    */
     protected User owner;
-
     protected ItemType type;
 
-    public Item(String name, String description, double startingPrice, User owner, ItemType type) {
+    // CẬP NHẬT: Thêm hai trường thời gian
+    protected LocalDateTime startingTime;
+    protected LocalDateTime endingTime;
+
+    /*
+        Constructor cập nhật để nhận thêm thời gian bắt đầu và kết thúc
+    */
+    public Item(String name, String description, User owner, ItemType type, LocalDateTime startingTime, LocalDateTime endingTime) {
         super();
 
+        // Kiểm tra dữ liệu cơ bản
         if (name == null || name.trim().isEmpty()) {
             throw new ItemInformationException("Item name cannot be null or empty");
         }
-
         if (description == null || description.trim().isEmpty()) {
             throw new ItemInformationException("Item description cannot be null or empty");
         }
-
-        if (startingPrice <= 0) {
-            throw new ItemInformationException("Starting price must be greater than 0");
-        }
-
         if (owner == null) {
             throw new ItemInformationException("Owner cannot be null");
         }
 
-        /*
-            Owner phải là user có quyền SELLER.
-            Không dùng instanceof Seller nữa.
-        */
+        // Kiểm tra quyền Seller
         if (!owner.hasRole(UserRole.SELLER)) {
             throw new AuthorizationException("Owner must have SELLER role");
         }
@@ -52,42 +40,50 @@ public abstract class Item extends Entity {
             throw new NullPointerException("Item type cannot be null");
         }
 
+        // CẬP NHẬT: Kiểm tra tính hợp lệ của thời gian
+        if (startingTime == null || endingTime == null) {
+            throw new ItemInformationException("Starting and ending time cannot be null");
+        }
+        if (endingTime.isBefore(startingTime)) {
+            throw new ItemInformationException("Ending time must be after starting time");
+        }
+
         this.name = name;
         this.description = description;
-        this.startingPrice = startingPrice;
-
-        /*
-            Item id bây giờ do MySQL AUTO_INCREMENT sinh ra.
-            ItemDAO.save(item) sẽ lấy generated id rồi set lại vào item.
-        */
-        this.id = null;
-
         this.owner = owner;
         this.type = type;
+        this.startingTime = startingTime;
+        this.endingTime = endingTime;
+
+        // Id sẽ được gán sau khi lưu vào DB (AUTO_INCREMENT)
+        this.id = null;
     }
 
-    public String getName() {
-        return name;
+    // --- Getters ---
+    public String getName() { return name; }
+    public String getDescription() { return description; }
+    public User getOwner() { return owner; }
+    public ItemType getType() { return type; }
+    public LocalDateTime getStartingTime() { return startingTime; }
+    public LocalDateTime getEndingTime() { return endingTime; }
+
+    // --- Setters ---
+    // (Cần thiết khi ItemDAO đọc dữ liệu từ DB và gán ngược lại vào Object)
+    public void setStartingTime(LocalDateTime startingTime) {
+        this.startingTime = startingTime;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public User getOwner() {
-        return owner;
-    }
-
-    public double getStartingPrice() {
-        return startingPrice;
-    }
-
-    public ItemType getType() {
-        return type;
+    public void setEndingTime(LocalDateTime endingTime) {
+        this.endingTime = endingTime;
     }
 
     @Override
     public String toString() {
-        return "Item{id='" + id + "', name='" + name + "', startingPrice=" + startingPrice + "}";
+        return "Item{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", startingTime=" + startingTime +
+                ", endingTime=" + endingTime +
+                '}';
     }
 }

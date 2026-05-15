@@ -6,12 +6,11 @@ import auction_system.server.common.protocol.Request;
 import auction_system.server.common.protocol.Response;
 import auction_system.server.model.User;
 import auction_system.server.service.UserService;
-import com.google.gson.Gson;
+import auction_system.server.util.GsonUtil;
 import com.google.gson.JsonElement;
 
 public class LoginController implements RequestHandler {
 
-    private final Gson gson = new Gson();
     private final UserService userService = new UserService();
 
     @Override
@@ -67,14 +66,14 @@ public class LoginController implements RequestHandler {
         }
 
         if (dataObj instanceof JsonElement) {
-            return gson.fromJson((JsonElement) dataObj, clazz);
+            return GsonUtil.fromJson((JsonElement) dataObj, clazz);
         } else if (dataObj instanceof String) {
             // Chuỗi JSON: parse trực tiếp
-            return gson.fromJson((String) dataObj, clazz);
+            return GsonUtil.fromJson((String) dataObj, clazz);
         } else {
             // Có thể là LinkedTreeMap hoặc Map khác
-            String json = gson.toJson(dataObj);
-            return gson.fromJson(json, clazz);
+            String json = GsonUtil.toJson(dataObj);
+            return GsonUtil.fromJson(json, clazz);
         }
     }
 }

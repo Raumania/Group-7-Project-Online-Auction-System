@@ -36,14 +36,10 @@ public class AuctionService {
     /*
         Tạo auction mới.
 
-        Trước đây:
-        - seller là Seller
-
-        Bây giờ:
-        - seller là User
-        - User này phải có role SELLER
+        CẬP NHẬT: Thêm tham số double startingPrice vì giá khởi điểm
+        bây giờ được quản lý ở Auction thay vì Item.
     */
-    public Auction createAuction(Item item, User seller) {
+    public Auction createAuction(Item item, User seller, double startingPrice) {
         if (item == null) {
             throw new RuntimeException("Item cannot be null");
         }
@@ -60,15 +56,18 @@ public class AuctionService {
             throw new RuntimeException("Item must have owner");
         }
 
-        /*
-            Không nên so sánh object bằng equals nếu bạn chưa override equals().
-            So sánh id chắc hơn.
-        */
         if (!item.getOwner().getId().equals(seller.getId())) {
             throw new RuntimeException("Seller does not own this item");
         }
 
-        Auction auction = new Auction(item, seller);
+        if (startingPrice <= 0) {
+            throw new RuntimeException("Starting price must be greater than 0");
+        }
+
+        /*
+            CẬP NHẬT: Dùng constructor 3 tham số để tạo mới Auction
+        */
+        Auction auction = new Auction(item, seller, startingPrice);
 
         auctionDAO.save(auction);
 

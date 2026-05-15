@@ -10,14 +10,13 @@ import auction_system.server.model.User;
 import auction_system.server.service.AuctionService;
 import auction_system.server.service.ItemService;
 import auction_system.server.service.UserService;
-import com.google.gson.Gson;
+import auction_system.server.util.GsonUtil;
 import com.google.gson.JsonElement;
 
 import java.util.List;
 
 public class AuctionController implements RequestHandler {
 
-    private final Gson gson = new Gson();
     private final AuctionService auctionService = AuctionService.getInstance();
     private final UserService userService = new UserService();
     private final ItemService itemService = new ItemService();
@@ -46,7 +45,6 @@ public class AuctionController implements RequestHandler {
 
     private Response getAllAuctions() {
         List<Auction> auctions = auctionService.getAllAuctions();
-        // Trả về trực tiếp list object, Gson sẽ serialize đúng
         return new Response("SUCCESS", "AUCTION", auctions, "List returned");
     }
 
@@ -59,27 +57,13 @@ public class AuctionController implements RequestHandler {
 
     private Response createAuction(Object dataObj) {
         try {
-            // Parse CreateAuctionRequest từ Object/JsonElement
             CreateAuctionRequest req = parseData(dataObj, CreateAuctionRequest.class);
-
-            /*
-                Lấy seller.
-
-                Trước đây:
-                Seller seller = userService.getSellerById(req.getSellerId());
-
-                Bây giờ:
-                User seller = userService.getSellerById(req.getSellerId());
-
-                Hàm getSellerById trong UserService đã kiểm tra user có role SELLER.
-            */
             User seller = userService.getSellerById(req.getSellerId());
 
             if (seller == null) {
                 return new Response("ERROR", "AUCTION", null, "Seller not found");
             }
 
-            // Tạo Item dựa trên itemType
             Item item = null;
             String type = req.getItemType();
 
@@ -87,15 +71,18 @@ public class AuctionController implements RequestHandler {
                 return new Response("ERROR", "AUCTION", null, "Missing item type");
             }
 
+            /*
+                CẬP NHẬT: Tất cả các loại Item giờ chỉ dùng chung bộ tham số:
+                name, description, seller, startingTime, endingTime.
+            */
             switch (type) {
                 case "ELECTRONICS":
                     item = itemService.createElectronics(
                             req.getName(),
                             req.getDescription(),
-                            req.getStartingPrice(),
                             seller,
-                            req.getBrand(),
-                            req.getModel()
+                            req.getStartingTime(), // Thêm từ Request
+                            req.getEndingTime()    // Thêm từ Request
                     );
                     break;
 
@@ -103,10 +90,9 @@ public class AuctionController implements RequestHandler {
                     item = itemService.createArt(
                             req.getName(),
                             req.getDescription(),
-                            req.getStartingPrice(),
                             seller,
-                            req.getArtist(),
-                            req.getYear()
+                            req.getStartingTime(),
+                            req.getEndingTime()
                     );
                     break;
 
@@ -114,10 +100,9 @@ public class AuctionController implements RequestHandler {
                     item = itemService.createVehicle(
                             req.getName(),
                             req.getDescription(),
-                            req.getStartingPrice(),
                             seller,
-                            req.getBrand(),
-                            req.getYear()
+                            req.getStartingTime(),
+                            req.getEndingTime()
                     );
                     break;
 
@@ -125,7 +110,8 @@ public class AuctionController implements RequestHandler {
                     return new Response("ERROR", "AUCTION", null, "Unsupported item type: " + type);
             }
 
-            Auction auction = auctionService.createAuction(item, seller);
+            // Tạo phiên đấu giá với startingPrice
+            Auction auction = auctionService.createAuction(item, seller, req.getStartingPrice());
 
             return new Response("SUCCESS", "AUCTION", auction, "Auction created");
 
@@ -141,26 +127,23 @@ public class AuctionController implements RequestHandler {
         return new Response("SUCCESS", "AUCTION", null, "Auction closed");
     }
 
-    // Helper chuyển đổi Object hoặc JsonElement thành string
     private String parseDataAsString(Object dataObj) {
         if (dataObj instanceof String) {
             return (String) dataObj;
         } else if (dataObj instanceof JsonElement) {
-            return gson.fromJson((JsonElement) dataObj, String.class);
+            return GsonUtil.fromJson((JsonElement) dataObj, String.class);
         } else {
-            // Nếu là LinkedTreeMap hoặc object khác, chuyển thành JSON rồi parse String
-            String json = gson.toJson(dataObj);
-            return gson.fromJson(json, String.class);
+            String json = GsonUtil.toJson(dataObj);
+            return GsonUtil.fromJson(json, String.class);
         }
     }
 
-    // Helper parse object thành class T
     private <T> T parseData(Object dataObj, Class<T> clazz) {
         if (dataObj instanceof JsonElement) {
-            return gson.fromJson((JsonElement) dataObj, clazz);
+            return GsonUtil.fromJson((JsonElement) dataObj, clazz);
         } else {
-            String json = gson.toJson(dataObj);
-            return gson.fromJson(json, clazz);
+            String json = GsonUtil.toJson(dataObj);
+            return GsonUtil.fromJson(json, clazz);
         }
     }
 }

@@ -1,41 +1,23 @@
 package auction_system.server.model;
 
-import auction_system.server.exception.ItemInformationException;
+import java.time.LocalDateTime;
 
 public class Electronics extends Item {
 
-    private String brand;
-    private String model;
+    /*
+        CẬP NHẬT: Loại bỏ brand và model để khớp với DB mới.
+        Constructor bây giờ chỉ nhận các thông tin cơ bản và thời gian.
+    */
+    public Electronics(String name, String description, User owner,
+                       LocalDateTime startingTime, LocalDateTime endingTime) {
 
-    public Electronics(String name, String description, double startingPrice,
-                       User owner, String brand, String model) {
-
-        super(name, description, startingPrice, owner, ItemType.ELECTRONICS);
-
-        if (brand == null || brand.trim().isEmpty()) {
-            throw new ItemInformationException("Brand cannot be empty");
-        }
-
-        if (model == null || model.trim().isEmpty()) {
-            throw new ItemInformationException("Model cannot be empty");
-        }
-
-        this.brand = brand;
-        this.model = model;
-    }
-
-    public String getBrand() {
-        return brand;
-    }
-
-    public String getModel() {
-        return model;
+        // Truyền thẳng type là ELECTRONICS vào lớp cha
+        super(name, description, owner, ItemType.ELECTRONICS, startingTime, endingTime);
     }
 
     @Override
     public String toString() {
-        return super.toString() +
-                ", brand='" + brand + '\'' +
-                ", model='" + model + '\'';
+        // Tận dụng toString của Item để in ra ID, Name và Thời gian
+        return "Electronics" + super.toString().substring(4);
     }
 }
