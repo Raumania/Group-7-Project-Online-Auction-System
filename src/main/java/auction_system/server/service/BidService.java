@@ -2,6 +2,7 @@ package auction_system.server.service;
 
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.BidTransactionDAO;
+import auction_system.server.exception.InvalidBidException;
 import auction_system.server.model.Auction;
 import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;
@@ -37,8 +38,8 @@ public class BidService {
             throw new RuntimeException("Only bidder can place bid");
         }
 
-        if (amount <= 0) {
-            throw new RuntimeException("Bid amount must be greater than 0");
+        if (amount <= 0 && auction.getHighestBidder() != null) {
+            throw new InvalidBidException("Bid amount must be greater than 0");
         }
 
         User realBidder = userService.getUserById(bidder.getId());
