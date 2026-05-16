@@ -18,6 +18,7 @@ public class Auction extends Entity{
     private Integer highestBidderId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private double bidIncrement;
 
     public Auction() {
     }
@@ -31,6 +32,7 @@ public class Auction extends Entity{
         this.startTime = auctionDTO.getStartTime();
         this.endTime = auctionDTO.getEndTime();
         this.status = AuctionStatus.OPEN;
+        this.bidIncrement = auctionDTO.bidIncrement;
     }
 
     public int getId() {

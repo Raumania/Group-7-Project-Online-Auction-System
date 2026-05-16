@@ -7,7 +7,6 @@ import auction_system.server.model.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 public class AuctionService {
     //singleton for service
     private static AuctionService instance;
