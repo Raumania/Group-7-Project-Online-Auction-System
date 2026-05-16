@@ -135,11 +135,13 @@ public class BidService {
     /*
         Lấy lịch sử bid của một auction.
     */
-    public List<BidTransaction> getBidHistory(int auctionId) {
-        findAuctionOrThrow(auctionId);
+    public List<BidTransaction> getHistoryBid(int auctionId) {
+        if (auctionId <= 0) {
+            throw new RuntimeException("Auction id is invalid");
+        }
+
         return bidTransactionDAO.findByAuctionId(auctionId);
     }
-
     /*
         Lấy bid mới nhất của một auction.
     */

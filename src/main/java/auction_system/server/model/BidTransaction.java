@@ -9,11 +9,15 @@ import java.time.LocalDateTime;
 
 public class BidTransaction extends Entity {
 
+    private int id;
     private User bidder;
 
     private double amount;
 
-    private LocalDateTime bidTime;
+    private LocalDateTime biddingtime;
+
+    public BidTransaction() {
+    }
 
     public BidTransaction(User bidder, double amount) {
         super();
@@ -40,7 +44,7 @@ public class BidTransaction extends Entity {
         /*
             Thời điểm đặt bid hiện tại.
         */
-        this.bidTime = LocalDateTime.now();
+        this.biddingtime = LocalDateTime.now();
     }
 
     public User getBidder() {
@@ -52,7 +56,7 @@ public class BidTransaction extends Entity {
     }
 
     public LocalDateTime getBidTime() {
-        return bidTime;
+        return biddingtime;
     }
 
     /*
@@ -62,11 +66,14 @@ public class BidTransaction extends Entity {
         object Java phải giữ lại bidTime cũ trong database.
     */
     public void setBidTime(LocalDateTime bidTime) {
-        this.bidTime = bidTime;
+        this.biddingtime = bidTime;
+    }
+    public void setId(int id){
+        this.id=id;
     }
 
     @Override
     public String toString() {
-        return bidder.getUsername() + " bid " + amount + " at " + bidTime;
+        return bidder.getUsername() + " bid " + amount + " at " + biddingtime;
     }
 }

@@ -35,7 +35,7 @@ public class BidTransactionDAO {
         - bidtime là DATETIME
     */
     public void save(int auctionId, BidTransaction transaction) {
-        String sql = "INSERT INTO bid_transactions(auction_id, bidder_id, amount, bidtime) " +
+        String sql = "INSERT INTO bid_transactions(auction_id, bidder_id, amount, biddingtime) " +
                 "VALUES (?, ?, ?, ?)";
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -161,6 +161,8 @@ public class BidTransactionDAO {
     /*
         Chuyển một dòng trong bảng bid_transactions thành object BidTransaction.
     */
+    
+
     private BidTransaction mapResultSetToBidTransaction(ResultSet resultSet) throws SQLException {
         int id = resultSet.getInt("id");
 
