@@ -42,13 +42,13 @@ public class ItemFactory {
 
         switch (type) {
             case ELECTRONICS:
-                return new Electronics(name, description, owner, start, end);
+                return new Electronics(name, description, start, end);
 
             case ART:
-                return new Art(name, description, owner, start, end);
+                return new Art(name, description, start, end);
 
             case VEHICLE:
-                return new Vehicle(name, description, owner, start, end);
+                return new Vehicle(name, description, start, end);
 
             default:
                 throw new RuntimeException("Invalid item type: " + type);

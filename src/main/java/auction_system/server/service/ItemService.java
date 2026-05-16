@@ -13,11 +13,11 @@ public class ItemService {
 
     public ItemService() {
         this.itemDAO = new ItemDAO();
+        this.aucionService = AuctionService.getInstance();
     }
 
     public Electronics createElectronics(String name,
                                          String description,
-                                         User owner,
                                          LocalDateTime startTime,
                                          LocalDateTime endTime) {
         aucionService.validateItemData(name, description, startTime, endTime);

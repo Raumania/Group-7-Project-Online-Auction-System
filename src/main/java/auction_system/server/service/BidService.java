@@ -29,6 +29,8 @@ public class BidService {
 
         auctionId là int vì auctions.id trong database là INT AUTO_INCREMENT.
         bidder là User, nhưng bắt buộc phải có role BIDDER.
+
+        currentPrice có thể null nếu auction chưa có ai bid.
     */
     public void placeBid(int auctionId, User bidder, double amount) {
         Auction auction = findAuctionOrThrow(auctionId);
@@ -41,11 +43,6 @@ public class BidService {
             throw new RuntimeException("Only bidder can place bid");
         }
 
-        /*
-            Sửa lỗi logic:
-            Dù auction đã có highestBidder hay chưa,
-            amount vẫn luôn phải > 0.
-        */
         if (amount <= 0) {
             throw new InvalidBidException("Bid amount must be greater than 0");
         }
@@ -65,13 +62,23 @@ public class BidService {
         }
 
         /*
-            Auction.placeBid thường đã check:
-            - auction còn OPEN không
-            - amount phải lớn hơn currentPrice không
+            Nếu currentPrice == null nghĩa là chưa có ai bid.
+            Khi đó bid đầu tiên phải lớn hơn startingPrice.
 
-            Nhưng check ở đây trước cho rõ lỗi hơn.
+            Nếu currentPrice != null nghĩa là đã có bid.
+            Khi đó bid mới phải lớn hơn currentPrice.
         */
-        if (amount <= auction.getCurrentPrice()) {
+        Double currentPrice = auction.getCurrentPrice();
+
+        double priceToCompare;
+
+        if (currentPrice == null) {
+            priceToCompare = auction.getStartingPrice();
+        } else {
+            priceToCompare = currentPrice;
+        }
+
+        if (amount <= priceToCompare) {
             throw new InvalidBidException("Bid amount must be greater than current price");
         }
 
@@ -82,10 +89,19 @@ public class BidService {
         /*
             Nếu đã có người đang giữ giá cao nhất,
             trả lại tiền cho người đó.
+
+            Trường hợp có highestBidder mà currentPrice lại null là dữ liệu bị sai logic.
         */
         if (auction.getHighestBidder() != null) {
             User oldHighestBidder = auction.getHighestBidder();
-            userService.deposit(oldHighestBidder.getId(), auction.getCurrentPrice());
+
+            Double oldCurrentPrice = auction.getCurrentPrice();
+
+            if (oldCurrentPrice == null) {
+                throw new RuntimeException("Current price is null while highest bidder exists");
+            }
+
+            userService.deposit(oldHighestBidder.getId(), oldCurrentPrice);
         }
 
         /*
@@ -95,11 +111,9 @@ public class BidService {
 
         /*
             Cập nhật auction trong RAM:
-            - currentPrice
-            - highestBidder
-            - bidHistory
-            - tạo BidTransaction mới
-            - BidTransaction mới có bidTime = LocalDateTime.now()
+            - currentPrice = amount
+            - highestBidder = realBidder
+            - thêm BidTransaction vào bidHistory
         */
         auction.placeBid(realBidder, amount);
 
@@ -108,7 +122,7 @@ public class BidService {
         */
         List<BidTransaction> bidHistory = auction.getBidHistory();
 
-        if (bidHistory.isEmpty()) {
+        if (bidHistory == null || bidHistory.isEmpty()) {
             throw new RuntimeException("Bid history is empty after placing bid");
         }
 
@@ -116,12 +130,6 @@ public class BidService {
 
         /*
             Lưu bid transaction xuống database.
-
-            BidTransactionDAO mới:
-            - không insert id nữa
-            - id trong bid_transactions là INT AUTO_INCREMENT
-            - sau khi insert xong DAO sẽ lấy generated id rồi set lại vào object
-            - bidtime lấy từ latestTransaction.getBidTime()
         */
         bidTransactionDAO.save(auctionId, latestTransaction);
 
@@ -171,10 +179,30 @@ public class BidService {
 
     /*
         Lấy giá hiện tại của auction.
+
+        Vì currentPrice có thể null khi chưa có ai bid,
+        nên kiểu trả về phải là Double, không phải double.
     */
-    public double getCurrentPrice(int auctionId) {
+    public Double getCurrentPrice(int auctionId) {
         Auction auction = findAuctionOrThrow(auctionId);
         return auction.getCurrentPrice();
+    }
+
+    /*
+        Nếu muốn lấy giá dùng để so sánh bid:
+        - chưa ai bid thì trả startingPrice
+        - có bid rồi thì trả currentPrice
+    */
+    public double getPriceToCompare(int auctionId) {
+        Auction auction = findAuctionOrThrow(auctionId);
+
+        Double currentPrice = auction.getCurrentPrice();
+
+        if (currentPrice == null) {
+            return auction.getStartingPrice();
+        }
+
+        return currentPrice;
     }
 
     /*
