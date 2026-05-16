@@ -2,13 +2,14 @@ package auction_system.client.socket;
 
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
-import com.google.gson.Gson;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
-import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
 import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class SocketClient {
     //Singleton for socket client
@@ -25,7 +26,13 @@ public class SocketClient {
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
-    private Gson gson = new Gson();
+    
+    private Gson gson = new GsonBuilder()
+            .registerTypeAdapter(LocalDateTime.class, (JsonSerializer<LocalDateTime>) (src, type, context) -> 
+                    new JsonPrimitive(src.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)))
+            .registerTypeAdapter(LocalDateTime.class, (JsonDeserializer<LocalDateTime>) (json, type, context) -> 
+                    LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+            .create();
 
     public void connect(String URL, int PORT) {
         try {

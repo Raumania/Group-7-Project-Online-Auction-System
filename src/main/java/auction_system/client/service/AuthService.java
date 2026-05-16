@@ -1,11 +1,12 @@
 package auction_system.client.service;
 
-import auction_system.client.model.User;
+import auction_system.client.session.UserSession;
 import auction_system.client.socket.SocketClient;
 import auction_system.common.dto.UserDTO;
 import auction_system.common.protocol.MessageType;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
+import com.google.gson.Gson;
 
 import java.net.Socket;
 
@@ -19,6 +20,7 @@ public class AuthService {
         }
         return instance;
     }
+    Gson gson = new Gson();
     //Main code in below
 
     public boolean checkLogin(UserDTO user) {
@@ -27,6 +29,8 @@ public class AuthService {
         SocketClient.getInstance().send(request);
         Response response = SocketClient.getInstance().receive();
         if(response.getStatus().equals("SUCCESS")) {
+            //fill full data for user session hehe :>
+            UserSession.getInstance().setUser(gson.fromJson(response.getData(),UserDTO.class));
             return true;
         }
         else {

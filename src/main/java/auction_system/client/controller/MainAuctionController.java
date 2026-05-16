@@ -1,6 +1,8 @@
 package auction_system.client.controller;
 
 import auction_system.client.Util.ViewSingleton;
+import auction_system.client.session.UserSession;
+import auction_system.common.dto.UserDTO;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -8,6 +10,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
@@ -17,13 +20,33 @@ import java.util.ResourceBundle;
 
 public class MainAuctionController implements Initializable{
     @FXML
+    private Label balanceCardLabel;
+
+    @FXML
+    private Label fullnameCardLabel;
+
+    @FXML
+    private Label fullnameHeaderLabel;
+
+    @FXML
+    private Label usernameCardLabel;
+
+    @FXML
     private StackPane viewport;
+
     private VBox listViewport;
     private VBox sellerViewport;
     private VBox AIViewport;
 
     public void initialize(URL location, ResourceBundle resources) {
         try {
+            //load user's info
+            UserDTO user = UserSession.getInstance().getUser();
+            fullnameCardLabel.setText(user.getFullname());
+            fullnameHeaderLabel.setText(user.getFullname());
+            usernameCardLabel.setText(user.getUsername());
+            balanceCardLabel.setText(String.valueOf(user.getBalance()));
+            //load stage
             ViewSingleton.getInstance().setViewport(viewport);
             FXMLLoader listLoader = new FXMLLoader();
             FXMLLoader sellerLoader = new FXMLLoader();

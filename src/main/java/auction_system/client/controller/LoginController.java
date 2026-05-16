@@ -1,6 +1,5 @@
 package auction_system.client.controller;
 
-import auction_system.client.model.User;
 import auction_system.client.service.AuthService;
 import auction_system.common.dto.UserDTO;
 import javafx.animation.PauseTransition;
@@ -47,7 +46,6 @@ public class LoginController  {
                 loader.setLocation(getClass().getResource("/fxml/mainAuction.fxml"));
                 Parent root = loader.load();
                 Scene scene = new Scene(root);
-
                 Stage stage = (Stage) side_form.getScene().getWindow();
                 stage.setScene(scene);
             }
