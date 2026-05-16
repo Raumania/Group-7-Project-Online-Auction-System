@@ -8,11 +8,11 @@ public class Vehicle extends Item {
         CẬP NHẬT: Loại bỏ hoàn toàn brand và year.
         Chỉ giữ lại constructor để truyền thông tin về lớp cha Item.
     */
-    public Vehicle(String name, String description, User owner,
+    public Vehicle(String name, String description,
                    LocalDateTime startingTime, LocalDateTime endingTime) {
 
         // Truyền ItemType.VEHICLE cùng thời gian đấu giá vào super
-        super(name, description, owner, ItemType.VEHICLE, startingTime, endingTime);
+        super(name, description, ItemType.VEHICLE, startingTime, endingTime);
     }
 
     @Override

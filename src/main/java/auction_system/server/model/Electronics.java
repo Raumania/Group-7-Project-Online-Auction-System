@@ -8,11 +8,11 @@ public class Electronics extends Item {
         CẬP NHẬT: Loại bỏ brand và model để khớp với DB mới.
         Constructor bây giờ chỉ nhận các thông tin cơ bản và thời gian.
     */
-    public Electronics(String name, String description, User owner,
+    public Electronics(String name, String description,
                        LocalDateTime startingTime, LocalDateTime endingTime) {
 
         // Truyền thẳng type là ELECTRONICS vào lớp cha
-        super(name, description, owner, ItemType.ELECTRONICS, startingTime, endingTime);
+        super(name, description, ItemType.ELECTRONICS, startingTime, endingTime);
     }
 
     @Override
