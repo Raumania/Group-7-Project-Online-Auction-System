@@ -7,8 +7,8 @@ public class ItemFactory {
 
     /*
         CẬP NHẬT: extraParams bây giờ sẽ chứa:
-        - index 0: LocalDateTime startingTime
-        - index 1: LocalDateTime endingTime
+        - index 0: LocalDateTime startTime
+        - index 1: LocalDateTime endTime
     */
     public static Item createItem(ItemType type,
                                   String name,

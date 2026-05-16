@@ -3,6 +3,7 @@ package auction_system.server;
 import auction_system.server.common.protocol.Action;
 import auction_system.server.common.protocol.CreateAuctionRequest;
 import auction_system.server.common.protocol.Request;
+import auction_system.server.model.ItemType;
 import auction_system.server.util.GsonUtil;
 import com.google.gson.JsonElement;
 
@@ -28,14 +29,14 @@ public class TestCreateAuction {
             CreateAuctionRequest payload = new CreateAuctionRequest();
 
             payload.setSellerId("1"); // ID của User có role SELLER
-            payload.setItemType("VEHICLE");
+            payload.setItemType(ItemType.VEHICLE);
             payload.setName("Xe máy SYM Galaxy 50cc");
             payload.setDescription("Xe còn chạy tốt, phù hợp đi phượt nhẹ nhàng quanh Hà Nội.");
             payload.setStartingPrice(8000.0);
 
             // CẬP NHẬT: Thêm thời gian bắt đầu và kết thúc
-            payload.setStartingTime(LocalDateTime.now());
-            payload.setEndingTime(LocalDateTime.now().plusDays(3)); // Đấu giá trong 3 ngày
+            payload.setStartTime(LocalDateTime.now());
+            payload.setEndTime(LocalDateTime.now().plusDays(3)); // Đấu giá trong 3 ngày
 
             /*
                LƯU Ý: Đã loại bỏ setBrand, setYear... vì model và DTO đã tối giản.

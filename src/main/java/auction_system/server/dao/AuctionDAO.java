@@ -23,7 +23,7 @@ public class AuctionDAO {
         Theo DB mới:
             items.id = auctions.id
     */
-    public void save(Auction auction, LocalDateTime startingTime, LocalDateTime endingTime) {
+    public void save(Auction auction, LocalDateTime startTime, LocalDateTime endTime) {
         String sql = """
                 INSERT INTO auctions
                 (seller_id, starting_price, current_price, highest_bidder_id, status, starting_time, ending_time)
@@ -54,8 +54,8 @@ public class AuctionDAO {
                 }
 
                 statement.setString(5, auction.getStatus().name());
-                statement.setTimestamp(6, Timestamp.valueOf(startingTime));
-                statement.setTimestamp(7, Timestamp.valueOf(endingTime));
+                statement.setTimestamp(6, Timestamp.valueOf(startTime));
+                statement.setTimestamp(7, Timestamp.valueOf(endTime));
 
                 statement.executeUpdate();
 

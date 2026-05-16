@@ -2,7 +2,7 @@ package auction_system.server.model;
 
 import auction_system.server.exception.AuthorizationException;
 import auction_system.server.exception.ItemInformationException;
-import java.time.LocalDateTime; // Import để xử lý thời gian
+import java.time.LocalDateTime;
 
 public abstract class Item extends Entity {
     protected String name;
@@ -10,17 +10,12 @@ public abstract class Item extends Entity {
     protected User owner;
     protected ItemType type;
 
-    // CẬP NHẬT: Thêm hai trường thời gian
-    protected LocalDateTime startingTime;
-    protected LocalDateTime endingTime;
+    protected LocalDateTime startTime;
+    protected LocalDateTime endTime;
 
-    /*
-        Constructor cập nhật để nhận thêm thời gian bắt đầu và kết thúc
-    */
-    public Item(String name, String description, User owner, ItemType type, LocalDateTime startingTime, LocalDateTime endingTime) {
+    public Item(String name, String description, User owner, ItemType type, LocalDateTime startTime, LocalDateTime endTime) {
         super();
 
-        // Kiểm tra dữ liệu cơ bản
         if (name == null || name.trim().isEmpty()) {
             throw new ItemInformationException("Item name cannot be null or empty");
         }
@@ -31,7 +26,6 @@ public abstract class Item extends Entity {
             throw new ItemInformationException("Owner cannot be null");
         }
 
-        // Kiểm tra quyền Seller
         if (!owner.hasRole(UserRole.SELLER)) {
             throw new AuthorizationException("Owner must have SELLER role");
         }
@@ -40,11 +34,10 @@ public abstract class Item extends Entity {
             throw new NullPointerException("Item type cannot be null");
         }
 
-        // CẬP NHẬT: Kiểm tra tính hợp lệ của thời gian
-        if (startingTime == null || endingTime == null) {
+        if (startTime == null || endTime == null) {
             throw new ItemInformationException("Starting and ending time cannot be null");
         }
-        if (endingTime.isBefore(startingTime)) {
+        if (endTime.isBefore(startTime)) {
             throw new ItemInformationException("Ending time must be after starting time");
         }
 
@@ -52,29 +45,25 @@ public abstract class Item extends Entity {
         this.description = description;
         this.owner = owner;
         this.type = type;
-        this.startingTime = startingTime;
-        this.endingTime = endingTime;
+        this.startTime = startTime;
+        this.endTime = endTime;
 
-        // Id sẽ được gán sau khi lưu vào DB (AUTO_INCREMENT)
         this.id = null;
     }
 
-    // --- Getters ---
     public String getName() { return name; }
     public String getDescription() { return description; }
     public User getOwner() { return owner; }
     public ItemType getType() { return type; }
-    public LocalDateTime getStartingTime() { return startingTime; }
-    public LocalDateTime getEndingTime() { return endingTime; }
+    public LocalDateTime getStartTime() { return startTime; }
+    public LocalDateTime getEndTime() { return endTime; }
 
-    // --- Setters ---
-    // (Cần thiết khi ItemDAO đọc dữ liệu từ DB và gán ngược lại vào Object)
-    public void setStartingTime(LocalDateTime startingTime) {
-        this.startingTime = startingTime;
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
     }
 
-    public void setEndingTime(LocalDateTime endingTime) {
-        this.endingTime = endingTime;
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
     }
 
     @Override
@@ -82,8 +71,8 @@ public abstract class Item extends Entity {
         return "Item{" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
-                ", startingTime=" + startingTime +
-                ", endingTime=" + endingTime +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
                 '}';
     }
 }
