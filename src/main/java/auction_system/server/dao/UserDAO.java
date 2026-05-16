@@ -1,7 +1,7 @@
 package auction_system.server.dao;
 
+import auction_system.common.enums.UserRole;
 import auction_system.server.model.User;
-import auction_system.server.model.UserRole;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -38,21 +38,6 @@ public class UserDAO {
             statement.setDouble(5, user.getBalance());
 
             statement.executeUpdate();
-
-            /*
-                Lấy id AUTO_INCREMENT do MySQL tự sinh.
-                Vì Entity.id trong Java đang là String,
-                nên convert int -> String.
-            */
-            ResultSet generatedKeys = statement.getGeneratedKeys();
-
-            if (generatedKeys.next()) {
-                int generatedId = generatedKeys.getInt(1);
-                user.setId(String.valueOf(generatedId));
-            } else {
-                throw new RuntimeException("Cannot get generated user id");
-            }
-
         } catch (SQLException e) {
             throw new RuntimeException("Cannot save user", e);
         }
@@ -130,18 +115,14 @@ public class UserDAO {
 
     /*
         Hàm findById dùng để tìm user theo id.
-
-        users.id trong MySQL là INT AUTO_INCREMENT.
-        Entity.id trong Java vẫn là String.
-        Vì vậy khi query phải parse String -> int.
     */
-    public User findById(String id) {
+    public User findById(int id) {
         String sql = "SELECT * FROM users WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setInt(1, Integer.parseInt(id));
+            statement.setInt(1, id);
 
             ResultSet resultSet = statement.executeQuery();
 
@@ -173,7 +154,7 @@ public class UserDAO {
             statement.setString(3, user.getPassword());
             statement.setString(4, rolesToString(user.getRoles()));
             statement.setDouble(5, user.getBalance());
-            statement.setInt(6, Integer.parseInt(user.getId()));
+            statement.setInt(6, user.getId());
 
             statement.executeUpdate();
 
@@ -188,13 +169,13 @@ public class UserDAO {
         Không còn bảng user_roles,
         nên chỉ cần xóa trong bảng users.
     */
-    public boolean deleteById(String id) {
+    public boolean deleteById(int id) {
         String sql = "DELETE FROM users WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setInt(1, Integer.parseInt(id));
+            statement.setInt(1, id);
 
             int affectedRows = statement.executeUpdate();
 
@@ -207,18 +188,15 @@ public class UserDAO {
 
     /*
         Hàm updateBalance dùng để cập nhật số dư của user.
-
-        Vì users.id là INT,
-        nên userId cần parse sang int.
     */
-    public boolean updateBalance(String userId, double newBalance) {
+    public boolean updateBalance(int userId, double newBalance) {
         String sql = "UPDATE users SET balance = ? WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setDouble(1, newBalance);
-            statement.setInt(2, Integer.parseInt(userId));
+            statement.setInt(2, userId);
 
             int affectedRows = statement.executeUpdate();
 
@@ -257,10 +235,7 @@ public class UserDAO {
 
         User user = new User(fullname, username, password, roles);
 
-        /*
-            MySQL id là int, Entity.id là String.
-        */
-        user.setId(String.valueOf(id));
+        user.setId(id);
         user.setBalance(balance);
 
         return user;

@@ -1,5 +1,6 @@
 package auction_system.server.model;
 
+import auction_system.common.enums.UserRole;
 import auction_system.server.exception.UserInformationException;
 
 import java.util.HashSet;
@@ -41,7 +42,7 @@ public class User extends Entity {
             id sẽ do database AUTO_INCREMENT tạo.
             Sau khi save xong, UserDAO sẽ setId lại.
         */
-        this.id = null;
+        this.id = 0;
 
         this.balance = 0;
     }

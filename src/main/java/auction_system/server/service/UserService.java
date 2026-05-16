@@ -1,8 +1,8 @@
 package auction_system.server.service;
 
+import auction_system.common.enums.UserRole;
 import auction_system.server.dao.UserDAO;
 import auction_system.server.model.User;
-import auction_system.server.model.UserRole;
 
 import java.util.List;
 import java.util.Set;
@@ -15,19 +15,6 @@ public class UserService {
         this.userDAO = new UserDAO();
     }
 
-    /*
-        Tạo User mới với role mặc định.
-
-        Bây giờ:
-        - Khi đăng ký tài khoản bình thường
-        - User mặc định có cả 2 role:
-            + BIDDER: được đặt giá
-            + SELLER: được đăng bán item
-
-        Client không cần gửi role nữa.
-        Client cũng không cần gửi email nữa.
-        Thay email bằng fullname.
-    */
     public User registerUser(String fullname, String username, String password) {
         return registerUser(
                 fullname,
@@ -37,26 +24,6 @@ public class UserService {
         );
     }
 
-    /*
-        Tạo User mới với roles tùy chỉnh.
-
-        Trước đây:
-        - createSeller(...) tạo Seller
-        - createBidder(...) tạo Bidder
-        - mỗi tài khoản chỉ có 1 role
-
-        Bây giờ:
-        - tạo User
-        - 1 tài khoản có thể có nhiều role
-        - ví dụ: BIDDER, SELLER
-        - kiểm tra username đã tồn tại chưa
-        - lưu vào database qua UserDAO
-
-        Hàm này vẫn giữ lại để:
-        - tạo ADMIN
-        - tạo user chỉ có 1 role nếu cần
-        - test custom role
-    */
     public User registerUser(String fullname, String username, String password, Set<UserRole> roles) {
         User existingUser = userDAO.findByUsername(username);
 
@@ -156,7 +123,7 @@ public class UserService {
 
         Nếu DAO trả về null nghĩa là database không có user đó.
     */
-    public User getUserById(String id) {
+    public User getUserById(int id) {
         User user = userDAO.findById(id);
 
         if (user == null) {
@@ -189,7 +156,7 @@ public class UserService {
         - không dùng instanceof nữa
         - dùng hasRole(UserRole.SELLER)
     */
-    public User getSellerById(String id) {
+    public User getSellerById(int id) {
         User user = getUserById(id);
 
         if (user.hasRole(UserRole.SELLER)) {
@@ -202,7 +169,7 @@ public class UserService {
     /*
         Lấy user theo id và kiểm tra user đó có role BIDDER hay không.
     */
-    public User getBidderById(String id) {
+    public User getBidderById(int id) {
         User user = getUserById(id);
 
         if (user.hasRole(UserRole.BIDDER)) {
@@ -215,7 +182,7 @@ public class UserService {
     /*
         Lấy user theo id và kiểm tra user đó có role ADMIN hay không.
     */
-    public User getAdminById(String id) {
+    public User getAdminById(int id) {
         User user = getUserById(id);
 
         if (user.hasRole(UserRole.ADMIN)) {
@@ -233,7 +200,7 @@ public class UserService {
         - sau đó muốn user đó đăng bán sản phẩm
         - thì thêm role SELLER
     */
-    public void addRole(String userId, UserRole role) {
+    public void addRole(int userId, UserRole role) {
         User user = getUserById(userId);
 
         user.addRole(role);
@@ -250,7 +217,7 @@ public class UserService {
 
         Trong class User nên chặn trường hợp xóa hết role.
     */
-    public void removeRole(String userId, UserRole role) {
+    public void removeRole(int userId, UserRole role) {
         User user = getUserById(userId);
 
         user.removeRole(role);
@@ -295,7 +262,7 @@ public class UserService {
         Nếu UserDAO của bạn đang là void deleteById(String id),
         mình khuyên sửa thành boolean.
     */
-    public void removeUser(String id) {
+    public void removeUser(int id) {
         boolean removed = userDAO.deleteById(id);
 
         if (!removed) {
@@ -303,7 +270,7 @@ public class UserService {
         }
     }
 
-    public void deposit(String userId, double amount) {
+    public void deposit(int userId, double amount) {
         User user = getUserById(userId);
 
         user.deposit(amount);
@@ -315,7 +282,7 @@ public class UserService {
         }
     }
 
-    public void withdraw(String userId, double amount) {
+    public void withdraw(int userId, double amount) {
         User user = getUserById(userId);
 
         user.withdraw(amount);

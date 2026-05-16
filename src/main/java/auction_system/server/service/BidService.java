@@ -1,12 +1,12 @@
 package auction_system.server.service;
 
+import auction_system.common.enums.UserRole;
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.BidTransactionDAO;
 import auction_system.server.exception.InvalidBidException;
 import auction_system.server.model.Auction;
 import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;
-import auction_system.server.model.UserRole;
 
 import java.util.List;
 
@@ -238,7 +238,7 @@ public class BidService {
             return false;
         }
 
-        return auction.getHighestBidder().getId().equals(bidder.getId());
+        return auction.getHighestBidder().getId() == bidder.getId();
     }
 
     /*
@@ -249,7 +249,7 @@ public class BidService {
             return false;
         }
 
-        return auctionDAO.findById(String.valueOf(auctionId)) != null;
+        return auctionDAO.findById(auctionId) != null;
     }
 
     /*
@@ -260,7 +260,7 @@ public class BidService {
             throw new RuntimeException("Auction id must be greater than 0");
         }
 
-        Auction auction = auctionService.getAuctionById(String.valueOf(auctionId));
+        Auction auction = auctionService.getAuctionById(auctionId);
 
         if (auction == null) {
             throw new RuntimeException("Auction not found");

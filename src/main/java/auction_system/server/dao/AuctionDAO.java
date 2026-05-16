@@ -1,97 +1,68 @@
 package auction_system.server.dao;
 
-import auction_system.server.model.*;
+import auction_system.common.dto.AuctionDTO;
+import auction_system.common.enums.AuctionStatus;
+import auction_system.common.enums.ItemType;
+import auction_system.server.model.Auction;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class AuctionDAO {
 
-    private final ItemDAO itemDAO;
-    private final UserDAO userDAO;
-
-    public AuctionDAO() {
-        this.itemDAO = new ItemDAO();
-        this.userDAO = new UserDAO();
-    }
-
-    /*
-        Lưu auction mới vào bảng auctions trước.
-        Sau đó lấy auctionId vừa sinh ra để lưu item.
-        Theo DB mới:
-            items.id = auctions.id
-    */
-    public void save(Auction auction, LocalDateTime startTime, LocalDateTime endTime) {
+    public int save(Auction auction) {
         String sql = """
                 INSERT INTO auctions
                 (seller_id, starting_price, current_price, highest_bidder_id, status, starting_time, ending_time)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            connection.setAutoCommit(false);
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            try (PreparedStatement statement =
-                         connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            // ĐÃ SỬA LẠI THỨ TỰ CHO KHỚP VỚI CÂU LỆNH SQL
+            statement.setInt(1, auction.getSellerId());
+            statement.setDouble(2, auction.getStartingPrice());
+            statement.setDouble(3, auction.getCurrentPrice());
 
-                validateAuctionBeforeSave(auction);
-
-                statement.setInt(1, Integer.parseInt(auction.getSeller().getId()));
-                statement.setDouble(2, auction.getStartingPrice());
-
-                if (auction.getCurrentPrice() == null) {
-                    statement.setNull(3, Types.DOUBLE);
-                } else {
-                    statement.setDouble(3, auction.getCurrentPrice());
-                }
-
-                if (auction.getHighestBidder() == null) {
-                    statement.setNull(4, Types.INTEGER);
-                } else {
-                    statement.setInt(4, Integer.parseInt(auction.getHighestBidder().getId()));
-                }
-
-                statement.setString(5, auction.getStatus().name());
-                statement.setTimestamp(6, Timestamp.valueOf(startTime));
-                statement.setTimestamp(7, Timestamp.valueOf(endTime));
-
-                statement.executeUpdate();
-
-                ResultSet generatedKeys = statement.getGeneratedKeys();
-
-                if (!generatedKeys.next()) {
-                    throw new RuntimeException("Cannot get generated auction id");
-                }
-
-                String auctionId = String.valueOf(generatedKeys.getInt(1));
-                auction.setId(auctionId);
-
-                /*
-                    Lưu item sau khi đã có auctionId.
-                */
-                itemDAO.saveForAuction(connection, auctionId, auction.getItem());
-
-                connection.commit();
-
-            } catch (Exception e) {
-                connection.rollback();
-                throw e;
+            // Xử lý null cho highest_bidder_id (tránh lỗi nếu chưa có ai bid)
+            if (auction.getHighestBidderId() == null) {
+                statement.setNull(4, Types.INTEGER);
+            } else {
+                statement.setInt(4, auction.getHighestBidderId());
             }
 
-        } catch (Exception e) {
+            statement.setString(5, auction.getStatus().name());
+            statement.setTimestamp(6, Timestamp.valueOf(auction.getStartTime()));
+            statement.setTimestamp(7, Timestamp.valueOf(auction.getEndTime()));
+
+            // Thực thi lệnh INSERT
+            statement.executeUpdate();
+
+            // LẤY ID VỪA ĐƯỢỢC TẠO RA
+            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    int generatedId = generatedKeys.getInt(1);
+                    auction.setId(generatedId); // Set ngược lại vào object nếu cần
+                    return generatedId;         // Trả về ID để dùng tạo Item
+                } else {
+                    throw new SQLException("Creating auction failed, no ID obtained.");
+                }
+            }
+
+        } catch (SQLException e) {
             throw new RuntimeException("Cannot save auction", e);
         }
     }
 
-    public Auction findById(String id) {
+    public Auction findById(int id) {
         String sql = "SELECT * FROM auctions WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setInt(1, Integer.parseInt(id));
+            statement.setInt(1, id);
 
             ResultSet resultSet = statement.executeQuery();
 
@@ -108,7 +79,6 @@ public class AuctionDAO {
 
     public List<Auction> findAll() {
         String sql = "SELECT * FROM auctions";
-
         List<Auction> auctions = new ArrayList<>();
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -117,98 +87,83 @@ public class AuctionDAO {
             ResultSet resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
-                Auction auction = mapResultSetToAuction(resultSet);
-                auctions.add(auction);
+                auctions.add(mapResultSetToAuction(resultSet));
             }
-
-            return auctions;
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot find all auctions", e);
         }
-    }
 
-    public List<Auction> findOpenAuctions() {
-        String sql = "SELECT * FROM auctions WHERE status = ?";
+        return auctions;
+    }
+    public List<Auction> findAllBySellerId(int sellerId) {
+        // SQL JOIN 2 bảng auctions (a) và items (i) dựa trên id trùng nhau
+        String sql = "SELECT a.id, a.seller_id, i.name, i.description, i.type, a.status, " +
+                "a.starting_price, a.current_price, a.highest_bidder_id, a.starting_time, a.ending_time " +
+                "FROM auctions a " +
+                "INNER JOIN items i ON a.id = i.id " +
+                "WHERE a.seller_id = ?";
 
         List<Auction> auctions = new ArrayList<>();
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setString(1, AuctionStatus.RUNNING.name());
-
+            statement.setInt(1, sellerId);
             ResultSet resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
-                Auction auction = mapResultSetToAuction(resultSet);
-                auctions.add(auction);
+                auctions.add(mapResultSetToAuctionWithItem(resultSet));
             }
 
-            return auctions;
-
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find open auctions", e);
+            throw new RuntimeException("Cannot find auctions for seller ID: " + sellerId, e);
         }
-    }
 
-    /*
-        Dùng khi có người bid hoặc khi đổi trạng thái auction.
-        Cập nhật:
-            current_price
-            highest_bidder_id
-            status
-    */
-    public boolean update(Auction auction) {
+        return auctions;
+    }
+    public void update(Auction auction) {
         String sql = """
                 UPDATE auctions
-                SET current_price = ?, highest_bidder_id = ?, status = ?
+                SET seller_id = ?, status = ?,
+                    starting_price = ?, current_price = ?, highest_bidder_id = ?,
+                    starting_time = ?, ending_time = ?
                 WHERE id = ?
                 """;
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            if (auction.getHighestBidder() != null &&
-                    !auction.getHighestBidder().hasRole(UserRole.BIDDER)) {
-                throw new RuntimeException("Highest bidder must have BIDDER role");
-            }
+            statement.setInt(1, auction.getSellerId());
+            statement.setString(2, auction.getStatus().name());
+            statement.setDouble(3, auction.getStartingPrice());
+            statement.setDouble(4, auction.getCurrentPrice());
 
-            if (auction.getCurrentPrice() == null) {
-                statement.setNull(1, Types.DOUBLE);
+            if (auction.getHighestBidderId() == null) {
+                statement.setNull(5, Types.INTEGER);
             } else {
-                statement.setDouble(1, auction.getCurrentPrice());
+                statement.setInt(5, auction.getHighestBidderId());
             }
 
-            if (auction.getHighestBidder() == null) {
-                statement.setNull(2, Types.INTEGER);
-            } else {
-                statement.setInt(2, Integer.parseInt(auction.getHighestBidder().getId()));
-            }
+            statement.setTimestamp(6, Timestamp.valueOf(auction.getStartTime()));
+            statement.setTimestamp(7, Timestamp.valueOf(auction.getEndTime()));
+            statement.setInt(8, auction.getId());
 
-            statement.setString(3, auction.getStatus().name());
-            statement.setInt(4, Integer.parseInt(auction.getId()));
-
-            int affectedRows = statement.executeUpdate();
-
-            return affectedRows > 0;
+            statement.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot update auction", e);
         }
     }
 
-    public boolean deleteById(String id) {
+    public void delete(int id) {
         String sql = "DELETE FROM auctions WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setInt(1, Integer.parseInt(id));
-
-            int affectedRows = statement.executeUpdate();
-
-            return affectedRows > 0;
+            statement.setInt(1, id);
+            statement.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot delete auction", e);
@@ -216,89 +171,65 @@ public class AuctionDAO {
     }
 
     private Auction mapResultSetToAuction(ResultSet resultSet) throws SQLException {
-        String id = String.valueOf(resultSet.getInt("id"));
-        String sellerId = String.valueOf(resultSet.getInt("seller_id"));
+        Auction auction = new Auction();
 
-        /*
-            Vì items.id = auctions.id,
-            nên muốn lấy item thì dùng chính auction id.
-        */
-        Item item = itemDAO.findById(id);
+        auction.setId(resultSet.getInt("id"));
+        auction.setSellerId(resultSet.getInt("seller_id"));
+        auction.setStartingPrice(resultSet.getDouble("starting_price"));
+        auction.setCurrentPrice(resultSet.getDouble("current_price"));
 
-        if (item == null) {
-            throw new RuntimeException("Item not found for auction id = " + id);
+        auction.setHighestBidderId(resultSet.getObject("highest_bidder_id", Integer.class));
+
+        String statusStr = resultSet.getString("status");
+        if (statusStr != null) {
+            auction.setStatus(AuctionStatus.valueOf(statusStr.toUpperCase()));
         }
 
-        User seller = userDAO.findById(sellerId);
-
-        if (seller == null) {
-            throw new RuntimeException("Seller not found for auction id = " + id);
+        java.sql.Timestamp startTimestamp = resultSet.getTimestamp("starting_time");
+        if (startTimestamp != null) {
+            auction.setStartTime(startTimestamp.toLocalDateTime());
         }
 
-        if (!seller.hasRole(UserRole.SELLER)) {
-            throw new RuntimeException("Seller user does not have SELLER role");
-        }
-
-        double startingPrice = resultSet.getDouble("starting_price");
-
-        /*
-            current_price trong DB có thể NULL,
-            nên phải đọc bằng getObject(..., Double.class).
-        */
-        Double currentPrice = resultSet.getObject("current_price", Double.class);
-
-        String highestBidderId = null;
-        int highestBidderInt = resultSet.getInt("highest_bidder_id");
-
-        if (!resultSet.wasNull()) {
-            highestBidderId = String.valueOf(highestBidderInt);
-        }
-
-        String statusText = resultSet.getString("status");
-
-        Auction auction = new Auction(item, seller);
-        auction.setId(id);
-        auction.setStartingPrice(startingPrice);
-        auction.setCurrentPrice(currentPrice);
-        auction.setStatus(AuctionStatus.valueOf(statusText));
-
-        if (highestBidderId != null) {
-            User highestBidder = userDAO.findById(highestBidderId);
-
-            if (highestBidder == null) {
-                throw new RuntimeException("Highest bidder not found for auction id = " + id);
-            }
-
-            if (!highestBidder.hasRole(UserRole.BIDDER)) {
-                throw new RuntimeException("Highest bidder user does not have BIDDER role");
-            }
-
-            auction.setHighestBidder(highestBidder);
+        java.sql.Timestamp endTimestamp = resultSet.getTimestamp("ending_time");
+        if (endTimestamp != null) {
+            auction.setEndTime(endTimestamp.toLocalDateTime());
         }
 
         return auction;
     }
+    
+    private Auction mapResultSetToAuctionWithItem(ResultSet resultSet) throws SQLException {
+        Auction auction = new Auction();
 
-    private void validateAuctionBeforeSave(Auction auction) {
-        if (auction == null) {
-            throw new RuntimeException("Auction cannot be null");
+        auction.setId(resultSet.getInt("id"));
+        auction.setSellerId(resultSet.getInt("seller_id"));
+        auction.setName(resultSet.getString("name"));
+        auction.setDescription(resultSet.getString("description"));
+        auction.setStartingPrice(resultSet.getDouble("starting_price"));
+        auction.setCurrentPrice(resultSet.getDouble("current_price"));
+
+        auction.setHighestBidderId(resultSet.getObject("highest_bidder_id", Integer.class));
+
+        String typeStr = resultSet.getString("type");
+        if (typeStr != null) {
+            auction.setType(ItemType.valueOf(typeStr.toUpperCase()));
         }
 
-        if (auction.getSeller() == null) {
-            throw new RuntimeException("Seller cannot be null");
+        String statusStr = resultSet.getString("status");
+        if (statusStr != null) {
+            auction.setStatus(AuctionStatus.valueOf(statusStr.toUpperCase()));
         }
 
-        if (!auction.getSeller().hasRole(UserRole.SELLER)) {
-            throw new RuntimeException("Seller must have SELLER role");
+        java.sql.Timestamp startTimestamp = resultSet.getTimestamp("starting_time");
+        if (startTimestamp != null) {
+            auction.setStartTime(startTimestamp.toLocalDateTime());
         }
 
-        if (auction.getItem() == null) {
-            throw new RuntimeException("Item cannot be null");
+        java.sql.Timestamp endTimestamp = resultSet.getTimestamp("ending_time");
+        if (endTimestamp != null) {
+            auction.setEndTime(endTimestamp.toLocalDateTime());
         }
 
-        if (auction.getHighestBidder() != null &&
-                !auction.getHighestBidder().hasRole(UserRole.BIDDER)) {
-            throw new RuntimeException("Highest bidder must have BIDDER role");
-        }
+        return auction;
     }
 }
