@@ -1,16 +1,18 @@
 package auction_system.server.observer;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
-
+// Có thể là singleton vì cả hệ thống cần 1 bus
 public class EventBus {
 
     // Queue chứa các event chờ dispatch
-    private final BlockingQueue<BidEvent> queue =
+    private static final BlockingQueue<BidEvent> queue =
             new LinkedBlockingQueue<>();
 
-    private final List<AuctionObserver> observers =
-            new CopyOnWriteArrayList<>();
+    private static final Map<String, Set<String>> auctions =
+            new ConcurrentHashMap<>();  //FAKE DATABASE
 
     // Thread pool riêng cho việc notify — không dùng chung với bid thread
     private final ExecutorService dispatcher =
@@ -26,14 +28,10 @@ public class EventBus {
     }
 
     // Auction gọi cái này — nhanh, không block
-    public void publish(BidEvent event) {
+    public static void publish(BidEvent event) {
         if (!queue.offer(event)) {
             System.err.println("EventBus queue full! Event dropped.");
         }
-    }
-
-    public void subscribe(AuctionObserver observer) {
-        observers.add(observer);
     }
 
     // Chạy trên thread riêng — liên tục đọc queue
@@ -54,10 +52,13 @@ public class EventBus {
     // Mỗi observer chạy trên thread riêng trong pool — không block  , kẾT NỐI DATABASE GỬI RESPONSE NMA CH XONG
 
     private void notifyAll(BidEvent event) {
-        for (AuctionObserver observer : observers) {
+        Set<String> subscribers =
+                new CopyOnWriteArraySet<>(auctions.get(event.auctionId()));
+        for (String subscriber : subscribers) {
             dispatcher.submit(() -> {
                 try {
-                    observer.onBidPlaced(event);
+                    //print để test -thực te la response
+                    System.out.println("Thông báo biến động của phiên: " + event.auctionId());
                 } catch (Exception e) {
                     // Một observer lỗi không làm hỏng observer khác
                     System.err.println("Observer error: " + e.getMessage());

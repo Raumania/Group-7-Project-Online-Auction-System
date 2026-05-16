@@ -34,7 +34,6 @@ public class BidTransaction extends Entity {
             throw new InvalidBidException("Amount must be positive");
         }
 
-        this.id = null;
         this.bidder = bidder;
         this.amount = amount;
 

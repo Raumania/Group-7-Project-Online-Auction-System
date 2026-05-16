@@ -112,7 +112,6 @@ public class UserDAO {
             throw new RuntimeException("Cannot find user by username", e);
         }
     }
-
     /*
         Hàm findById dùng để tìm user theo id.
     */

@@ -11,7 +11,10 @@ import java.util.List;
 public class AuctionService {
     //singleton for service
     private static AuctionService instance;
-    private AuctionService() {}
+
+    private AuctionService() {
+    }
+
     public static AuctionService getInstance() {
         if (instance == null) {
             instance = new AuctionService();
@@ -25,7 +28,7 @@ public class AuctionService {
 
     public void createAuction(Auction auction) {
         int id = auctionDAO.save(auction);
-        itemDAO.save(auction,id);
+        itemDAO.save(auction, id);
     }
 
     public void deleteAuction(int id) {
@@ -45,6 +48,7 @@ public class AuctionService {
     public List<Auction> getAllAuctions() {
         return auctionDAO.findAll();
     }
+
     public List<Auction> getMyAuctions(int seller_id) {
         return auctionDAO.findAllBySellerId(seller_id);
     }
@@ -56,6 +60,7 @@ public class AuctionService {
             auctionDAO.update(auction);
         }
     }
+
     public Electronics createElectronics(String name, String description, LocalDateTime startTime, LocalDateTime endTime) {
         return new Electronics(name, description, startTime, endTime);
     }
@@ -68,12 +73,12 @@ public class AuctionService {
         return new Vehicle(name, description, startTime, endTime);
     }
 
-//    public Item getItemById(int id) {
-//        Item item = itemDAO.findById(id);
-//
-//        if (item == null) {
-//            throw new RuntimeException("Item not found");
-//        }
-//        return item;
-//    }
+    public Item getItemById(int id) {
+        Item item = itemDAO.findById(id);
+
+        if (item == null) {
+            throw new RuntimeException("Item not found");
+        }
+        return item;
+    }
 }

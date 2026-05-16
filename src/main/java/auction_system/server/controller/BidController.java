@@ -1,6 +1,7 @@
 package auction_system.server.controller;
 
 import auction_system.common.dto.BidDTO;
+import auction_system.common.enums.Status;
 import auction_system.common.enums.UserRole;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
@@ -38,7 +39,7 @@ public class BidController implements RequestHandler {
                 Kiểm tra user có role BIDDER không.
             */
             if (!bidder.hasRole(UserRole.BIDDER)) {
-                return new Response(Response.Status.ERROR, "Only bidders can place bids", null);
+                return new Response(Status.ERROR, "Only bidders can place bids", null);
             }
 
             bidService.placeBid(
@@ -51,10 +52,10 @@ public class BidController implements RequestHandler {
             var latestBid = bidService.getLatestBid(bidDTO.getAuctionId());
 
             // Trả về object trực tiếp, không dùng GsonUtil.toJson()
-            return new Response(Response.Status.SUCCESS, "Bid placed successfully", latestBid);
+            return new Response(Status.SUCCESS, "Bid placed successfully", latestBid);
 
         } catch (Exception e) {
-            return new Response(Response.Status.ERROR, "Place bid failed: " + e.getMessage(), null);
+            return new Response(Status.ERROR, "Place bid failed: " + e.getMessage(), null);
         }
     }
 
