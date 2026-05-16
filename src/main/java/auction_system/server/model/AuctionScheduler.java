@@ -37,7 +37,7 @@ public class AuctionScheduler {
             AuctionStatus oldStatus =
                     auction.getStatus();
 
-            auction.updateStatus();
+            bidService.updateStatus(auction.getId());
 
             AuctionStatus newStatus =
                     auction.getStatus();

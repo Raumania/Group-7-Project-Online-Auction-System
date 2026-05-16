@@ -62,6 +62,7 @@ public class BidService {
             reetrantlock.unlock();
         }
     }
+
     public void placeBid(int auctionId, User bidder, double amount) {
         Auction auction = findAuctionOrThrow(auctionId); //ném exc
 

@@ -19,7 +19,6 @@ public class AuctionDTO {
 
     // request for server
     public AuctionDTO() {
-
     }
     
     public AuctionDTO(String name, String description, ItemType type, int sellerId, double startingPrice, LocalDateTime startTime, LocalDateTime endTime ) {
