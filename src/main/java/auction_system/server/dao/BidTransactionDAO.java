@@ -8,6 +8,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+
+import java.time.LocalDateTime;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,20 +23,23 @@ public class BidTransactionDAO {
         this.userDAO = new UserDAO();
     }
 
-    /* Lưu một bid transaction vào database.
+    /*
+        Lưu một bid transaction vào database.
 
-        Lưu ý mới:
-        - bidder không còn là object Bidder nữa
-        - bidder là User có role BIDDER
-        - bidder_id trong database là INT vì users.id là INT AUTO_INCREMENT
-        - auction_id bây giờ là INT
+        Lưu ý:
+        - id của bid_transactions là INT AUTO_INCREMENT
+        - không insert id từ Java nữa
+        - sau khi insert xong, lấy id tự tăng từ database set lại vào object
+        - auction_id là INT
+        - bidder_id là INT
+        - bidtime là DATETIME
     */
     public void save(int auctionId, BidTransaction transaction) {
-        String sql = "INSERT INTO bid_transactions(id, auction_id, bidder_id, amount, timestamp) " +
-                "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO bid_transactions(auction_id, bidder_id, amount, bidtime) " +
+                "VALUES (?, ?, ?, ?)";
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             if (transaction.getBidder() == null) {
                 throw new RuntimeException("Bidder cannot be null");
@@ -42,23 +49,36 @@ public class BidTransactionDAO {
                 throw new RuntimeException("Bidder must have BIDDER role");
             }
 
-            statement.setString(1, transaction.getId());
-
             /*
-                CẬP NHẬT: auction_id là INT trong database
+                auction_id là INT trong database
             */
-            statement.setInt(2, auctionId);
+            statement.setInt(1, auctionId);
 
             /*
                 bidder_id là INT trong database.
                 Entity.id trong Java vẫn là String nên parse sang int.
             */
-            statement.setInt(3, Integer.parseInt(transaction.getBidder().getId()));
+            statement.setInt(2, Integer.parseInt(transaction.getBidder().getId()));
 
-            statement.setDouble(4, transaction.getAmount());
-            statement.setLong(5, transaction.getTimestamp());
+            statement.setDouble(3, transaction.getAmount());
+
+            /*
+                LocalDateTime trong Java -> DATETIME trong MySQL
+            */
+            statement.setObject(4, transaction.getBidTime());
 
             statement.executeUpdate();
+
+            /*
+                Lấy id tự tăng do MySQL sinh ra.
+                Vì Entity.id trong Java là String nên convert int -> String.
+            */
+            ResultSet generatedKeys = statement.getGeneratedKeys();
+
+            if (generatedKeys.next()) {
+                int generatedId = generatedKeys.getInt(1);
+                transaction.setId(String.valueOf(generatedId));
+            }
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot save bid transaction", e);
@@ -69,14 +89,13 @@ public class BidTransactionDAO {
         Lấy lịch sử bid của một auction.
     */
     public List<BidTransaction> findByAuctionId(int auctionId) {
-        String sql = "SELECT * FROM bid_transactions WHERE auction_id = ? ORDER BY timestamp ASC";
+        String sql = "SELECT * FROM bid_transactions WHERE auction_id = ? ORDER BY bidtime ASC";
 
         List<BidTransaction> transactions = new ArrayList<>();
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            // CẬP NHẬT: setInt thay vì setString
             statement.setInt(1, auctionId);
 
             ResultSet resultSet = statement.executeQuery();
@@ -97,12 +116,11 @@ public class BidTransactionDAO {
         Lấy bid mới nhất của auction.
     */
     public BidTransaction findLatestByAuctionId(int auctionId) {
-        String sql = "SELECT * FROM bid_transactions WHERE auction_id = ? ORDER BY timestamp DESC LIMIT 1";
+        String sql = "SELECT * FROM bid_transactions WHERE auction_id = ? ORDER BY bidtime DESC LIMIT 1";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            // CẬP NHẬT: setInt thay vì setString
             statement.setInt(1, auctionId);
 
             ResultSet resultSet = statement.executeQuery();
@@ -127,7 +145,6 @@ public class BidTransactionDAO {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            // CẬP NHẬT: setInt thay vì setString
             statement.setInt(1, auctionId);
 
             ResultSet resultSet = statement.executeQuery();
@@ -147,7 +164,11 @@ public class BidTransactionDAO {
         Chuyển một dòng trong bảng bid_transactions thành object BidTransaction.
     */
     private BidTransaction mapResultSetToBidTransaction(ResultSet resultSet) throws SQLException {
-        String id = resultSet.getString("id");
+        /*
+            id trong database là INT AUTO_INCREMENT.
+            Entity.id trong Java vẫn là String nên convert int -> String.
+        */
+        String id = String.valueOf(resultSet.getInt("id"));
 
         /*
             bidder_id trong database là INT.
@@ -157,19 +178,13 @@ public class BidTransactionDAO {
         String bidderId = String.valueOf(resultSet.getInt("bidder_id"));
 
         double amount = resultSet.getDouble("amount");
-        long timestamp = resultSet.getLong("timestamp");
 
         /*
-            Trước đây:
-            - lấy User
-            - kiểm tra instanceof Bidder
-            - ép kiểu Bidder
-
-            Bây giờ:
-            - lấy User
-            - kiểm tra user có role BIDDER không
-            - không ép kiểu nữa
+            bidtime trong database là DATETIME.
+            Trong Java lấy ra thành LocalDateTime.
         */
+        LocalDateTime bidTime = resultSet.getObject("bidtime", LocalDateTime.class);
+
         User bidder = userDAO.findById(bidderId);
 
         if (bidder == null) {
@@ -183,11 +198,11 @@ public class BidTransactionDAO {
         BidTransaction transaction = new BidTransaction(bidder, amount);
 
         /*
-            Constructor tạo id và timestamp mới,
-            nên khi đọc từ database phải set lại giá trị cũ.
+            Constructor tạo id và bidTime mới.
+            Khi đọc từ database ra phải set lại id và bidTime cũ.
         */
         transaction.setId(id);
-        transaction.setTimestamp(timestamp);
+        transaction.setBidTime(bidTime);
 
         return transaction;
     }
