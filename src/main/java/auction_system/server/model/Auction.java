@@ -17,7 +17,7 @@ public class Auction extends Entity {
 
     // CẬP NHẬT: Thêm startingPrice
     private double startingPrice;
-    private Double currentPrice;
+    private double currentPrice;
     private User highestBidder;
 
     private List<BidTransaction> bidHistory;
@@ -47,7 +47,7 @@ public class Auction extends Entity {
         this.item = item;
         this.seller = seller;
         this.startingPrice = startingPrice;
-        this.currentPrice = null;
+        this.currentPrice = 0.0;
         this.highestBidder = null;
         this.bidHistory = new ArrayList<>();
         this.status = AuctionStatus.RUNNING;
@@ -178,7 +178,7 @@ public class Auction extends Entity {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startTime = item.getStartTime();
         LocalDateTime endTime = item.getEndTime();
-        
+
         if (status == AuctionStatus.OPEN && now.isAfter(startTime)) {
             startAuction();
         } else if (status == AuctionStatus.RUNNING && now.isAfter(endTime)) {
