@@ -1,11 +1,14 @@
 package auction_system.server;
 
-import auction_system.server.common.protocol.*;
+import auction_system.common.enums.Action;
+import auction_system.common.enums.Status;
+import auction_system.common.protocol.Request;
+import auction_system.common.protocol.Response;
 import auction_system.server.controller.RequestHandler;
 import auction_system.server.controller.LoginController;
 import auction_system.server.controller.RegisterController;
 import auction_system.server.controller.AuctionController;
-import auction_system.server.controller.BidController;
+//import auction_system.server.controller.BidController;
 import auction_system.server.util.GsonUtil;
 
 import java.io.*;
@@ -16,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ClientHandler implements Runnable {
 
     private final Socket socket;
-    private final Map<String, RequestHandler> handlers = new ConcurrentHashMap<>();
+    private final Map<Action, RequestHandler> handlers = new ConcurrentHashMap<>();
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -31,7 +34,10 @@ public class ClientHandler implements Runnable {
         handlers.put(Action.GET_AUCTION_DETAIL, auctionController);
         handlers.put(Action.CREATE_AUCTION, auctionController);
         handlers.put(Action.CLOSE_AUCTION, auctionController);
-        handlers.put(Action.PLACE_BID, new BidController());
+        handlers.put(Action.GET_SELLER_ITEMS, auctionController);
+        handlers.put(Action.DELETE_AUCTION, auctionController);
+        handlers.put(Action.EDIT_AUCTION, auctionController);
+//        handlers.put(Action.PLACE_BID, new BidController());
     }
 
     @Override
@@ -58,12 +64,13 @@ public class ClientHandler implements Runnable {
                 Request req = GsonUtil.fromJson(line, Request.class);
 
                 RequestHandler handler = handlers.get(req.getAction());
+
                 Response res;
 
                 if (handler != null) {
                     res = handler.handle(req);
                 } else {
-                    res = new Response("ERROR", "type", null, "Unknown action: " + req.getAction());
+                    res = new Response(Status.ERROR, "Unknown action: " + req.getAction(), null);
                 }
                 String jsonResponse = GsonUtil.toJson(res);
                 System.out.println("Respond: " + jsonResponse);

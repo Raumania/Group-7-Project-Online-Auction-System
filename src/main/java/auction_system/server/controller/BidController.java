@@ -1,11 +1,10 @@
 package auction_system.server.controller;
 
-import auction_system.server.common.protocol.Action;
-import auction_system.server.common.protocol.BidData;
-import auction_system.server.common.protocol.Request;
-import auction_system.server.common.protocol.Response;
+import auction_system.common.dto.BidDTO;
+import auction_system.common.enums.UserRole;
+import auction_system.common.protocol.Request;
+import auction_system.common.protocol.Response;
 import auction_system.server.model.User;
-import auction_system.server.model.UserRole;
 import auction_system.server.service.BidService;
 import auction_system.server.service.UserService;
 import auction_system.server.util.GsonUtil;
@@ -22,16 +21,12 @@ public class BidController implements RequestHandler {
 
     @Override
     public Response handle(Request request) {
-        if (!Action.PLACE_BID.equals(request.getAction())) {
-            return new Response("ERROR", "BIDDING", null, "Invalid action for BidController");
-        }
-
         try {
             // Parse dữ liệu từ request (hỗ trợ cả Object và JsonElement)
-            BidData bidData = parseData(request.getData(), BidData.class);
+            BidDTO bidDTO = parseData(request.getData(), BidDTO.class);
 
             // Lấy User từ bidderId
-            User bidder = userService.getUserById(bidData.getBidderId());
+            User bidder = userService.getUserById(bidDTO.getBidderId());
 
             /*
                 Trước đây:
@@ -43,23 +38,23 @@ public class BidController implements RequestHandler {
                 Kiểm tra user có role BIDDER không.
             */
             if (!bidder.hasRole(UserRole.BIDDER)) {
-                return new Response("ERROR", "BIDDING", null, "Only bidders can place bids");
+                return new Response(Response.Status.ERROR, "Only bidders can place bids", null);
             }
 
             bidService.placeBid(
-                    bidData.getAuctionId(),
+                    bidDTO.getAuctionId(),
                     bidder,
-                    bidData.getAmount()
+                    bidDTO.getAmount()
             );
 
             // Lấy giao dịch mới nhất để trả về (tuỳ chọn)
-            var latestBid = bidService.getLatestBid(bidData.getAuctionId());
+            var latestBid = bidService.getLatestBid(bidDTO.getAuctionId());
 
             // Trả về object trực tiếp, không dùng GsonUtil.toJson()
-            return new Response("SUCCESS", "BIDDING", latestBid, "Bid placed successfully");
+            return new Response(Response.Status.SUCCESS, "Bid placed successfully", latestBid);
 
         } catch (Exception e) {
-            return new Response("ERROR", "BIDDING", null, "Place bid failed: " + e.getMessage());
+            return new Response(Response.Status.ERROR, "Place bid failed: " + e.getMessage(), null);
         }
     }
 

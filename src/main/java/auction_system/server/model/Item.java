@@ -1,66 +1,91 @@
 package auction_system.server.model;
 
-import auction_system.server.exception.AuthorizationException;
-import auction_system.server.exception.ItemInformationException;
+import auction_system.common.dto.AuctionDTO;
+import auction_system.common.enums.ItemType;
+
 import java.time.LocalDateTime;
 
+/**
+ * Lớp trừu tượng đại diện cho một sản phẩm đấu giá chung.
+ * Chỉ chứa dữ liệu, không chứa logic validate (kiểm tra rỗng, kiểm tra thời gian).
+ */
 public abstract class Item extends Entity {
+
     protected String name;
     protected String description;
     protected ItemType type;
+    LocalDateTime startTime;
+    LocalDateTime endTime;
 
-    protected LocalDateTime startTime;
-    protected LocalDateTime endTime;
-
-    public Item(String name, String description, ItemType type, LocalDateTime startTime, LocalDateTime endTime) {
-        super();
-
-        if (name == null || name.trim().isEmpty()) {
-            throw new ItemInformationException("Item name cannot be null or empty");
-        }
-        if (description == null || description.trim().isEmpty()) {
-            throw new ItemInformationException("Item description cannot be null or empty");
-        }
-
-        if (type == null) {
-            throw new NullPointerException("Item type cannot be null");
-        }
-
-        if (startTime == null || endTime == null) {
-            throw new ItemInformationException("Starting and ending time cannot be null");
-        }
-        if (endTime.isBefore(startTime)) {
-            throw new ItemInformationException("Ending time must be after starting time");
-        }
-
+    public Item(int id, String name, String description, ItemType type, LocalDateTime startTime, LocalDateTime endTime) {
+        this.id = id;
         this.name = name;
         this.description = description;
         this.type = type;
         this.startTime = startTime;
         this.endTime = endTime;
-
-        this.id = null;
     }
 
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public ItemType getType() { return type; }
-    public LocalDateTime getStartTime() { return startTime; }
-    public LocalDateTime getEndTime() { return endTime; }
-
-    public void setStartTime(LocalDateTime startTime) {
+    public Item(String name, String description, ItemType type, LocalDateTime startTime, LocalDateTime endTime) {
+        this.name = name;
+        this.description = description;
+        this.type = type;
         this.startTime = startTime;
+        this.endTime = endTime;
     }
 
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
+    public static Item createFromDTO(AuctionDTO dto) {
+        Item item;
+        switch (dto.getType()) {
+            case ART:
+                item = new Art(dto.getName(), dto.getDescription(), dto.getStartTime(), dto.getEndTime());
+                break;
+            case ELECTRONICS:
+                item = new Electronics(dto.getName(), dto.getDescription(), dto.getStartTime(), dto.getEndTime());
+                break;
+            case VEHICLE:
+                item = new Vehicle(dto.getName(), dto.getDescription(), dto.getStartTime(), dto.getEndTime());
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid item type: " + dto.getType());
+        }
+        return item;
+    }
+
+    // =========================================
+    // GETTERS & SETTERS (Đã bổ sung đầy đủ)
+    // =========================================
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public ItemType getType() {
+        return type;
+    }
+
+    public void setType(ItemType type) {
+        this.type = type;
     }
 
     @Override
     public String toString() {
         return "Item{" +
-                "id='" + id + '\'' +
+                "id=" + id +
                 ", name='" + name + '\'' +
+                ", type=" + type +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
                 '}';

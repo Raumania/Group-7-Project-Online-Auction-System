@@ -1,17 +1,17 @@
-package auction_system.server.common.protocol;
+package auction_system.common.dto;
 
-public class BidData {
+public class BidDTO {
     // CẬP NHẬT: Đổi kiểu dữ liệu từ String sang int
     private int auctionId;
     private double amount;
-    private String bidderId;
+    private int bidderId;
 
-    public BidData() {
+    public BidDTO() {
         // Constructor rỗng cần cho Gson
     }
 
     // CẬP NHẬT: Tham số auctionId đổi thành int
-    public BidData(int auctionId, double amount, String bidderId) {
+    public BidDTO(int auctionId, double amount, int bidderId) {
         this.auctionId = auctionId;
         this.amount = amount;
         this.bidderId = bidderId;
@@ -35,11 +35,11 @@ public class BidData {
         this.amount = amount;
     }
 
-    public String getBidderId() {
+    public int getBidderId() {
         return bidderId;
     }
 
-    public void setBidderId(String bidderId) {
+    public void setBidderId(int bidderId) {
         this.bidderId = bidderId;
     }
 }

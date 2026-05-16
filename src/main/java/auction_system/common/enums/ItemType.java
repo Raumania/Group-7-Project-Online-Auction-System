@@ -1,4 +1,4 @@
-package auction_system.server.model;
+package auction_system.common.enums;
 
 public enum ItemType {
     ELECTRONICS,

@@ -1,177 +1,79 @@
 package auction_system.server.service;
 
+import auction_system.server.AuctionServer;
 import auction_system.server.dao.AuctionDAO;
-import auction_system.server.exception.AuthorizationException;
-import auction_system.server.exception.ItemInformationException;
-import auction_system.server.model.Auction;
-import auction_system.server.model.Item;
-import auction_system.server.model.User;
-import auction_system.server.model.UserRole;
+import auction_system.server.dao.ItemDAO;
+import auction_system.server.model.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class AuctionService {
-
+    //singleton for service
     private static AuctionService instance;
-
-    private AuctionDAO auctionDAO;
-
-    private AuctionService() {
-        this.auctionDAO = new AuctionDAO();
-    }
-
+    private AuctionService() {}
     public static AuctionService getInstance() {
         if (instance == null) {
             instance = new AuctionService();
         }
-
         return instance;
     }
+    //core in below
 
-    public Auction createAuction(Item item,
-                                 User seller,
-                                 double startingPrice,
-                                 LocalDateTime startTime,
-                                 LocalDateTime endTime) {
+    private final AuctionDAO auctionDAO = new AuctionDAO();
+    private final ItemDAO itemDAO = new ItemDAO();
 
-        if (item == null) {
-            throw new NullPointerException("Item cannot be null");
-        }
-
-        if (seller == null) {
-            throw new NullPointerException("Seller cannot be null");
-        }
-
-        if (!seller.hasRole(UserRole.SELLER)) {
-            throw new AuthorizationException("Seller must have SELLER role");
-        }
-
-        if (startingPrice <= 0) {
-            throw new RuntimeException("Starting price must be greater than 0");
-        }
-
-        if (startTime == null) {
-            throw new NullPointerException("Starting time cannot be null");
-        }
-
-        if (endTime == null) {
-            throw new NullPointerException("Ending time cannot be null");
-        }
-
-        if (!endTime.isAfter(startTime)) {
-            throw new RuntimeException("Ending time must be after starting time");
-        }
-
-        Auction auction = new Auction(item, seller, startingPrice);
-
-        auctionDAO.save(auction, startTime, endTime);
-
-        return auction;
+    public void createAuction(Auction auction) {
+        int id = auctionDAO.save(auction);
+        itemDAO.save(auction,id);
     }
 
-    public Auction getAuctionById(String id) {
-        if (id == null || id.trim().isEmpty()) {
-            throw new NullPointerException("Auction id cannot be null or empty");
-        }
+    public void deleteAuction(int id) {
+        itemDAO.delete(id);
+        auctionDAO.delete(id);
+    }
 
-        Auction auction = auctionDAO.findById(id);
+    public void editAuction(Auction auction) {
+        auctionDAO.update(auction);
+        itemDAO.update(auction);
+    }
 
-        if (auction == null) {
-            throw new NullPointerException("Auction not found");
-        }
-
-        return auction;
+    public Auction getAuctionById(int id) {
+        return auctionDAO.findById(id);
     }
 
     public List<Auction> getAllAuctions() {
         return auctionDAO.findAll();
     }
-
-    public List<Auction> getOpenAuctions() {
-        return auctionDAO.findOpenAuctions();
+    public List<Auction> getMyAuctions(int seller_id) {
+        return auctionDAO.findAllBySellerId(seller_id);
     }
 
-    public void startAuction(String auctionId) {
+    public void closeAuction(int auctionId) {
         Auction auction = getAuctionById(auctionId);
-
-        auction.startAuction();
-
-        boolean updated = auctionDAO.update(auction);
-
-        if (!updated) {
-            throw new RuntimeException("Cannot update auction");
+        if (auction != null) {
+            // Perform any business logic for closing an auction
+            auctionDAO.update(auction);
         }
     }
-
-    public void closeAuction(String auctionId) {
-        Auction auction = getAuctionById(auctionId);
-
-        auction.closeAuction();
-
-        boolean updated = auctionDAO.update(auction);
-
-        if (!updated) {
-            throw new RuntimeException("Cannot update auction");
-        }
+    public Electronics createElectronics(String name, String description, LocalDateTime startTime, LocalDateTime endTime) {
+        return new Electronics(name, description, startTime, endTime);
     }
 
-    public void cancelAuction(String auctionId) {
-        Auction auction = getAuctionById(auctionId);
-
-        auction.cancelAuction();
-
-        boolean updated = auctionDAO.update(auction);
-
-        if (!updated) {
-            throw new RuntimeException("Cannot update auction");
-        }
+    public Art createArt(String name, String description, LocalDateTime startTime, LocalDateTime endTime) {
+        return new Art(name, description, startTime, endTime);
     }
 
-    public void removeAuction(String id) {
-        if (id == null || id.trim().isEmpty()) {
-            throw new RuntimeException("Auction id cannot be null or empty");
-        }
-
-        boolean removed = auctionDAO.deleteById(id);
-
-        if (!removed) {
-            throw new RuntimeException("Auction not found to remove");
-        }
-    }
-    public void validateItemData(String name,
-                                  String description,
-                                  LocalDateTime startTime,
-                                  LocalDateTime endTime) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new RuntimeException("Item name cannot be null or empty");
-        }
-
-        if (description == null || description.trim().isEmpty()) {
-            throw new RuntimeException("Item description cannot be null or empty");
-        }
-
-
-        if (startTime == null) {
-            throw new RuntimeException("Starting time cannot be null");
-        }
-
-        if (endTime == null) {
-            throw new RuntimeException("Ending time cannot be null");
-        }
-
-        if (!endTime.isAfter(startTime)) {
-            throw new RuntimeException("Ending time must be after starting time");
-        }
+    public Vehicle createVehicle(String name, String description, LocalDateTime startTime, LocalDateTime endTime) {
+        return new Vehicle(name, description, startTime, endTime);
     }
 
-    private void validateSeller(User owner) {
-        if (owner == null) {
-            throw new RuntimeException("Owner cannot be null");
-        }
-
-        if (!owner.hasRole(UserRole.SELLER)) {
-            throw new RuntimeException("Owner must have SELLER role");
-        }
-    }
+//    public Item getItemById(int id) {
+//        Item item = itemDAO.findById(id);
+//
+//        if (item == null) {
+//            throw new RuntimeException("Item not found");
+//        }
+//        return item;
+//    }
 }

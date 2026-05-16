@@ -1,5 +1,6 @@
 package auction_system.server.model;
 
+import auction_system.common.enums.UserRole;
 import auction_system.server.exception.AuthorizationException;
 import auction_system.server.exception.InvalidBidException;
 import auction_system.server.util.IdGenerator;
@@ -8,25 +9,10 @@ import java.time.LocalDateTime;
 
 public class BidTransaction extends Entity {
 
-    /*
-        Trước đây bidder là Bidder.
-
-        Bây giờ:
-        - User không còn chia cứng thành Bidder/Seller nữa
-        - Một User có thể có nhiều role
-        - Vì vậy bidder là User
-        - Nhưng User này bắt buộc phải có role BIDDER
-    */
     private User bidder;
 
     private double amount;
 
-    /*
-        Trước đây dùng long timestamp.
-
-        Bây giờ dùng LocalDateTime cho giống Auction/Item.
-        Trong database sẽ lưu bằng DATETIME.
-    */
     private LocalDateTime bidTime;
 
     public BidTransaction(User bidder, double amount) {

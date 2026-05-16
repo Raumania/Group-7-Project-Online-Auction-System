@@ -1,7 +1,7 @@
 package auction_system.server.controller;
 
-import auction_system.server.common.protocol.Request;
-import auction_system.server.common.protocol.Response;
+import auction_system.common.protocol.Request;
+import auction_system.common.protocol.Response;
 
 /**
  * Interface định nghĩa chuẩn xử lý request cho server.

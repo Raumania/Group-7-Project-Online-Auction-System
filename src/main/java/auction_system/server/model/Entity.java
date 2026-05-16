@@ -3,22 +3,12 @@ package auction_system.server.model;
 import auction_system.server.util.IdGenerator;
 
 public abstract class Entity {
-    protected String id;
-    protected long createdAt;
+    protected int id;
 
-    public Entity() {
-        this.createdAt = System.currentTimeMillis();
-        this.id = IdGenerator.generateEntityId();
-    }
-
-    public String getId() {
+    public int getId() {
         return id;
     }
-    public void setId(String id){
-        this.id=id;
-    }
-
-    public long getCreatedAt() {
-        return createdAt;
+    public void setId(int id) {
+        this.id = id;
     }
 }

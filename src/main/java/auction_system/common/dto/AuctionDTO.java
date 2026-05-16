@@ -1,36 +1,35 @@
-package auction_system.server.model;
+package auction_system.common.dto;
 
-import auction_system.common.dto.AuctionDTO;
-import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.ItemType;
 
 import java.time.LocalDateTime;
 
-public class Auction extends Entity{
-
+public class AuctionDTO {
+    private int id;
     private int sellerId;
     private String name;
     private String description;
     private ItemType type;
-    private AuctionStatus status;
+    private String status;
     private double startingPrice;
     private double currentPrice;
-    private Integer highestBidderId;
+    private int highestBidderId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    public Auction() {
-    }
+    // request for server
+    public AuctionDTO() {
 
-    public Auction(AuctionDTO auctionDTO) {
-        this.name = auctionDTO.getName();
-        this.description = auctionDTO.getDescription();
-        this.type = auctionDTO.getType();
-        this.sellerId = auctionDTO.getSellerId();
-        this.startingPrice = auctionDTO.getStartingPrice();
-        this.startTime = auctionDTO.getStartTime();
-        this.endTime = auctionDTO.getEndTime();
-        this.status = AuctionStatus.OPEN;
+    }
+    
+    public AuctionDTO(String name, String description, ItemType type, int sellerId, double startingPrice, LocalDateTime startTime, LocalDateTime endTime ) {
+        this.name = name;
+        this.description = description;
+        this.type = type;
+        this.sellerId = sellerId;
+        this.startingPrice = startingPrice;
+        this.startTime = startTime;
+        this.endTime = endTime;
     }
 
     public int getId() {
@@ -73,11 +72,11 @@ public class Auction extends Entity{
         this.type = type;
     }
 
-    public AuctionStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(AuctionStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -97,11 +96,11 @@ public class Auction extends Entity{
         this.currentPrice = currentPrice;
     }
 
-    public Integer getHighestBidderId() {
+    public int getHighestBidderId() {
         return highestBidderId;
     }
 
-    public void setHighestBidderId(Integer highestBidderId) {
+    public void setHighestBidderId(int highestBidderId) {
         this.highestBidderId = highestBidderId;
     }
 
@@ -119,22 +118,5 @@ public class Auction extends Entity{
 
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
-    }
-
-    @Override
-    public String toString() {
-        return "Auction{" +
-                "id=" + id +
-                ", sellerId=" + sellerId +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", type=" + type +
-                ", status=" + status +
-                ", startingPrice=" + startingPrice +
-                ", currentPrice=" + currentPrice +
-                ", highestBidderId=" + highestBidderId +
-                ", startTime=" + startTime +
-                ", endTime=" + endTime +
-                '}';
     }
 }
