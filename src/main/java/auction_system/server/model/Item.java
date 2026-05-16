@@ -7,13 +7,12 @@ import java.time.LocalDateTime;
 public abstract class Item extends Entity {
     protected String name;
     protected String description;
-    protected User owner;
     protected ItemType type;
 
     protected LocalDateTime startTime;
     protected LocalDateTime endTime;
 
-    public Item(String name, String description, User owner, ItemType type, LocalDateTime startTime, LocalDateTime endTime) {
+    public Item(String name, String description, ItemType type, LocalDateTime startTime, LocalDateTime endTime) {
         super();
 
         if (name == null || name.trim().isEmpty()) {
@@ -21,13 +20,6 @@ public abstract class Item extends Entity {
         }
         if (description == null || description.trim().isEmpty()) {
             throw new ItemInformationException("Item description cannot be null or empty");
-        }
-        if (owner == null) {
-            throw new ItemInformationException("Owner cannot be null");
-        }
-
-        if (!owner.hasRole(UserRole.SELLER)) {
-            throw new AuthorizationException("Owner must have SELLER role");
         }
 
         if (type == null) {
@@ -43,7 +35,6 @@ public abstract class Item extends Entity {
 
         this.name = name;
         this.description = description;
-        this.owner = owner;
         this.type = type;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -53,7 +44,6 @@ public abstract class Item extends Entity {
 
     public String getName() { return name; }
     public String getDescription() { return description; }
-    public User getOwner() { return owner; }
     public ItemType getType() { return type; }
     public LocalDateTime getStartTime() { return startTime; }
     public LocalDateTime getEndTime() { return endTime; }

@@ -115,11 +115,11 @@ public class ItemDAO {
         Item item;
 
         if (type == ItemType.ELECTRONICS) {
-            item = new Electronics(name, description, owner, startTime, endTime);
+            item = new Electronics(name, description, startTime, endTime);
         } else if (type == ItemType.ART) {
-            item = new Art(name, description, owner, startTime, endTime);
+            item = new Art(name, description, startTime, endTime);
         } else if (type == ItemType.VEHICLE) {
-            item = new Vehicle(name, description, owner, startTime, endTime);
+            item = new Vehicle(name, description,  startTime, endTime);
         } else {
             throw new RuntimeException("Invalid item type: " + typeText);
         }

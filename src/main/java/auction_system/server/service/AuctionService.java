@@ -47,14 +47,6 @@ public class AuctionService {
             throw new AuthorizationException("Seller must have SELLER role");
         }
 
-        if (item.getOwner() == null) {
-            throw new ItemInformationException("Item must have owner");
-        }
-
-        if (!item.getOwner().getId().equals(seller.getId())) {
-            throw new AuthorizationException("Seller does not own this item");
-        }
-
         if (startingPrice <= 0) {
             throw new RuntimeException("Starting price must be greater than 0");
         }
@@ -145,6 +137,41 @@ public class AuctionService {
 
         if (!removed) {
             throw new RuntimeException("Auction not found to remove");
+        }
+    }
+    public void validateItemData(String name,
+                                  String description,
+                                  LocalDateTime startTime,
+                                  LocalDateTime endTime) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new RuntimeException("Item name cannot be null or empty");
+        }
+
+        if (description == null || description.trim().isEmpty()) {
+            throw new RuntimeException("Item description cannot be null or empty");
+        }
+
+
+        if (startTime == null) {
+            throw new RuntimeException("Starting time cannot be null");
+        }
+
+        if (endTime == null) {
+            throw new RuntimeException("Ending time cannot be null");
+        }
+
+        if (!endTime.isAfter(startTime)) {
+            throw new RuntimeException("Ending time must be after starting time");
+        }
+    }
+
+    private void validateSeller(User owner) {
+        if (owner == null) {
+            throw new RuntimeException("Owner cannot be null");
+        }
+
+        if (!owner.hasRole(UserRole.SELLER)) {
+            throw new RuntimeException("Owner must have SELLER role");
         }
     }
 }

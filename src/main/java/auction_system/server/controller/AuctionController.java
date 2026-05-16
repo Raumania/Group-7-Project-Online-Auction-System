@@ -90,7 +90,6 @@ public class AuctionController implements RequestHandler {
                     item = itemService.createArt(
                             req.getName(),
                             req.getDescription(),
-                            seller,
                             req.getStartTime(),
                             req.getEndTime()
                     );
@@ -100,7 +99,6 @@ public class AuctionController implements RequestHandler {
                     item = itemService.createVehicle(
                             req.getName(),
                             req.getDescription(),
-                            seller,
                             req.getStartTime(),
                             req.getEndTime()
                     );
