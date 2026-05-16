@@ -167,19 +167,6 @@ public class UserService {
     }
 
     /*
-        Lấy user theo id và kiểm tra user đó có role BIDDER hay không.
-    */
-    public User getBidderById(int id) {
-        User user = getUserById(id);
-
-        if (user.hasRole(UserRole.BIDDER)) {
-            return user;
-        }
-
-        throw new RuntimeException("User with id " + id + " is not a bidder");
-    }
-
-    /*
         Lấy user theo id và kiểm tra user đó có role ADMIN hay không.
     */
     public User getAdminById(int id) {
