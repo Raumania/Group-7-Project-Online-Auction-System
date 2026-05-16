@@ -4,6 +4,8 @@ import auction_system.server.exception.AuthorizationException;
 import auction_system.server.exception.InvalidBidException;
 import auction_system.server.util.IdGenerator;
 
+import java.time.LocalDateTime;
+
 public class BidTransaction extends Entity {
 
     /*
@@ -18,7 +20,14 @@ public class BidTransaction extends Entity {
     private User bidder;
 
     private double amount;
-    private long timestamp;
+
+    /*
+        Trước đây dùng long timestamp.
+
+        Bây giờ dùng LocalDateTime cho giống Auction/Item.
+        Trong database sẽ lưu bằng DATETIME.
+    */
+    private LocalDateTime bidTime;
 
     public BidTransaction(User bidder, double amount) {
         super();
@@ -39,10 +48,14 @@ public class BidTransaction extends Entity {
             throw new InvalidBidException("Amount must be positive");
         }
 
-        this.id = IdGenerator.generationBidTransactionId();
+        this.id = null;
         this.bidder = bidder;
         this.amount = amount;
-        this.timestamp = System.currentTimeMillis();
+
+        /*
+            Thời điểm đặt bid hiện tại.
+        */
+        this.bidTime = LocalDateTime.now();
     }
 
     public User getBidder() {
@@ -53,22 +66,22 @@ public class BidTransaction extends Entity {
         return amount;
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    public LocalDateTime getBidTime() {
+        return bidTime;
     }
 
     /*
         Setter này cần cho DAO.
 
         Khi lấy bid transaction từ database ra,
-        object Java phải giữ lại timestamp cũ trong database.
+        object Java phải giữ lại bidTime cũ trong database.
     */
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
+    public void setBidTime(LocalDateTime bidTime) {
+        this.bidTime = bidTime;
     }
 
     @Override
     public String toString() {
-        return bidder.getUsername() + " bid " + amount + " at " + timestamp;
+        return bidder.getUsername() + " bid " + amount + " at " + bidTime;
     }
 }
