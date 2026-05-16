@@ -6,6 +6,7 @@ import auction_system.server.common.protocol.Request;
 import auction_system.server.common.protocol.Response;
 import auction_system.server.model.Auction;
 import auction_system.server.model.Item;
+import auction_system.server.model.ItemType;
 import auction_system.server.model.User;
 import auction_system.server.service.AuctionService;
 import auction_system.server.service.ItemService;
@@ -13,6 +14,7 @@ import auction_system.server.service.UserService;
 import auction_system.server.util.GsonUtil;
 import com.google.gson.JsonElement;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class AuctionController implements RequestHandler {
@@ -48,60 +50,59 @@ public class AuctionController implements RequestHandler {
         return new Response("SUCCESS", "AUCTION", auctions, "List returned");
     }
 
-    private Response getAuctionDetail(Object dataObj) {
-        String auctionId = parseDataAsString(dataObj);
+    private Response getAuctionDetail(JsonElement data) {
+        String auctionId = GsonUtil.fromJson(data, String.class);
         Auction auction = auctionService.getAuctionById(auctionId);
         return new Response("SUCCESS", "AUCTION", auction, "Auction detail");
     }
 
-    private Response createAuction(Object dataObj) {
+    private Response createAuction(JsonElement data) {
         try {
-            CreateAuctionRequest req = parseData(dataObj, CreateAuctionRequest.class);
+            CreateAuctionRequest req = GsonUtil.fromJson(data, CreateAuctionRequest.class);
             User seller = userService.getSellerById(req.getSellerId());
 
             if (seller == null) {
                 return new Response("ERROR", "AUCTION", null, "Seller not found");
             }
-
+            System.out.println(req.getItemType());
             Item item = null;
-            String type = req.getItemType();
+            ItemType type = req.getItemType();
+            LocalDateTime startTime = req.getStartTime();
+            LocalDateTime endTime = req.getEndTime();
+            double startingPrice = req.getStartingPrice();
 
             if (type == null) {
                 return new Response("ERROR", "AUCTION", null, "Missing item type");
             }
 
-            /*
-                CẬP NHẬT: Tất cả các loại Item giờ chỉ dùng chung bộ tham số:
-                name, description, seller, startingTime, endingTime.
-            */
             switch (type) {
-                case "ELECTRONICS":
+                case ELECTRONICS:
                     item = itemService.createElectronics(
                             req.getName(),
                             req.getDescription(),
                             seller,
-                            req.getStartingTime(), // Thêm từ Request
-                            req.getEndingTime()    // Thêm từ Request
+                            req.getStartTime(), // Thêm từ Request
+                            req.getEndTime()    // Thêm từ Request
                     );
                     break;
 
-                case "ART":
+                case ART:
                     item = itemService.createArt(
                             req.getName(),
                             req.getDescription(),
                             seller,
-                            req.getStartingTime(),
-                            req.getEndingTime()
+                            req.getStartTime(),
+                            req.getEndTime()
                     );
                     break;
 
-                case "VEHICLE":
+                case VEHICLE:
                     item = itemService.createVehicle(
                             req.getName(),
                             req.getDescription(),
                             seller,
-                            req.getStartingTime(),
-                            req.getEndingTime()
+                            req.getStartTime(),
+                            req.getEndTime()
                     );
                     break;
 
@@ -110,7 +111,7 @@ public class AuctionController implements RequestHandler {
             }
 
             // Tạo phiên đấu giá với startingPrice
-            Auction auction = auctionService.createAuction(item, seller, req.getStartingPrice(),req.getStartingTime(),req.getEndingTime());
+            Auction auction = auctionService.createAuction(item, seller,startingPrice,startTime,endTime);
 
             return new Response("SUCCESS", "AUCTION", auction, "Auction created");
 
@@ -120,29 +121,10 @@ public class AuctionController implements RequestHandler {
         }
     }
 
-    private Response closeAuction(Object dataObj) {
-        String auctionId = parseDataAsString(dataObj);
+    private Response closeAuction(JsonElement data) {
+        String auctionId = GsonUtil.fromJson(data, String.class);
         auctionService.closeAuction(auctionId);
         return new Response("SUCCESS", "AUCTION", null, "Auction closed");
     }
 
-    private String parseDataAsString(Object dataObj) {
-        if (dataObj instanceof String) {
-            return (String) dataObj;
-        } else if (dataObj instanceof JsonElement) {
-            return GsonUtil.fromJson((JsonElement) dataObj, String.class);
-        } else {
-            String json = GsonUtil.toJson(dataObj);
-            return GsonUtil.fromJson(json, String.class);
-        }
-    }
-
-    private <T> T parseData(Object dataObj, Class<T> clazz) {
-        if (dataObj instanceof JsonElement) {
-            return GsonUtil.fromJson((JsonElement) dataObj, clazz);
-        } else {
-            String json = GsonUtil.toJson(dataObj);
-            return GsonUtil.fromJson(json, clazz);
-        }
-    }
 }

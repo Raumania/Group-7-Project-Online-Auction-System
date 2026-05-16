@@ -1,10 +1,11 @@
 package auction_system.server.common.protocol;
 
+import auction_system.server.model.ItemType;
 import java.time.LocalDateTime;
 
 public class CreateAuctionRequest {
     private String sellerId;
-    private String itemType; // "ELECTRONICS", "ART", "VEHICLE"
+    private ItemType type;
 
     // Thông tin chung của sản phẩm
     private String name;
@@ -12,8 +13,8 @@ public class CreateAuctionRequest {
     private double startingPrice;
 
     // CẬP NHẬT: Thêm thời gian bắt đầu và kết thúc đấu giá
-    private LocalDateTime startingTime;
-    private LocalDateTime endingTime;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
 
     /*
         LƯU Ý: Các trường brand, model, artist, year, material, licensePlate
@@ -26,8 +27,8 @@ public class CreateAuctionRequest {
     public String getSellerId() { return sellerId; }
     public void setSellerId(String sellerId) { this.sellerId = sellerId; }
 
-    public String getItemType() { return itemType; }
-    public void setItemType(String itemType) { this.itemType = itemType; }
+    public ItemType getItemType() { return type; }
+    public void setItemType(ItemType type) { this.type = type; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -38,9 +39,9 @@ public class CreateAuctionRequest {
     public double getStartingPrice() { return startingPrice; }
     public void setStartingPrice(double startingPrice) { this.startingPrice = startingPrice; }
 
-    public LocalDateTime getStartingTime() { return startingTime; }
-    public void setStartingTime(LocalDateTime startingTime) { this.startingTime = startingTime; }
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
 
-    public LocalDateTime getEndingTime() { return endingTime; }
-    public void setEndingTime(LocalDateTime endingTime) { this.endingTime = endingTime; }
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
 }

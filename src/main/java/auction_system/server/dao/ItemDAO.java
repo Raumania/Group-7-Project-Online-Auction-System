@@ -92,11 +92,11 @@ public class ItemDAO {
 
         String sellerId = String.valueOf(resultSet.getInt("seller_id"));
 
-        LocalDateTime startingTime = resultSet
+        LocalDateTime startTime = resultSet
                 .getTimestamp("starting_time")
                 .toLocalDateTime();
 
-        LocalDateTime endingTime = resultSet
+        LocalDateTime endTime = resultSet
                 .getTimestamp("ending_time")
                 .toLocalDateTime();
 
@@ -115,11 +115,11 @@ public class ItemDAO {
         Item item;
 
         if (type == ItemType.ELECTRONICS) {
-            item = new Electronics(name, description, owner, startingTime, endingTime);
+            item = new Electronics(name, description, owner, startTime, endTime);
         } else if (type == ItemType.ART) {
-            item = new Art(name, description, owner, startingTime, endingTime);
+            item = new Art(name, description, owner, startTime, endTime);
         } else if (type == ItemType.VEHICLE) {
-            item = new Vehicle(name, description, owner, startingTime, endingTime);
+            item = new Vehicle(name, description, owner, startTime, endTime);
         } else {
             throw new RuntimeException("Invalid item type: " + typeText);
         }

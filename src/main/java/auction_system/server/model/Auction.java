@@ -9,6 +9,7 @@ import auction_system.server.util.IdGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 public class Auction extends Entity {
     private Item item;
@@ -171,6 +172,18 @@ public class Auction extends Entity {
 
         status = AuctionStatus.CANCELLED;
         notifyObservers("Auction cancelled");
+    }
+
+    public void updateStatus() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startTime = item.getStartTime();
+        LocalDateTime endTime = item.getEndTime();
+        
+        if (status == AuctionStatus.OPEN && now.isAfter(startTime)) {
+            startAuction();
+        } else if (status == AuctionStatus.RUNNING && now.isAfter(endTime)) {
+            closeAuction();
+        }
     }
 
     public Item getItem() {
