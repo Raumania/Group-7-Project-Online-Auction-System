@@ -1,27 +1,31 @@
 package auction_system.server.model;
 
 import auction_system.common.enums.AuctionStatus;
+import auction_system.server.dao.AuctionDAO;
 import auction_system.server.service.BidService;
 
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.concurrent.*;
 
 //Tự động update trạng thái tất cả auction (tested)
 public class AuctionScheduler {
     BidService bidService = new BidService();
+    AuctionDAO auctionRepository = new AuctionDAO();
 
-    private CopyOnWriteArrayList<Auction> auctions; //DATABASE OR VUNG NHO TRONG HEAP
+    private final Map<Integer, Auction> auctions = new ConcurrentHashMap<>();
 
     private final ScheduledExecutorService scheduler =
-            Executors.newScheduledThreadPool(1);
+            Executors.newScheduledThreadPool(2);
 
     public AuctionScheduler(CopyOnWriteArrayList<Auction> auctions) {
-        this.auctions = auctions;
     }
 
     public void start() {
+        scheduler.scheduleAtFixedRate(
+                this::syncFromDatabase,
+                0, 30, TimeUnit.SECONDS
+        );
+
         scheduler.scheduleAtFixedRate(
                 this::updateAuctions,
                 0,
@@ -31,30 +35,45 @@ public class AuctionScheduler {
     }
 
     private void updateAuctions() {
-
-        for (Auction auction : auctions) {
-
-            AuctionStatus oldStatus =
-                    auction.getStatus();
-
-            bidService.updateStatus(auction.getId());
-
-            AuctionStatus newStatus =
-                    auction.getStatus();
-
-            if (oldStatus != newStatus) {
-
+        auctions.values().forEach(auction -> {
+            AuctionStatus old = auction.getStatus();
+            bidService.updateStatus(auction);
+            if (old != auction.getStatus()) {
                 System.out.println(
                         "Auction "
                                 + auction.getId()
                                 + " changed from "
-                                + oldStatus
-                                + " to "
-                                + newStatus
-                );
+                                + old
+                ); //in để test
             }
-        }
+        });
     }
+
+    private void syncFromDatabase() {
+        auctionRepository.getallopenAuction()
+                .forEach(a -> auctions.put(a.getId(), a));
+
+        // Xóa phiên đã kết thúc khỏi RAM
+        auctions.values().removeIf(this::canRemove);
+    }
+
+    private boolean canRemove(Auction auction) {
+        return auction.getStatus() != AuctionStatus.OPEN
+                && auction.getStatus() != AuctionStatus.RUNNING;
+    }
+
+    private void syncToDatabase() {
+        auctionRepository.save()
+    }
+
+    // vấn đề: kph nh thead vào 1 hàm mà nh hàm cx update database
+
+
+
+
+
+
+
 
     public void shutdown() {
         scheduler.shutdown();

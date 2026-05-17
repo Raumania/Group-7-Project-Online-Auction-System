@@ -54,10 +54,10 @@ public class BidService {
     }
 
     // Public method có lock (cho Scheduler gọi)
-    public void updateStatus(int auctionId) {
+    public void updateStatus(Auction auction) {
         reetrantlock.lock();
         try {
-            updateStatusInternal(auctionId);
+            updateStatusInternal(auction.getId());
         } finally {
             reetrantlock.unlock();
         }
@@ -101,6 +101,9 @@ public class BidService {
             if (bidder.getBalance() < amount) {
                 throw new RuntimeException("Not enough balance");
             }
+
+            if (amount < getBidIncrement(auction.getCurrentPrice())) {
+                throw new InvalidBidException("Bid amount must not be lower than bid increment");}
 
 
 //        List<BidTransaction> bidHistory = auction.getBidHistory();
@@ -194,5 +197,16 @@ public class BidService {
         }
 
         return auction;
+    }
+
+    private double getBidIncrement(double currentPrice) {
+        if (currentPrice < 1) return 0.05;
+        else if (currentPrice < 5) return 0.25;
+        else if (currentPrice < 25) return 0.5;
+        else if (currentPrice < 100) return 1;
+        else if (currentPrice < 250) return 2.5;
+        else if (currentPrice < 500) return 5;
+        else if (currentPrice < 1000) return 10;
+        else return 25;
     }
 }
