@@ -1,6 +1,5 @@
 package auction_system.server.dao;
 
-import auction_system.common.dto.AuctionDTO;
 import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.ItemType;
 import auction_system.server.model.Auction;
@@ -11,22 +10,35 @@ import java.util.List;
 
 public class AuctionDAO {
 
+    /*
+        Hàm save bình thường.
+        Dùng khi bạn chỉ muốn lưu auction riêng lẻ.
+    */
     public int save(Auction auction) {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            return save(connection, auction);
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot save auction", e);
+        }
+    }
+
+    /*
+        Hàm save dùng chung connection.
+        Dùng trong transaction ở AuctionService.createAuction().
+    */
+    public int save(Connection connection, Auction auction) {
         String sql = """
                 INSERT INTO auctions
                 (seller_id, starting_price, current_price, highest_bidder_id, status, starting_time, ending_time)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            // ĐÃ SỬA LẠI THỨ TỰ CHO KHỚP VỚI CÂU LỆNH SQL
             statement.setInt(1, auction.getSellerId());
             statement.setDouble(2, auction.getStartingPrice());
             statement.setDouble(3, auction.getCurrentPrice());
 
-            // Xử lý null cho highest_bidder_id (tránh lỗi nếu chưa có ai bid)
             if (auction.getHighestBidderId() == null) {
                 statement.setNull(4, Types.INTEGER);
             } else {
@@ -37,18 +49,16 @@ public class AuctionDAO {
             statement.setTimestamp(6, Timestamp.valueOf(auction.getStartTime()));
             statement.setTimestamp(7, Timestamp.valueOf(auction.getEndTime()));
 
-            // Thực thi lệnh INSERT
             statement.executeUpdate();
 
-            // LẤY ID VỪA ĐƯỢỢC TẠO RA
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     int generatedId = generatedKeys.getInt(1);
-                    auction.setId(generatedId); // Set ngược lại vào object nếu cần
-                    return generatedId;         // Trả về ID để dùng tạo Item
-                } else {
-                    throw new SQLException("Creating auction failed, no ID obtained.");
+                    auction.setId(generatedId);
+                    return generatedId;
                 }
+
+                throw new SQLException("Creating auction failed, no ID obtained.");
             }
 
         } catch (SQLException e) {
@@ -56,6 +66,9 @@ public class AuctionDAO {
         }
     }
 
+    /*
+        Tìm auction bình thường.
+    */
     public Auction findById(int id) {
         String sql = "SELECT * FROM auctions WHERE id = ?";
 
@@ -76,27 +89,61 @@ public class AuctionDAO {
             throw new RuntimeException("Cannot find auction by id", e);
         }
     }
-    public List<Auction>getallopenAuction(){
-        String sql="SELECT * FROM auctions where status = ? or where status= ? ";
-        List<Auction> auctions=new ArrayList<>();
-        try(Connection connection=DatabaseConnection.getConnection();
-            PreparedStatement statement=connection.prepareStatement(sql)){
-            statement.setString(1,AuctionStatus.OPEN.name());
-            statement.setString(2,AuctionStatus.RUNNING.name());
-            ResultSet resultSet=statement.executeQuery();
-            while (resultSet.next()){
+    /*
+        Tìm auction và khóa dòng trong database.
+        Chỉ dùng trong transaction:
+        - placeBid()
+        - closeAuction()
+        - editAuction()
+        - deleteAuction()
+       */
+    public Auction findByIdForUpdate(Connection connection, int id) {
+        String sql = "SELECT * FROM auctions WHERE id = ? FOR UPDATE";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setInt(1, id);
+
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return mapResultSetToAuction(resultSet);
+            }
+
+            return null;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot find auction by id for update", e);
+        }
+    }
+
+    public List<Auction> getAllOpenAuctions() {
+        String sql = "SELECT * FROM auctions WHERE status IN (?, ?)";
+
+        List<Auction> auctions = new ArrayList<>();
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, AuctionStatus.OPEN.name());
+            statement.setString(2, AuctionStatus.RUNNING.name());
+
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
                 auctions.add(mapResultSetToAuction(resultSet));
             }
-        }
-        catch (SQLException e){
-            throw new RuntimeException("Cannot find all open auctions",e);
 
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot find all open auctions", e);
         }
+
         return auctions;
     }
 
     public List<Auction> findAll() {
         String sql = "SELECT * FROM auctions";
+
         List<Auction> auctions = new ArrayList<>();
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -111,15 +158,28 @@ public class AuctionDAO {
         } catch (SQLException e) {
             throw new RuntimeException("Cannot find all auctions", e);
         }
+
         return auctions;
     }
+
     public List<Auction> findAllBySellerId(int sellerId) {
-        // SQL JOIN 2 bảng auctions (a) và items (i) dựa trên id trùng nhau
-        String sql = "SELECT a.id, a.seller_id, i.name, i.description, i.type, a.status, " +
-                "a.starting_price, a.current_price, a.highest_bidder_id, a.starting_time, a.ending_time " +
-                "FROM auctions a " +
-                "INNER JOIN items i ON a.id = i.id " +
-                "WHERE a.seller_id = ?";
+        String sql = """
+                SELECT
+                    a.id,
+                    a.seller_id,
+                    i.name,
+                    i.description,
+                    i.type,
+                    a.status,
+                    a.starting_price,
+                    a.current_price,
+                    a.highest_bidder_id,
+                    a.starting_time,
+                    a.ending_time
+                FROM auctions a
+                INNER JOIN items i ON a.id = i.id
+                WHERE a.seller_id = ?
+                """;
 
         List<Auction> auctions = new ArrayList<>();
 
@@ -127,6 +187,7 @@ public class AuctionDAO {
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, sellerId);
+
             ResultSet resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
@@ -139,17 +200,37 @@ public class AuctionDAO {
 
         return auctions;
     }
+
+    /*
+        Update bình thường.
+        Không dùng transaction bên ngoài.
+    */
     public void update(Auction auction) {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            update(connection, auction);
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot update auction", e);
+        }
+    }
+
+    /*
+        Update dùng chung connection.
+        Dùng trong transaction ở Service.
+    */
+    public void update(Connection connection, Auction auction) {
         String sql = """
                 UPDATE auctions
-                SET seller_id = ?, status = ?,
-                    starting_price = ?, current_price = ?, highest_bidder_id = ?,
-                    starting_time = ?, ending_time = ?
+                SET seller_id = ?,
+                    status = ?,
+                    starting_price = ?,
+                    current_price = ?,
+                    highest_bidder_id = ?,
+                    starting_time = ?,
+                    ending_time = ?
                 WHERE id = ?
                 """;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, auction.getSellerId());
             statement.setString(2, auction.getStatus().name());
@@ -173,11 +254,25 @@ public class AuctionDAO {
         }
     }
 
+    /*
+        Delete bình thường.
+    */
     public void delete(int id) {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            delete(connection, id);
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot delete auction", e);
+        }
+    }
+
+    /*
+        Delete dùng chung connection.
+        Dùng trong transaction ở Service.
+    */
+    public void delete(Connection connection, int id) {
         String sql = "DELETE FROM auctions WHERE id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
             statement.executeUpdate();
@@ -202,19 +297,19 @@ public class AuctionDAO {
             auction.setStatus(AuctionStatus.valueOf(statusStr.toUpperCase()));
         }
 
-        java.sql.Timestamp startTimestamp = resultSet.getTimestamp("starting_time");
+        Timestamp startTimestamp = resultSet.getTimestamp("starting_time");
         if (startTimestamp != null) {
             auction.setStartTime(startTimestamp.toLocalDateTime());
         }
 
-        java.sql.Timestamp endTimestamp = resultSet.getTimestamp("ending_time");
+        Timestamp endTimestamp = resultSet.getTimestamp("ending_time");
         if (endTimestamp != null) {
             auction.setEndTime(endTimestamp.toLocalDateTime());
         }
 
         return auction;
     }
-    
+
     private Auction mapResultSetToAuctionWithItem(ResultSet resultSet) throws SQLException {
         Auction auction = new Auction();
 
@@ -237,12 +332,12 @@ public class AuctionDAO {
             auction.setStatus(AuctionStatus.valueOf(statusStr.toUpperCase()));
         }
 
-        java.sql.Timestamp startTimestamp = resultSet.getTimestamp("starting_time");
+        Timestamp startTimestamp = resultSet.getTimestamp("starting_time");
         if (startTimestamp != null) {
             auction.setStartTime(startTimestamp.toLocalDateTime());
         }
 
-        java.sql.Timestamp endTimestamp = resultSet.getTimestamp("ending_time");
+        Timestamp endTimestamp = resultSet.getTimestamp("ending_time");
         if (endTimestamp != null) {
             auction.setEndTime(endTimestamp.toLocalDateTime());
         }
