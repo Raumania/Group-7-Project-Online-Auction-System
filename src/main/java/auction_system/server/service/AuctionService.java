@@ -1,11 +1,13 @@
 package auction_system.server.service;
 
+import auction_system.common.enums.ItemType;
 import auction_system.server.AuctionServer;
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.ItemDAO;
 import auction_system.server.model.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 public class AuctionService {
     //singleton for service
@@ -38,6 +40,30 @@ public class AuctionService {
     public void editAuction(Auction auction) {
         auctionDAO.update(auction);
         itemDAO.update(auction);
+    }
+    //tim tra ve danh sach auction theo kieu loai item( tinh nang dang phat trien)
+    public List<Auction> findbyItemType(ItemType type){
+        List<Auction> auctions=new ArrayList<>();
+       List<Item> items=itemDAO.findByType(type);
+       for(Item item:items){
+           Auction auction=auctionDAO.findById(item.getId());
+           if(auction!=null){
+               auctions.add(auction);
+           }
+       }
+       return  auctions;
+    }
+    //tim tra ve danh sach auction theo ten cua san pham(tinh nang dang phat trien)
+    public List<Auction> findbyItemName(String name){
+        List<Auction> auctions=new ArrayList<>();
+        List<Item> items=itemDAO.findByItemName(name);
+        for(Item item:items) {
+            Auction auction = auctionDAO.findById(item.getId());
+            if (auction != null) {
+                auctions.add(auction);
+            }
+        }
+        return auctions;
     }
 
     public Auction getAuctionById(int id) {
