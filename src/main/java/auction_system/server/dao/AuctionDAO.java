@@ -76,6 +76,24 @@ public class AuctionDAO {
             throw new RuntimeException("Cannot find auction by id", e);
         }
     }
+    public List<Auction>getallopenAuction(){
+        String sql="SELECT * FROM auctions where status = ? or where status= ? ";
+        List<Auction> auctions=new ArrayList<>();
+        try(Connection connection=DatabaseConnection.getConnection();
+            PreparedStatement statement=connection.prepareStatement(sql)){
+            statement.setString(1,AuctionStatus.OPEN.name());
+            statement.setString(2,AuctionStatus.RUNNING.name());
+            ResultSet resultSet=statement.executeQuery();
+            while (resultSet.next()){
+                auctions.add(mapResultSetToAuction(resultSet));
+            }
+        }
+        catch (SQLException e){
+            throw new RuntimeException("Cannot find all open auctions",e);
+
+        }
+        return auctions;
+    }
 
     public List<Auction> findAll() {
         String sql = "SELECT * FROM auctions";
@@ -93,7 +111,6 @@ public class AuctionDAO {
         } catch (SQLException e) {
             throw new RuntimeException("Cannot find all auctions", e);
         }
-
         return auctions;
     }
     public List<Auction> findAllBySellerId(int sellerId) {

@@ -6,6 +6,8 @@ import auction_system.server.model.*;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ItemDAO {
 
@@ -15,11 +17,11 @@ public class ItemDAO {
         this.userDAO = new UserDAO();
     }
 
-    public void save(Auction auction,int id) {
+    public void save(Auction auction, int id) {
         String sql = "INSERT INTO items(id, name, description, type) VALUES (?, ?, ?, ?)";
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
             statement.setString(2, auction.getName());
@@ -58,6 +60,7 @@ public class ItemDAO {
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
+
             statement.executeUpdate();
 
         } catch (SQLException e) {
@@ -98,6 +101,73 @@ public class ItemDAO {
         }
     }
 
+    public List<Item> findByType(ItemType type) {
+        List<Item> items = new ArrayList<>();
+
+        String sql = """
+                SELECT
+                    i.id,
+                    i.name,
+                    i.description,
+                    i.type,
+                    a.seller_id,
+                    a.starting_time,
+                    a.ending_time
+                FROM items i
+                JOIN auctions a ON i.id = a.id
+                WHERE i.type = ?
+                """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, type.name());
+
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                Item item = mapResultSetToItem(resultSet);
+                items.add(item);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot find items by type", e);
+        }
+
+        return items;
+    }
+    public List<Item> findByItemName(String name) {
+        List<Item> items = new ArrayList<>();
+
+        String sql = """
+                SELECT
+                    i.id,
+                    i.name,
+                    i.description,
+                    i.type,
+                    a.seller_id,
+                    a.starting_time,
+                    a.ending_time
+                FROM items i
+                JOIN auctions a ON i.id = a.id
+                WHERE i.name = ?
+                """;
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, name);
+            ResultSet resultSet= statement.executeQuery();
+            while (resultSet.next()) {
+                Item item = mapResultSetToItem(resultSet);
+                items.add(item);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot find items by name", e);
+        }
+        return items;
+    }
+
     private Item mapResultSetToItem(ResultSet resultSet) throws SQLException {
         int id = resultSet.getInt("id");
         String name = resultSet.getString("name");
@@ -106,13 +176,19 @@ public class ItemDAO {
 
         int sellerId = resultSet.getInt("seller_id");
 
-        LocalDateTime startTime = resultSet
-                .getTimestamp("starting_time")
-                .toLocalDateTime();
+        Timestamp startTimestamp = resultSet.getTimestamp("starting_time");
+        Timestamp endTimestamp = resultSet.getTimestamp("ending_time");
 
-        LocalDateTime endTime = resultSet
-                .getTimestamp("ending_time")
-                .toLocalDateTime();
+        LocalDateTime startTime = null;
+        LocalDateTime endTime = null;
+
+        if (startTimestamp != null) {
+            startTime = startTimestamp.toLocalDateTime();
+        }
+
+        if (endTimestamp != null) {
+            endTime = endTimestamp.toLocalDateTime();
+        }
 
         User owner = userDAO.findById(sellerId);
 
@@ -133,7 +209,7 @@ public class ItemDAO {
         } else if (type == ItemType.ART) {
             item = new Art(name, description, startTime, endTime);
         } else if (type == ItemType.VEHICLE) {
-            item = new Vehicle(name, description,  startTime, endTime);
+            item = new Vehicle(name, description, startTime, endTime);
         } else {
             throw new RuntimeException("Invalid item type: " + typeText);
         }

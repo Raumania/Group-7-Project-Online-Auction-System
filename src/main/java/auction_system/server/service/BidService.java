@@ -136,6 +136,7 @@ public class BidService {
         Lấy lịch sử bid của một auction.
     */
     public List<BidTransaction> getHistoryBid(int auctionId) {
+        findAuctionOrThrow(auctionId);
         if (auctionId <= 0) {
             throw new RuntimeException("Auction id is invalid");
         }
