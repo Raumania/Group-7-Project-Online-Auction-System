@@ -64,8 +64,8 @@ public class AuctionController implements RequestHandler {
     private Response createAuction(JsonElement data) {
         try {
             AuctionDTO auctionDTO = GsonUtil.fromJson(data, AuctionDTO.class);
+
             Auction auction = new Auction(auctionDTO);
-            //Auction auction = new Auction(auctionDTO, double bidIncrement);
             auctionService.createAuction(auction);
             return new Response(Status.SUCCESS, "Auction created", auction);
         } catch (Exception e) {

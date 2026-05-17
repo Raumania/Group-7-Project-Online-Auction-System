@@ -4,6 +4,7 @@ import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.UserRole;
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.BidTransactionDAO;
+import auction_system.server.dao.DatabaseConnection;
 import auction_system.server.exception.InvalidBidException;
 import auction_system.server.model.Auction;
 import auction_system.server.model.BidTransaction;
@@ -11,9 +12,9 @@ import auction_system.server.model.User;
 import auction_system.server.observer.BidEvent;
 import auction_system.server.observer.EventBus;
 
+import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class BidService {
 
@@ -21,7 +22,6 @@ public class BidService {
     private final UserService userService;
     private final AuctionDAO auctionDAO;
     private final BidTransactionDAO bidTransactionDAO;
-    private ReentrantLock reetrantlock = new ReentrantLock();
 
     public BidService() {
         this.auctionService = AuctionService.getInstance();
@@ -31,18 +31,16 @@ public class BidService {
     }
 
     /*
-        Đặt bid cho một auction.
-
-        auctionId là int vì auctions.id trong database là INT AUTO_INCREMENT.
-        bidder là User, nhưng bắt buộc phải có role BIDDER.
-
-        currentPrice có thể null nếu auction chưa có ai bid.
+        Cập nhật status dựa theo thời gian.
+        Hàm này chỉ sửa object auction trong RAM.
+        Sau đó hàm gọi bên ngoài phải auctionDAO.update(...) để lưu xuống DB.
     */
+    private void updateStatusInternal(Auction auction) {
+        if (auction.getStatus() == AuctionStatus.OPEN ||
+                auction.getStatus() == AuctionStatus.RUNNING) {
 
-    private void updateStatusInternal(int auctionId) {
-        Auction auction = findAuctionOrThrow(auctionId);
-        if (auction.getStatus() == AuctionStatus.OPEN || auction.getStatus() == AuctionStatus.RUNNING) {
             LocalDateTime now = LocalDateTime.now();
+
             if (now.isBefore(auction.getStartTime())) {
                 auction.setStatus(AuctionStatus.OPEN);
             } else if (now.isBefore(auction.getEndTime())) {
@@ -53,24 +51,66 @@ public class BidService {
         }
     }
 
-    // Public method có lock (cho Scheduler gọi)
-    public void updateStatus(Auction auction) {
-        reetrantlock.lock();
+    /*
+        Cho Scheduler gọi để cập nhật trạng thái auction.
+        Hàm này nên dùng transaction + SELECT FOR UPDATE
+        vì nó có đọc auction rồi update status.
+    */
+    public void updateStatus(int auctionId) {
+        Connection connection = null;
+
         try {
-            updateStatusInternal(auction.getId());
+            connection = DatabaseConnection.getConnection();
+            connection.setAutoCommit(false);
+
+            Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
+
+            if (auction == null) {
+                throw new RuntimeException("Auction not found");
+            }
+
+            updateStatusInternal(auction);
+
+            auctionDAO.update(connection, auction);
+
+            connection.commit();
+
+        } catch (Exception e) {
+            rollback(connection);
+            throw new RuntimeException("Cannot update auction status", e);
+
         } finally {
-            reetrantlock.unlock();
+            closeConnection(connection);
         }
     }
 
-    public void placeBid(int auctionId, User bidder, double amount) {
-        Auction auction = findAuctionOrThrow(auctionId); //ném exc
+    /*
+        Đặt bid cho một auction.
 
+        Cần transaction vì:
+        - insert bid transaction
+        - update current_price
+        - update highest_bidder_id
+
+        Cần SELECT FOR UPDATE vì:
+        - nhiều bidder có thể đặt giá cùng lúc
+        - phải khóa dòng auction trước khi kiểm tra giá
+    */
+    public void placeBid(int auctionId, User bidder, double amount) {
+        Connection connection = null;
         BidEvent eventToPublish = null;
-        reetrantlock.lock();
 
         try {
-            updateStatusInternal(auctionId);
+            connection = DatabaseConnection.getConnection();
+            connection.setAutoCommit(false);
+
+            Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
+
+            if (auction == null) {
+                throw new RuntimeException("Auction not found");
+            }
+
+            updateStatusInternal(auction);
 
             if (bidder == null) {
                 throw new NullPointerException("Bidder cannot be null");
@@ -84,51 +124,56 @@ public class BidService {
                 throw new InvalidBidException("Bid amount must be greater than 0");
             }
 
-             auction.setCurrentPrice(auction.getStartingPrice());
+            if (auction.getStatus() != AuctionStatus.RUNNING) {
+                throw new RuntimeException("Auction is not running");
+            }
 
-        /*
-            Nếu currentPrice == null nghĩa là chưa có ai bid.
-            Khi đó bid đầu tiên phải lớn hơn startingPrice.
+            /*
+                Vì bạn nói currentPrice ban đầu = 0,
+                nên:
+                - nếu currentPrice == 0: bid đầu tiên phải > startingPrice
+                - nếu currentPrice > 0: bid sau phải > currentPrice
+            */
+            if (auction.getCurrentPrice() == 0) {
+                if (amount < auction.getStartingPrice()) {
+                    throw new InvalidBidException("Bid amount must not be lower than minBid");
+                }
+                auction.setCurrentPrice(amount);
 
-            Nếu currentPrice != null nghĩa là đã có bid.
-            Khi đó bid mới phải lớn hơn currentPrice.
-        */
-
-            if (amount <= auction.getCurrentPrice() && auction.getCurrentPrice() != 0) {
-                throw new InvalidBidException("Bid amount must be greater than current price");
+            } else {
+                double bidIncrement = getBidIncrement(auction.getCurrentPrice());
+                if (amount < auction.getCurrentPrice() + bidIncrement) {
+                    throw new InvalidBidException("Bid amount must not be lower than minBid");
+                }
+                auction.setCurrentPrice(amount);
             }
 
             if (bidder.getBalance() < amount) {
                 throw new RuntimeException("Not enough balance");
             }
 
-            if (amount < getBidIncrement(auction.getCurrentPrice())) {
-                throw new InvalidBidException("Bid amount must not be lower than bid increment");}
-
-
-//        List<BidTransaction> bidHistory = auction.getBidHistory();
-//
-//        if (bidHistory == null || bidHistory.isEmpty()) {
-//            throw new RuntimeException("Bid history is empty after placing bid");
-//        }
-//
-//        BidTransaction latestTransaction = bidHistory.get(bidHistory.size() - 1);
-
-        /*
-            Lưu bid transaction xuống database.
-        */
+            /*
+                Lưu bid transaction xuống database.
+                Nên dùng cùng connection để nằm trong cùng transaction.
+            */
             BidTransaction latestTransaction = new BidTransaction(bidder, amount);
             bidTransactionDAO.save(auctionId, latestTransaction);
 
-        /*
-            Cập nhật auction xuống database:
-            - current_price
-            - highest_bidder_id
-            - status nếu có
-        */
-            auctionDAO.update(auction);
+            /*
+                Cập nhật auction sau khi bid thành công.
+                Đây là phần code cũ của bạn đang thiếu.
+            */
+            auction.setCurrentPrice(amount);
+            auction.setHighestBidderId(bidder.getId());
+            auctionDAO.update(connection, auction);
+            connection.commit();
+        } catch (Exception e) {
+            rollback(connection);
+            throw new RuntimeException("Cannot place bid", e);
+
         } finally {
-            reetrantlock.unlock();
+            closeConnection(connection);
+
             if (eventToPublish != null) {
                 EventBus.publish(eventToPublish);
             }
@@ -137,17 +182,17 @@ public class BidService {
 
     /*
         Lấy lịch sử bid của một auction.
+        Chỉ đọc nên không cần transaction/lock.
     */
     public List<BidTransaction> getHistoryBid(int auctionId) {
         findAuctionOrThrow(auctionId);
-        if (auctionId <= 0) {
-            throw new RuntimeException("Auction id is invalid");
-        }
 
         return bidTransactionDAO.findByAuctionId(auctionId);
     }
+
     /*
         Lấy bid mới nhất của một auction.
+        Chỉ đọc nên không cần transaction/lock.
     */
     public BidTransaction getLatestBid(int auctionId) {
         findAuctionOrThrow(auctionId);
@@ -163,28 +208,27 @@ public class BidService {
 
     /*
         Lấy người đang giữ giá cao nhất.
+        Chỉ đọc nên không cần transaction/lock.
     */
     public User getHighestBidder(int auctionId) {
         Auction auction = findAuctionOrThrow(auctionId);
+
+        if (auction.getHighestBidderId() == null) {
+            throw new RuntimeException("This auction has no highest bidder yet");
+        }
+
         return userService.getUserById(auction.getHighestBidderId());
     }
 
     /*
         Lấy giá hiện tại của auction.
-
-        Vì currentPrice có thể null khi chưa có ai bid,
-        nên kiểu trả về phải là Double, không phải double.
+        Chỉ đọc nên không cần transaction/lock.
     */
     public Double getCurrentPrice(int auctionId) {
         Auction auction = findAuctionOrThrow(auctionId);
         return auction.getCurrentPrice();
     }
 
-    /*
-        Kiểm tra auction có tồn tại không.
-    /*
-        Hàm dùng chung để lấy auction hoặc báo lỗi.
-    */
     private Auction findAuctionOrThrow(int auctionId) {
         if (auctionId <= 0) {
             throw new RuntimeException("Auction id must be greater than 0");
@@ -199,14 +243,35 @@ public class BidService {
         return auction;
     }
 
-    private double getBidIncrement(double currentPrice) {
-        if (currentPrice < 1) return 0.05;
-        else if (currentPrice < 5) return 0.25;
-        else if (currentPrice < 25) return 0.5;
-        else if (currentPrice < 100) return 1;
-        else if (currentPrice < 250) return 2.5;
-        else if (currentPrice < 500) return 5;
-        else if (currentPrice < 1000) return 10;
+    private void rollback(Connection connection) {
+        try {
+            if (connection != null) {
+                connection.rollback();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Rollback failed", e);
+        }
+    }
+
+    private void closeConnection(Connection connection) {
+        try {
+            if (connection != null) {
+                connection.setAutoCommit(true);
+                connection.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static double getBidIncrement(double price) {
+        if (price < 1) return 0.05;
+        else if (price < 5) return 0.25;
+        else if (price < 25) return 0.5;
+        else if (price < 100) return 1;
+        else if (price < 250) return 2.5;
+        else if (price < 500) return 5;
+        else if (price < 1000) return 10;
         else return 25;
     }
 }

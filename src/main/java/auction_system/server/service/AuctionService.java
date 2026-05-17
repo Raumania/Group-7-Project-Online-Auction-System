@@ -5,6 +5,7 @@ import auction_system.common.enums.ItemType;
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.DatabaseConnection;
 import auction_system.server.dao.ItemDAO;
+import auction_system.server.dao.UserDAO;
 import auction_system.server.model.*;
 
 import java.sql.Connection;
@@ -19,6 +20,7 @@ public class AuctionService {
 
     private final AuctionDAO auctionDAO = new AuctionDAO();
     private final ItemDAO itemDAO = new ItemDAO();
+    private final UserDAO userDAO = new UserDAO();
 
     private AuctionService() {
     }
@@ -40,8 +42,11 @@ public class AuctionService {
         Nếu lưu auction thành công nhưng lưu item lỗi
         thì phải rollback để database không bị lệch.
     */
+
+    //throwRuntime
     public void createAuction(Auction auction) {
         Connection connection = null;
+        validateItemData(auction);
 
         try {
             connection = DatabaseConnection.getConnection();
@@ -308,6 +313,40 @@ public class AuctionService {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public void validateItemData(Auction auction) {
+        if (auction.getName() == null || auction.getName().trim().isEmpty()) {
+            throw new RuntimeException("Item name cannot be null or empty");
+        }
+
+        if (auction.getDescription() == null || auction.getDescription().trim().isEmpty()) {
+            throw new RuntimeException("Item description cannot be null or empty");
+        }
+
+        if (auction.getStartTime() == null) {
+            throw new RuntimeException("Starting time cannot be null");
+        }
+
+        if (auction.getEndTime() == null) {
+            throw new RuntimeException("Ending time cannot be null");
+        }
+
+        if (!auction.getEndTime().isAfter(auction.getStartTime())) {
+            throw new RuntimeException("Ending time must be after starting time");
+        }
+
+        if (userDAO.findById(auction.getSellerId()) == null) {
+            throw new RuntimeException("Owner cannot be null");
+        }
+
+        if (auction.getStartingPrice() <= 0) {
+            throw new RuntimeException("Starting price must be greater than 0");
+        }
+
+        if (auction.getType() == null) {
+            throw new RuntimeException("Status cannot be null");
         }
     }
 }
