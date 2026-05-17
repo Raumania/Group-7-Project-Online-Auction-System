@@ -15,7 +15,7 @@ public class AuctionScheduler {
     private final Map<Integer, Auction> auctions = new ConcurrentHashMap<>();
 
     private final ScheduledExecutorService scheduler =
-            Executors.newScheduledThreadPool(2);
+            Executors.newScheduledThreadPool(3);
 
     public AuctionScheduler(CopyOnWriteArrayList<Auction> auctions) {
     }
@@ -32,6 +32,13 @@ public class AuctionScheduler {
                 1,
                 TimeUnit.MILLISECONDS
         );
+
+        scheduler.scheduleAtFixedRate(
+                this::syncToDatabase,
+                0,
+                1,
+                TimeUnit.MILLISECONDS
+        )
     }
 
     private void updateAuctions() {
@@ -50,7 +57,7 @@ public class AuctionScheduler {
     }
 
     private void syncFromDatabase() {
-        auctionRepository.getallopenAuction()
+        auctionRepository.getAllOpenAuctions()
                 .forEach(a -> auctions.put(a.getId(), a));
 
         // Xóa phiên đã kết thúc khỏi RAM
@@ -63,7 +70,7 @@ public class AuctionScheduler {
     }
 
     private void syncToDatabase() {
-        auctionRepository.save()
+        auctionRepository.update()
     }
 
     // vấn đề: kph nh thead vào 1 hàm mà nh hàm cx update database

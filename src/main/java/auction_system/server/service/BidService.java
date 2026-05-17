@@ -135,13 +135,15 @@ public class BidService {
                 - nếu currentPrice > 0: bid sau phải > currentPrice
             */
             if (auction.getCurrentPrice() == 0) {
-                if (amount <= auction.getStartingPrice()) {
-                    throw new InvalidBidException("Bid amount must be greater than starting price");
+                if (amount < auction.getStartingPrice()) {
+                    throw new InvalidBidException("Bid amount must not be lower than minBid");
                 }
-                auction.setCurrentPrice(auction.getStartingPrice());
+                auction.setCurrentPrice(amount);
+
             } else {
-                if (amount <= auction.getCurrentPrice()) {
-                    throw new InvalidBidException("Bid amount must be greater than current price");
+                double bidIncrement = getBidIncrement(auction.getCurrentPrice());
+                if (amount < auction.getCurrentPrice() + bidIncrement) {
+                    throw new InvalidBidException("Bid amount must not be lower than minBid");
                 }
                 auction.setCurrentPrice(amount);
             }
@@ -260,5 +262,16 @@ public class BidService {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static double getBidIncrement(double price) {
+        if (price < 1) return 0.05;
+        else if (price < 5) return 0.25;
+        else if (price < 25) return 0.5;
+        else if (price < 100) return 1;
+        else if (price < 250) return 2.5;
+        else if (price < 500) return 5;
+        else if (price < 1000) return 10;
+        else return 25;
     }
 }
