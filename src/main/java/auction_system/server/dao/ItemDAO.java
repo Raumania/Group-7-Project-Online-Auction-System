@@ -17,11 +17,26 @@ public class ItemDAO {
         this.userDAO = new UserDAO();
     }
 
+    /*
+        Save bình thường.
+        Dùng khi không cần transaction bên ngoài.
+    */
     public void save(Auction auction, int id) {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            save(connection, auction, id);
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot save item for auction", e);
+        }
+    }
+
+    /*
+        Save dùng chung connection.
+        Dùng trong AuctionService.createAuction().
+    */
+    public void save(Connection connection, Auction auction, int id) {
         String sql = "INSERT INTO items(id, name, description, type) VALUES (?, ?, ?, ?)";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
             statement.setString(2, auction.getName());
@@ -35,11 +50,26 @@ public class ItemDAO {
         }
     }
 
+    /*
+        Update bình thường.
+        Dùng khi không cần transaction bên ngoài.
+    */
     public void update(Auction auction) {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            update(connection, auction);
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot update item", e);
+        }
+    }
+
+    /*
+        Update dùng chung connection.
+        Dùng trong AuctionService.editAuction().
+    */
+    public void update(Connection connection, Auction auction) {
         String sql = "UPDATE items SET name = ?, description = ?, type = ? WHERE id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, auction.getName());
             statement.setString(2, auction.getDescription());
@@ -53,14 +83,28 @@ public class ItemDAO {
         }
     }
 
+    /*
+        Delete bình thường.
+        Dùng khi không cần transaction bên ngoài.
+    */
     public void delete(int id) {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            delete(connection, id);
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot delete item", e);
+        }
+    }
+
+    /*
+        Delete dùng chung connection.
+        Dùng trong AuctionService.deleteAuction().
+    */
+    public void delete(Connection connection, int id) {
         String sql = "DELETE FROM items WHERE id = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, id);
-
             statement.executeUpdate();
 
         } catch (SQLException e) {
@@ -136,6 +180,7 @@ public class ItemDAO {
 
         return items;
     }
+
     public List<Item> findByItemName(String name) {
         List<Item> items = new ArrayList<>();
 
@@ -152,11 +197,14 @@ public class ItemDAO {
                 JOIN auctions a ON i.id = a.id
                 WHERE i.name = ?
                 """;
+
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, name);
-            ResultSet resultSet= statement.executeQuery();
+
+            ResultSet resultSet = statement.executeQuery();
+
             while (resultSet.next()) {
                 Item item = mapResultSetToItem(resultSet);
                 items.add(item);
@@ -165,6 +213,7 @@ public class ItemDAO {
         } catch (SQLException e) {
             throw new RuntimeException("Cannot find items by name", e);
         }
+
         return items;
     }
 
