@@ -145,7 +145,7 @@ public class ItemDAO {
         }
     }
 
-    public List<Item> findByType(ItemType type) {
+    public List<Item> findByType(String type) {
         List<Item> items = new ArrayList<>();
 
         String sql = """
@@ -165,7 +165,7 @@ public class ItemDAO {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setString(1, type.name());
+            statement.setString(1, type);
 
             ResultSet resultSet = statement.executeQuery();
 
@@ -216,7 +216,6 @@ public class ItemDAO {
 
         return items;
     }
-
     private Item mapResultSetToItem(ResultSet resultSet) throws SQLException {
         int id = resultSet.getInt("id");
         String name = resultSet.getString("name");

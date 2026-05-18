@@ -281,7 +281,21 @@ public class AuctionDAO {
             throw new RuntimeException("Cannot delete auction", e);
         }
     }
-
+    public List<Auction> findbystatus(String status) {
+        String sql = "SELECT * FROM auctions where status = ?";
+        List<Auction> auctions = new ArrayList<>();
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, status);
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                auctions.add(mapResultSetToAuction(resultSet));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot find all auctions", e);
+        }
+        return auctions;
+    }
     private Auction mapResultSetToAuction(ResultSet resultSet) throws SQLException {
         Auction auction = new Auction();
 

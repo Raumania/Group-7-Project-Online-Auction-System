@@ -38,7 +38,14 @@ public enum Action {
 
     /** ĐĂNG KÝ NHẬN THÔNG BÁO */
     SUBSCRIBE,
-
+    /**Tim Auction*/
+    SEARCH_AUCTION,
+    /**Lọc Status*/
+    FILTER_STATUS,
+    /**Lọc loại item*/
+    FILTER_CATEGORY,
+    /**Lọc theo một caí gì đó*/
+    FILTER_SORT_BY,
 
 
     // ==================== QUẢN LÝ NGƯỜI DÙNG ====================
