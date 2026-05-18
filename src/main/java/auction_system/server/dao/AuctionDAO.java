@@ -2,6 +2,7 @@ package auction_system.server.dao;
 
 import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.ItemType;
+import auction_system.server.exception.daoException.deletingException;
 import auction_system.server.exception.daoException.findingException;
 import auction_system.server.exception.daoException.savingException;
 import auction_system.server.exception.daoException.updatingException;
@@ -276,7 +277,7 @@ public class AuctionDAO {
         try (Connection connection = DatabaseConnection.getConnection()) {
             delete(connection, id);
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot delete auction", e);
+            throw new deletingException("Cannot delete auction");
         }
     }
 
@@ -293,7 +294,7 @@ public class AuctionDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot delete auction", e);
+            throw new deletingException("Cannot delete auction");
         }
     }
 
@@ -308,7 +309,7 @@ public class AuctionDAO {
                 auctions.add(mapResultSetToAuction(resultSet));
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find all auctions", e);
+            throw new findingException("Cannot find all auctions");
         }
         return auctions;
     }
