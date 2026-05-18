@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * Chỉ chứa dữ liệu, không chứa logic validate (kiểm tra rỗng, kiểm tra thời gian).
  */
 public abstract class Item extends Entity {
-
+    protected String fix;
     protected String name;
     protected String description;
     protected ItemType type;

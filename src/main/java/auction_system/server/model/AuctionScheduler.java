@@ -1,3 +1,4 @@
+/*
 package auction_system.server.model;
 
 import auction_system.common.enums.AuctionStatus;
@@ -38,13 +39,13 @@ public class AuctionScheduler {
                 0,
                 1,
                 TimeUnit.MILLISECONDS
-        )
+        );
     }
 
     private void updateAuctions() {
         auctions.values().forEach(auction -> {
             AuctionStatus old = auction.getStatus();
-            bidService.updateStatus(auction);
+            bidService.updateStatus(auction.getId());
             if (old != auction.getStatus()) {
                 System.out.println(
                         "Auction "
@@ -86,3 +87,4 @@ public class AuctionScheduler {
         scheduler.shutdown();
     }
 }
+*/
