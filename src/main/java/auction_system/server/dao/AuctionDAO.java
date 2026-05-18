@@ -2,6 +2,9 @@ package auction_system.server.dao;
 
 import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.ItemType;
+import auction_system.server.exception.daoException.findingException;
+import auction_system.server.exception.daoException.savingException;
+import auction_system.server.exception.daoException.updatingException;
 import auction_system.server.model.Auction;
 import auction_system.server.observer.AuctionScheduler;
 
@@ -30,7 +33,7 @@ public class AuctionDAO {
         try (Connection connection = DatabaseConnection.getConnection()) {
             return save(connection, auction);
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot save auction", e);
+            throw new savingException("Cannot save auction");
         }
     }
 
@@ -74,7 +77,7 @@ public class AuctionDAO {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot save auction", e);
+            throw new savingException("Cannot save auction", e);
         }
     }
 
@@ -98,7 +101,7 @@ public class AuctionDAO {
             return null;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find auction by id", e);
+            throw new findingException("Cannot find auction by id");
         }
     }
     /*
@@ -125,11 +128,11 @@ public class AuctionDAO {
             return null;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find auction by id for update", e);
+            throw new findingException("Cannot find auction by id for update");
         }
     }
 
-    public List<Auction> getAllOpenAuctions() {
+    public List<Auction> findAllOpenAuctions() {
         String sql = "SELECT * FROM auctions WHERE status IN (?, ?)";
 
         List<Auction> auctions = new ArrayList<>();
@@ -147,7 +150,7 @@ public class AuctionDAO {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find all open auctions", e);
+            throw new findingException("Cannot find all open auctions");
         }
 
         return auctions;
@@ -168,7 +171,7 @@ public class AuctionDAO {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find all auctions", e);
+            throw new findingException("Cannot find all auctions");
         }
 
         return auctions;
@@ -207,7 +210,7 @@ public class AuctionDAO {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find auctions for seller ID: " + sellerId, e);
+            throw new findingException("Cannot find auctions for seller ID: " + sellerId);
         }
 
         return auctions;
@@ -221,7 +224,7 @@ public class AuctionDAO {
         try (Connection connection = DatabaseConnection.getConnection()) {
             update(connection, auction);
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot update auction", e);
+            throw new updatingException("Cannot update auction");
         }
     }
 
@@ -262,7 +265,7 @@ public class AuctionDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot update auction", e);
+            throw new updatingException("Cannot update auction");
         }
     }
 
