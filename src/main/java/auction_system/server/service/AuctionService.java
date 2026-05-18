@@ -6,6 +6,8 @@ import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.DatabaseConnection;
 import auction_system.server.dao.ItemDAO;
 import auction_system.server.dao.UserDAO;
+import auction_system.server.exception.daoException.DataBaseException;
+import auction_system.server.exception.serviceException.InValidAuctionData;
 import auction_system.server.model.*;
 
 import java.sql.Connection;
@@ -294,13 +296,16 @@ public class AuctionService {
     }
 
     public Item getItemById(int id) {
-        Item item = itemDAO.findById(id);
+        try {
+            Item item = itemDAO.findById(id);
 
-        if (item == null) {
-            throw new RuntimeException("Item not found");
-        }
+            if (item == null) {
+                throw new RuntimeException("Item not found");
+            }
 
-        return item;
+            return item;
+        } catch (DataBaseException e) {
+            throw new
     }
 
     /*
@@ -312,6 +317,7 @@ public class AuctionService {
                 connection.rollback();
             }
         } catch (Exception e) {
+            System.err.println("Rollback failed");
             throw new RuntimeException("Rollback failed", e);
         }
     }
@@ -326,45 +332,45 @@ public class AuctionService {
                 connection.close();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Cannot close Database connection");
+            throw new RuntimeException("Cannot close Database connection", e);
         }
     }
 
     public void validateItemData(Auction auction) {
-        if (auction.getName() == null || auction.getName().trim().isEmpty()) {
-            throw new RuntimeException("Item name cannot be null or empty");
-        }
+        try {
+            if (auction.getName() == null || auction.getName().trim().isEmpty()) {
+                throw new RuntimeException("Item name cannot be null or empty");
+            }
 
-        if (auction.getDescription() == null || auction.getDescription().trim().isEmpty()) {
-            throw new RuntimeException("Item description cannot be null or empty");
-        }
+            if (auction.getDescription() == null || auction.getDescription().trim().isEmpty()) {
+                throw new RuntimeException("Item description cannot be null or empty");
+            }
 
-        if (auction.getStartTime() == null) {
-            throw new RuntimeException("Starting time cannot be null");
-        }
+            if (auction.getStartTime() == null) {
+                throw new RuntimeException("Starting time cannot be null");
+            }
 
-        if (auction.getEndTime() == null) {
-            throw new RuntimeException("Ending time cannot be null");
-        }
+            if (auction.getEndTime() == null) {
+                throw new RuntimeException("Ending time cannot be null");
+            }
 
-        if (!auction.getEndTime().isAfter(auction.getStartTime())) {
-            throw new RuntimeException("Ending time must be after starting time");
-        }
+            if (!auction.getEndTime().isAfter(auction.getStartTime())) {
+                throw new RuntimeException("Ending time must be after starting time");
+            }
 
-        if (userDAO.findById(auction.getSellerId()) == null) {
-            throw new RuntimeException("Owner cannot be null");
-        }
+            if (userDAO.findById(auction.getSellerId()) == null) {
+                throw new RuntimeException("Owner cannot be null");
+            }
 
-        if (auction.getStartingPrice() <= 0) {
-            throw new RuntimeException("Starting price must be greater than 0");
-        }
+            if (auction.getStartingPrice() <= 0) {
+                throw new RuntimeException("Starting price must be greater than 0");
+            }
 
-        if (auction.getType() == null) {
-            throw new RuntimeException("Status cannot be null");
-        }
-    }
-
-    public ItemDAO getItemDAO() {
-        return itemDAO;
+            if (auction.getType() == null) {
+                throw new RuntimeException("Status cannot be null");
+            }
+        }catch (RuntimeException e) {
+            throw new InValidAuctionData(e.getMessage());}
     }
 }
