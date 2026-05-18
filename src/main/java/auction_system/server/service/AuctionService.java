@@ -9,6 +9,7 @@ import auction_system.server.dao.UserDAO;
 import auction_system.server.model.*;
 
 import java.sql.Connection;
+import java.text.ParsePosition;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -151,7 +152,20 @@ public class AuctionService {
             closeConnection(connection);
         }
     }
-
+    public void UpdateAll(List<Auction> auctions){
+        Connection connection=null;
+        try {
+            connection =DatabaseConnection.getConnection();
+            for (Auction auction : auctions) {
+                auctionDAO.update(auction);
+            }
+        }catch(Exception e) {
+            rollback(connection);
+            throw new RuntimeException("cannot update auctions", e);
+        }finally {
+            closeConnection(connection);
+        }
+    }
     /*
         Tìm danh sách auction theo loại item.
         Chỉ đọc dữ liệu nên không cần transaction/lock.
