@@ -4,10 +4,7 @@ import auction_system.common.enums.Action;
 import auction_system.common.enums.Status;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
-import auction_system.server.controller.RequestHandler;
-import auction_system.server.controller.LoginController;
-import auction_system.server.controller.RegisterController;
-import auction_system.server.controller.AuctionController;
+import auction_system.server.controller.*;
 //import auction_system.server.controller.BidController;
 import auction_system.server.util.GsonUtil;
 
@@ -37,7 +34,10 @@ public class ClientHandler implements Runnable {
         handlers.put(Action.GET_SELLER_ITEMS, auctionController);
         handlers.put(Action.DELETE_AUCTION, auctionController);
         handlers.put(Action.EDIT_AUCTION, auctionController);
-//        handlers.put(Action.PLACE_BID, new BidController());
+        handlers.put(Action.PLACE_BID, new BidController());
+        handlers.put(Action.GET_BID_HISTORY,new BidHistoryController());
+        //handlers.put(Action.FILTER_CATEGORY)
+
     }
 
     @Override

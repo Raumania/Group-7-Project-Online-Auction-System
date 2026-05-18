@@ -46,7 +46,6 @@ public class AuctionService {
         try {
             connection = DatabaseConnection.getConnection();
             connection.setAutoCommit(false);
-
             int id = auctionDAO.save(connection, auction);
             itemDAO.save(connection, auction, id);
 
@@ -152,7 +151,15 @@ public class AuctionService {
         Tìm danh sách auction theo loại item.
         Chỉ đọc dữ liệu nên không cần transaction/lock.
     */
-    public List<Auction> findbyItemType(ItemType type) {
+    public List<Auction> findbyStatus(String status) {
+        if (status == null) {
+            throw new RuntimeException("status cannot be null");
+        }
+
+        List<Auction> auctions = auctionDAO.findbystatus(status);
+        return auctions;
+    }
+    public List<Auction> findbyItemType(String type) {
         if (type == null) {
             throw new RuntimeException("Item type cannot be null");
         }

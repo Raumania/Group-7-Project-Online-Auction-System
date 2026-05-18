@@ -11,7 +11,7 @@ import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BidHistoryController {
+public class BidHistoryController implements RequestHandler{
 
     private BidService bidService;
     private Gson gson;
@@ -20,8 +20,8 @@ public class BidHistoryController {
         this.bidService = new BidService();
         this.gson = new Gson();
     }
-
-    public Response getHistoryBid(Request request) {
+    @Override
+    public Response handle(Request request) {
         try {
             String jsonData = gson.toJson(request.getData());
             BidDTO data = gson.fromJson(jsonData, BidDTO.class);
