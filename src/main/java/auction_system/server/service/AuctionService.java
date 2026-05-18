@@ -19,9 +19,9 @@ public class AuctionService {
     // Singleton for service
     private static AuctionService instance;
 
-    private final AuctionDAO auctionDAO = new AuctionDAO();
-    private final ItemDAO itemDAO = new ItemDAO();
-    private final UserDAO userDAO = new UserDAO();
+    private final AuctionDAO auctionDAO = AuctionDAO.getInstance();
+    private final ItemDAO itemDAO = ItemDAO.getInstance();
+    private final UserDAO userDAO = UserDAO.getInstance();
 
     private AuctionService() {
     }
@@ -362,5 +362,9 @@ public class AuctionService {
         if (auction.getType() == null) {
             throw new RuntimeException("Status cannot be null");
         }
+    }
+
+    public ItemDAO getItemDAO() {
+        return itemDAO;
     }
 }

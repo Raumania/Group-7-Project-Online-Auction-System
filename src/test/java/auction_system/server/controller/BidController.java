@@ -17,8 +17,8 @@ import com.google.gson.JsonElement;
  */
 public class BidController implements RequestHandler {
 
-    private final BidService bidService = new BidService();
-    private final UserService userService = new UserService();
+    private final BidService bidService = BidService.getInstance();
+    private final UserService userService = UserService.getInstance();
 
     @Override
     public Response handle(Request request) {

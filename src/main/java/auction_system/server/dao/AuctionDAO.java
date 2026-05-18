@@ -3,12 +3,24 @@ package auction_system.server.dao;
 import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.ItemType;
 import auction_system.server.model.Auction;
+import auction_system.server.observer.AuctionScheduler;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class AuctionDAO {
+    private static AuctionDAO instance;
+
+    private AuctionDAO() {
+    }
+
+    public static AuctionDAO getInstance() {
+        if (instance == null) {
+            instance = new AuctionDAO();
+        }
+        return instance;
+    }
 
     /*
         Hàm save bình thường.

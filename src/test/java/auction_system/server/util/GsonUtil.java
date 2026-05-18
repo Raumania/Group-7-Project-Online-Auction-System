@@ -1,8 +1,8 @@
 package auction_system.server.util;
 
 import com.google.gson.*;
+
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public class GsonUtil {
 

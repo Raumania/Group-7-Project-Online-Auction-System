@@ -17,7 +17,7 @@ public class BidHistoryController implements RequestHandler{
     private Gson gson;
 
     public BidHistoryController() {
-        this.bidService = new BidService();
+        this.bidService = BidService.getInstance();
         this.gson = new Gson();
     }
     @Override

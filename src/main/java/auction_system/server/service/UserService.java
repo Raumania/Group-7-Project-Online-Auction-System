@@ -8,11 +8,18 @@ import java.util.List;
 import java.util.Set;
 
 public class UserService {
-
+    private static UserService instance;
     private UserDAO userDAO;
 
-    public UserService() {
-        this.userDAO = new UserDAO();
+    private UserService() {
+        this.userDAO = UserDAO.getInstance();
+    }
+
+    public static UserService getInstance() {
+        if (instance == null) {
+            instance = new UserService();
+        }
+        return instance;
     }
 
     public User registerUser(String fullname, String username, String password) {

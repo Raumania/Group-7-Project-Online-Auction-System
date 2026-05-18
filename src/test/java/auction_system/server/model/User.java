@@ -2,7 +2,6 @@ package auction_system.server.model;
 
 import auction_system.common.enums.UserRole;
 import auction_system.server.exception.UserInformationException;
-import java.util.Objects;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -150,30 +149,6 @@ public class User extends Entity {
         }
 
         this.balance -= amount;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        User user = (User) o;
-
-        return id == user.id
-                && Double.compare(user.balance, balance) == 0
-                && Objects.equals(fullname, user.fullname)
-                && Objects.equals(username, user.username)
-                && Objects.equals(roles, user.roles);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, fullname, username, roles, balance);
     }
 
 

@@ -9,6 +9,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AuctionDAO {
+    private static AuctionDAO instance;
+
+    private AuctionDAO() {
+    }
+
+    public static AuctionDAO getInstance() {
+        if (instance == null) {
+            instance = new AuctionDAO();
+        }
+        return instance;
+    }
 
     /*
         Hàm save bình thường.
@@ -281,6 +292,7 @@ public class AuctionDAO {
             throw new RuntimeException("Cannot delete auction", e);
         }
     }
+
     public List<Auction> findbystatus(String status) {
         String sql = "SELECT * FROM auctions where status = ?";
         List<Auction> auctions = new ArrayList<>();

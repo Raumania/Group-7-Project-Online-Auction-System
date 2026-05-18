@@ -5,7 +5,6 @@ import auction_system.common.enums.Status;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import auction_system.server.controller.*;
-//import auction_system.server.controller.BidController;
 import auction_system.server.util.GsonUtil;
 
 import java.io.*;

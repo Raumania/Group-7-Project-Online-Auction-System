@@ -1,7 +1,6 @@
 package auction_system.server.service;
 
 import auction_system.common.enums.AuctionStatus;
-import auction_system.common.enums.ItemType;
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.DatabaseConnection;
 import auction_system.server.dao.ItemDAO;
@@ -18,9 +17,9 @@ public class AuctionService {
     // Singleton for service
     private static AuctionService instance;
 
-    private final AuctionDAO auctionDAO = new AuctionDAO();
-    private final ItemDAO itemDAO = new ItemDAO();
-    private final UserDAO userDAO = new UserDAO();
+    private final AuctionDAO auctionDAO = AuctionDAO.getInstance();
+    private final ItemDAO itemDAO = ItemDAO.getInstance();
+    private final UserDAO userDAO = UserDAO.getInstance();
 
     private AuctionService() {
     }
@@ -151,7 +150,20 @@ public class AuctionService {
             closeConnection(connection);
         }
     }
-
+    public void UpdateAll(List<Auction> auctions){
+        Connection connection=null;
+        try {
+            connection =DatabaseConnection.getConnection();
+            for (Auction auction : auctions) {
+                auctionDAO.update(auction);
+            }
+        }catch(Exception e) {
+            rollback(connection);
+            throw new RuntimeException("cannot update auctions", e);
+        }finally {
+            closeConnection(connection);
+        }
+    }
     /*
         Tìm danh sách auction theo loại item.
         Chỉ đọc dữ liệu nên không cần transaction/lock.
@@ -348,5 +360,9 @@ public class AuctionService {
         if (auction.getType() == null) {
             throw new RuntimeException("Status cannot be null");
         }
+    }
+
+    public ItemDAO getItemDAO() {
+        return itemDAO;
     }
 }
