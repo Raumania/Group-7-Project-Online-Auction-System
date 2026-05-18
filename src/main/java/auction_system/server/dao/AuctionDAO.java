@@ -281,6 +281,7 @@ public class AuctionDAO {
             throw new RuntimeException("Cannot delete auction", e);
         }
     }
+
     public List<Auction> findbystatus(String status) {
         String sql = "SELECT * FROM auctions where status = ?";
         List<Auction> auctions = new ArrayList<>();
