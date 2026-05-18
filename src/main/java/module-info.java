@@ -10,6 +10,8 @@ module com.auction_system {
     opens auction_system.common.dto to com.google.gson;
     opens auction_system.common.enums to com.google.gson;
 
+
+
     // 2. XUẤT (exports) để các package khác hoặc module khác nhìn thấy code
     exports auction_system.server.controller;
     exports auction_system.server.model;
@@ -17,4 +19,5 @@ module com.auction_system {
     exports auction_system.common.enums;
     exports auction_system.common.dto;
     exports auction_system.common.protocol;
+    exports auction_system.server.service;
 }

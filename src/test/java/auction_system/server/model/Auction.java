@@ -1,0 +1,140 @@
+package auction_system.server.model;
+
+import auction_system.common.dto.AuctionDTO;
+import auction_system.common.enums.AuctionStatus;
+import auction_system.common.enums.ItemType;
+
+import java.time.LocalDateTime;
+
+public class Auction extends Entity{
+
+    private int sellerId;
+    private String name;
+    private String description;
+    private ItemType type;
+    private AuctionStatus status;
+    private double startingPrice;
+    private double currentPrice;
+    private Integer highestBidderId;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+
+    public Auction() {
+    }
+
+    public Auction(AuctionDTO auctionDTO) {
+        this.name = auctionDTO.getName();
+        this.description = auctionDTO.getDescription();
+        this.type = auctionDTO.getType();
+        this.sellerId = auctionDTO.getSellerId();
+        this.startingPrice = auctionDTO.getStartingPrice();
+        this.startTime = auctionDTO.getStartTime();
+        this.endTime = auctionDTO.getEndTime();
+        this.status = AuctionStatus.OPEN;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getSellerId() {
+        return sellerId;
+    }
+
+    public void setSellerId(int sellerId) {
+        this.sellerId = sellerId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public ItemType getType() {
+        return type;
+    }
+
+    public void setType(ItemType type) {
+        this.type = type;
+    }
+
+    public AuctionStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AuctionStatus status) {
+        this.status = status;
+    }
+
+    public double getStartingPrice() {
+        return startingPrice;
+    }
+
+    public void setStartingPrice(double startingPrice) {
+        this.startingPrice = startingPrice;
+    }
+
+    public double getCurrentPrice() {
+        return currentPrice;
+    }
+
+    public void setCurrentPrice(double currentPrice) {
+        this.currentPrice = currentPrice;
+    }
+
+    public Integer getHighestBidderId() {
+        return highestBidderId;
+    }
+
+    public void setHighestBidderId(Integer highestBidderId) {
+        this.highestBidderId = highestBidderId;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
+
+    @Override
+    public String toString() {
+        return "Auction{" +
+                "id=" + id +
+                ", sellerId=" + sellerId +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", type=" + type +
+                ", status=" + status +
+                ", startingPrice=" + startingPrice +
+                ", currentPrice=" + currentPrice +
+                ", highestBidderId=" + highestBidderId +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
+                '}';
+    }
+}
