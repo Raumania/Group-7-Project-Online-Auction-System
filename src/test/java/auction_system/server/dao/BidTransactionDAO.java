@@ -4,14 +4,8 @@ import auction_system.common.enums.UserRole;
 import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-
+import java.sql.*;
 import java.time.LocalDateTime;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,8 +13,17 @@ public class BidTransactionDAO {
 
     private UserDAO userDAO;
 
-    public BidTransactionDAO() {
-        this.userDAO = new UserDAO();
+    private static BidTransactionDAO instance;
+
+    private BidTransactionDAO() {
+        UserDAO.getInstance();
+    }
+
+    public static BidTransactionDAO getInstance() {
+        if (instance == null) {
+            instance = new BidTransactionDAO();
+        }
+        return instance;
     }
 
     /*

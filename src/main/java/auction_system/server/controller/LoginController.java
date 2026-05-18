@@ -12,7 +12,7 @@ import com.google.gson.JsonElement;
 
 public class LoginController implements RequestHandler {
 
-    private final UserService userService = new UserService();
+    private final UserService userService = UserService.getInstance();
 
     @Override
     public Response handle(Request request) {

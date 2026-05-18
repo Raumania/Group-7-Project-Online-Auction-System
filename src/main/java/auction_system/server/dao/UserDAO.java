@@ -10,6 +10,17 @@ import java.util.List;
 import java.util.Set;
 
 public class UserDAO {
+    private static UserDAO instance;
+
+    private UserDAO() {
+    }
+
+    public static UserDAO getInstance() {
+        if (instance == null) {
+            instance = new UserDAO();
+        }
+        return instance;
+    }
 
     /*
         Hàm save dùng để lưu 1 User vào bảng users trong MySQL.

@@ -2,7 +2,7 @@
 //
 //import auction_system.server.common.protocol.*;
 //import auction_system.server.model.User;
-//import auction_system.server.observer.NotificationService;
+//import auction_system.server.service.NotificationService;
 //import com.google.gson.Gson;
 //import com.google.gson.JsonElement;
 //

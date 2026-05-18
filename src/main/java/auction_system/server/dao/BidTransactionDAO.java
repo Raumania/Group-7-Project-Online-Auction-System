@@ -19,8 +19,17 @@ public class BidTransactionDAO {
 
     private UserDAO userDAO;
 
-    public BidTransactionDAO() {
-        this.userDAO = new UserDAO();
+    private static BidTransactionDAO instance;
+
+    private BidTransactionDAO() {
+        UserDAO.getInstance();
+    }
+
+    public static BidTransactionDAO getInstance() {
+        if (instance == null) {
+            instance = new BidTransactionDAO();
+        }
+        return instance;
     }
 
     /*

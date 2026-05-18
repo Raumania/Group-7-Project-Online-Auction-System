@@ -10,11 +10,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ItemDAO {
-
+    private static ItemDAO instance;
     private final UserDAO userDAO;
 
-    public ItemDAO() {
-        this.userDAO = new UserDAO();
+    private ItemDAO() {
+        this.userDAO = UserDAO.getInstance();
+    }
+
+    public static ItemDAO getInstance() {
+        if (instance == null) {
+            instance = new ItemDAO();
+        }
+        return instance;
     }
 
     /*

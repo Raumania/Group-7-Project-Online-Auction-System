@@ -1,24 +1,34 @@
-/*
-package auction_system.server.model;
+
+package auction_system.server.observer;
 
 import auction_system.common.enums.AuctionStatus;
 import auction_system.server.dao.AuctionDAO;
+import auction_system.server.model.Auction;
+import auction_system.server.service.AuctionService;
 import auction_system.server.service.BidService;
 
 import java.util.Map;
 import java.util.concurrent.*;
-
+//
 //Tự động update trạng thái tất cả auction (tested)
 public class AuctionScheduler {
-    BidService bidService = new BidService();
-    AuctionDAO auctionRepository = new AuctionDAO();
+    private static AuctionScheduler instance;
+    BidService bidService =BidService.getInstance();
+    AuctionDAO auctionRepository = AuctionDAO.getInstance();
 
     private final Map<Integer, Auction> auctions = new ConcurrentHashMap<>();
 
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(3);
 
-    public AuctionScheduler(CopyOnWriteArrayList<Auction> auctions) {
+    private AuctionScheduler() {
+    }
+
+    public static AuctionScheduler getInstance() {
+        if (instance == null) {
+            instance = new AuctionScheduler();
+        }
+        return instance;
     }
 
     public void start() {
@@ -30,14 +40,14 @@ public class AuctionScheduler {
         scheduler.scheduleAtFixedRate(
                 this::updateAuctions,
                 0,
-                1,
+                360,
                 TimeUnit.MILLISECONDS
         );
 
         scheduler.scheduleAtFixedRate(
                 this::syncToDatabase,
                 0,
-                1,
+                360,
                 TimeUnit.MILLISECONDS
         );
     }
@@ -47,6 +57,7 @@ public class AuctionScheduler {
             AuctionStatus old = auction.getStatus();
             bidService.updateStatus(auction.getId());
             if (old != auction.getStatus()) {
+                auctionRepository.update(auction);
                 System.out.println(
                         "Auction "
                                 + auction.getId()
@@ -71,20 +82,13 @@ public class AuctionScheduler {
     }
 
     private void syncToDatabase() {
-        auctionRepository.update()
+
     }
 
     // vấn đề: kph nh thead vào 1 hàm mà nh hàm cx update database
-
-
-
-
-
-
-
 
     public void shutdown() {
         scheduler.shutdown();
     }
 }
-*/
+

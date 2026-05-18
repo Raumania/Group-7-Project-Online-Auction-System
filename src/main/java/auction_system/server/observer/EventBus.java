@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.concurrent.*;
 // Có thể là singleton vì cả hệ thống cần 1 bus
 public class EventBus {
-
     // Queue chứa các event chờ dispatch
     private static final BlockingQueue<BidEvent> queue =
             new LinkedBlockingQueue<>();

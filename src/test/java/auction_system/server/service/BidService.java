@@ -17,17 +17,24 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class BidService {
-
+    private static BidService instance;
     private final AuctionService auctionService;
     private final UserService userService;
     private final AuctionDAO auctionDAO;
     private final BidTransactionDAO bidTransactionDAO;
 
-    public BidService() {
+    private BidService() {
         this.auctionService = AuctionService.getInstance();
-        this.userService = new UserService();
-        this.auctionDAO = new AuctionDAO();
-        this.bidTransactionDAO = new BidTransactionDAO();
+        this.userService = UserService.getInstance();
+        this.auctionDAO = AuctionDAO.getInstance();
+        this.bidTransactionDAO = BidTransactionDAO.getInstance();
+    }
+
+    public static BidService getInstance() {
+        if (instance == null) {
+            instance = new BidService();
+        }
+        return instance;
     }
 
     /*
