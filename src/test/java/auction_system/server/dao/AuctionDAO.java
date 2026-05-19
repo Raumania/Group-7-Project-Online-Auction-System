@@ -128,7 +128,7 @@ public class AuctionDAO {
         }
     }
 
-    public List<Auction> getAllOpenAuctions() {
+    public List<Auction> findAllOpenAuctions() {
         String sql = "SELECT * FROM auctions WHERE status IN (?, ?)";
 
         List<Auction> auctions = new ArrayList<>();

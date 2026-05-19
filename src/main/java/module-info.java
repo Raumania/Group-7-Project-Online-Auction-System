@@ -1,7 +1,8 @@
 module com.auction_system {
     requires java.sql;
     requires com.google.gson;
-    requires java.desktop; // Nếu bạn dùng Swing
+    requires java.desktop;
+    requires org.slf4j; // Nếu bạn dùng Swing
 
     // 1. MỞ KHÓA (opens) cho Gson sử dụng Reflection để parse JSON
     opens auction_system.server.model to com.google.gson;

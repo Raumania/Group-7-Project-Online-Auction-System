@@ -71,14 +71,14 @@ public class AuctionScheduler {
     }
 
     private void syncFromDatabase() {
-        auctionRepository.getAllOpenAuctions()
+        auctionRepository.findAllOpenAuctions()
                 .forEach(a -> auctions.put(a.getId(), a));
 
         // Xóa phiên đã kết thúc khỏi RAM
         auctions.values().removeIf(this::canRemove);
     }
 
-    private boolean canRemove(Auction auction) {
+    public boolean canRemove(Auction auction) {
         return auction.getStatus() != AuctionStatus.OPEN
                 && auction.getStatus() != AuctionStatus.RUNNING;
     }
