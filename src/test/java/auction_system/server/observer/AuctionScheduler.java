@@ -42,14 +42,7 @@ public class AuctionScheduler {
 
         scheduler.scheduleAtFixedRate(
                 this::updateAuctions,
-                0,
-                360,
-                TimeUnit.MILLISECONDS
-        );
-
-        scheduler.scheduleAtFixedRate(
-                this::syncToDatabase,
-                0,
+                5,
                 360,
                 TimeUnit.MILLISECONDS
         );
@@ -73,7 +66,7 @@ public class AuctionScheduler {
 
     private void syncFromDatabase() {
         auctionRepository.findAllOpenAuctions()
-                .forEach(a -> auctions.put(a.getId(), a));
+                .forEach(a -> auctions.putIfAbsent(a.getId(), a));
 
         // Xóa phiên đã kết thúc khỏi RAM
         auctions.values().removeIf(this::canRemove);
@@ -84,14 +77,12 @@ public class AuctionScheduler {
                 && auction.getStatus() != AuctionStatus.RUNNING;
     }
 
-    private void syncToDatabase() {
-
-    }
-
     // vấn đề: kph nh thead vào 1 hàm mà nh hàm cx update database
 
     public void shutdown() {
         scheduler.shutdown();
     }
+
+    public Map<Integer, Auction> getAuctions() {return auctions;}
 }
 

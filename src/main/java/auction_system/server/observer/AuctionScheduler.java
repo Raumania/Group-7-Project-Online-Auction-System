@@ -78,5 +78,8 @@ public class AuctionScheduler {
     public void shutdown() {
         scheduler.shutdown();
     }
+
+    public Map<Integer, Auction> getAuctions() { return auctions;
+    }
 }
 
