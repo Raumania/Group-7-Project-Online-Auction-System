@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -107,7 +108,7 @@ public class BidService {
         - nhiều bidder có thể đặt giá cùng lúc
         - phải khóa dòng auction trước khi kiểm tra giá
     */
-    public void placeBid(int auctionId, User bidder, double amount) {
+    public void placeBid(int auctionId, User bidder, double amount) throws SQLException {
         Connection connection = null;
         BidEvent eventToPublish = null;
 
@@ -193,6 +194,7 @@ public class BidService {
 
         } finally {
             closeConnection(connection);
+            connection.close();
 
             if (eventToPublish != null) {
                 EventBus.publish(eventToPublish);

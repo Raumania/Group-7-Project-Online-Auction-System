@@ -34,7 +34,11 @@ public class EventBusTest {
                 String[] parts = line.split(" ");
                 int auctionID = Integer.parseInt(parts[0]);
                 double amount = Double.parseDouble(parts[1]);
-                bidService.placeBid(auctionID, dat, amount);
+                try {
+                    bidService.placeBid(auctionID, dat, amount);
+                } catch (Exception e) {
+                    System.err.println(e.getMessage());
+                }
             }
         }
         bus.shutdown();
