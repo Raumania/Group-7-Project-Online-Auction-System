@@ -78,7 +78,7 @@ public class AuctionDAO {
             }
 
         } catch (SQLException e) {
-            throw new savingException("Cannot save auction", e);
+            throw new savingException("Cannot save auction");
         }
     }
 
