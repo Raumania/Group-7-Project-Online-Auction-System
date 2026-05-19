@@ -68,7 +68,7 @@ public class AuctionDAO {
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
+                if (.next()) {
                     int generatedId = generatedKeys.getInt(1);
                     auction.setId(generatedId);
                     return generatedId;
@@ -180,22 +180,24 @@ public class AuctionDAO {
 
     public List<Auction> findAllBySellerId(int sellerId) {
         String sql = """
-                SELECT
-                    a.id,
-                    a.seller_id,
-                    i.name,
-                    i.description,
-                    i.type,
-                    a.status,
-                    a.starting_price,
-                    a.current_price,
-                    a.highest_bidder_id,
-                    a.starting_time,
-                    a.ending_time
-                FROM auctions a
-                INNER JOIN items i ON a.id = i.id
-                WHERE a.seller_id = ?
-                """;
+            SELECT
+                a.id,
+                a.seller_id,
+                i.name,
+                i.description,
+                i.type,
+                a.status,
+                a.starting_price,
+                a.current_price,
+                a.highest_bidder_id,
+                u.username AS highest_bidder_username,
+                a.starting_time,
+                a.ending_time
+            FROM auctions a
+            INNER JOIN items i ON a.id = i.id
+            LEFT JOIN users u ON a.highest_bidder_id = u.id
+            WHERE a.seller_id = ?
+            """;
 
         List<Auction> auctions = new ArrayList<>();
 
@@ -322,7 +324,7 @@ public class AuctionDAO {
         auction.setCurrentPrice(resultSet.getDouble("current_price"));
 
         auction.setHighestBidderId(resultSet.getObject("highest_bidder_id", Integer.class));
-        auction.setHighestBidderUserName(resultSet.getString("highest_bidder_username"));
+        auction.setHighestBidderUsername(resultSet.getString("highest_bidder_username"));
 
         String statusStr = resultSet.getString("status");
         if (statusStr != null) {
@@ -353,7 +355,7 @@ public class AuctionDAO {
         auction.setCurrentPrice(resultSet.getDouble("current_price"));
 
         auction.setHighestBidderId(resultSet.getObject("highest_bidder_id", Integer.class));
-        auction.setHighestBidderUserName(resultSet.getString("highest_bidder_id"));
+        auction.setHighestBidderUsername(resultSet.getString("highest_bidder_username"));
         String typeStr = resultSet.getString("type");
         if (typeStr != null) {
             auction.setType(ItemType.valueOf(typeStr.toUpperCase()));
