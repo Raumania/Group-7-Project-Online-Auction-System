@@ -296,7 +296,6 @@ public class AuctionService {
     }
 
     public Item getItemById(int id) {
-        try {
             Item item = itemDAO.findById(id);
 
             if (item == null) {
@@ -304,8 +303,6 @@ public class AuctionService {
             }
 
             return item;
-        } catch (DataBaseException e) {
-            throw new
     }
 
     /*

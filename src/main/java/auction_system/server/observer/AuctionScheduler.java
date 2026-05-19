@@ -69,7 +69,7 @@ public class AuctionScheduler {
     }
 
     private void syncFromDatabase() {
-        auctionRepository.getAllOpenAuctions()
+        auctionRepository.findAllOpenAuctions()
                 .forEach(a -> auctions.put(a.getId(), a));
 
         // Xóa phiên đã kết thúc khỏi RAM
