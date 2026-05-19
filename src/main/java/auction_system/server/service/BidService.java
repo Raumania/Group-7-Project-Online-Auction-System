@@ -11,10 +11,13 @@ import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;
 import auction_system.server.observer.BidEvent;
 import auction_system.server.observer.EventBus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.util.List;
+
 
 public class BidService {
     private static BidService instance;
@@ -22,6 +25,7 @@ public class BidService {
     private final UserService userService;
     private final AuctionDAO auctionDAO;
     private final BidTransactionDAO bidTransactionDAO;
+    Logger logger = LoggerFactory.getLogger(BidService.class);
 
     private BidService() {
         this.auctionService = AuctionService.getInstance();
@@ -112,6 +116,8 @@ public class BidService {
             connection.setAutoCommit(false);
 
             Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
+            Integer previousBidderId = auction.getHighestBidderId();
+            double previousPrice = auction.getCurrentPrice();
 
             if (auction == null) {
                 throw new RuntimeException("Auction not found");
@@ -152,28 +158,35 @@ public class BidService {
                 if (amount < auction.getCurrentPrice() + bidIncrement) {
                     throw new InvalidBidException("Bid amount must not be lower than minBid");
                 }
-                auction.setCurrentPrice(amount);
             }
 
             if (bidder.getBalance() < amount) {
                 throw new RuntimeException("Not enough balance");
             }
 
+            logger.info("đặt giá thành công");
             /*
                 Lưu bid transaction xuống database.
                 Nên dùng cùng connection để nằm trong cùng transaction.
             */
-            BidTransaction latestTransaction = new BidTransaction(bidder, amount);
-            bidTransactionDAO.save(auctionId, latestTransaction);
 
+                BidTransaction latestTransaction = new BidTransaction(bidder, amount);
+                bidTransactionDAO.save(connection,auctionId, latestTransaction);
             /*
                 Cập nhật auction sau khi bid thành công.
                 Đây là phần code cũ của bạn đang thiếu.
             */
-            auction.setCurrentPrice(amount);
-            auction.setHighestBidderId(bidder.getId());
-            auctionDAO.update(connection, auction);
-            connection.commit();
+
+                auction.setCurrentPrice(amount);
+                auction.setHighestBidderId(bidder.getId());
+                auctionDAO.update(connection, auction);
+                connection.commit();
+
+            eventToPublish = new BidEvent(
+                    auctionId, bidder.getId(), previousBidderId,
+                    amount, previousPrice,
+                    LocalDateTime.now());
+
         } catch (Exception e) {
             rollback(connection);
             throw new RuntimeException("Cannot place bid", e);

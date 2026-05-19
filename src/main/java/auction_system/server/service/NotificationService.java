@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 //(aucID, userID)
 public class NotificationService {
     private static NotificationService instance;
-    private final Map<String, Set<String>> auctions =
+    public static final Map<Integer, Set<Integer>> auctions =
             new ConcurrentHashMap<>();
 
     private NotificationService() {
@@ -23,15 +23,15 @@ public class NotificationService {
     }
 
     // Client kết nối vào và đăng ký theo dõi phiên
-    public void register(String auctionId, String subID) {
+    public void register(int auctionId, int subID) {
         auctions
                 .computeIfAbsent(auctionId, k -> ConcurrentHashMap.newKeySet())
                 .add(subID);
     }
 
     // Client ngắt kết nối
-    public void unregister(String auctionId, String subID) {
-        Set<String> subsID = auctions.get(auctionId);
+    public void unregister(int auctionId, String subID) {
+        Set<Integer> subsID = auctions.get(auctionId);
         if (subsID != null) {
             subsID.remove(subID);
         }

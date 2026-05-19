@@ -18,7 +18,7 @@ public class AuctionScheduler {
     BidService bidService =BidService.getInstance();
     AuctionDAO auctionRepository = AuctionDAO.getInstance();
     private static final Logger logger =
-            LoggerFactory.getLogger(AuctionService.class);
+            LoggerFactory.getLogger(AuctionScheduler.class);
 
     private final Map<Integer, Auction> auctions = new ConcurrentHashMap<>();
 

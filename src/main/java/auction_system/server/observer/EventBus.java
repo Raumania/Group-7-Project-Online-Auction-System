@@ -1,5 +1,9 @@
 package auction_system.server.observer;
 
+import auction_system.server.service.NotificationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -12,6 +16,7 @@ public class EventBus {
 
     private static final Map<String, Set<String>> auctions =
             new ConcurrentHashMap<>();  //FAKE DATABASE
+    private static final Logger log = LoggerFactory.getLogger(EventBus.class);
 
     // Thread pool riêng cho việc notify — không dùng chung với bid thread
     private final ExecutorService dispatcher =
@@ -51,9 +56,9 @@ public class EventBus {
     // Mỗi observer chạy trên thread riêng trong pool — không block  , kẾT NỐI DATABASE GỬI RESPONSE NMA CH XONG
 
     private void notifyAll(BidEvent event) {
-        Set<String> subscribers =
-                new CopyOnWriteArraySet<>(auctions.get(event.auctionId()));
-        for (String subscriber : subscribers) {
+        Set<Integer> subscribers =
+                new CopyOnWriteArraySet<>(NotificationService.auctions.get(event.auctionId()));
+        for (Integer subscriber : subscribers) {
             dispatcher.submit(() -> {
                 try {
                     //print để test -thực te la response
