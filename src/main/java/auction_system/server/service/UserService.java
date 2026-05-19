@@ -3,6 +3,7 @@ package auction_system.server.service;
 import auction_system.common.enums.UserRole;
 import auction_system.server.dao.UserDAO;
 import auction_system.server.model.User;
+import auction_system.server.util.HashUtil;
 
 import java.util.List;
 import java.util.Set;
@@ -41,8 +42,8 @@ public class UserService {
         if (roles == null || roles.isEmpty()) {
             throw new RuntimeException("User must have at least one role");
         }
-
-        User user = new User(fullname, username, password, roles);
+        String hashpassword= HashUtil.hashPassword(password);
+        User user = new User(fullname, username, hashpassword, roles);
 
         userDAO.save(user);
 
@@ -230,10 +231,12 @@ public class UserService {
         User user = userDAO.findByUsername(username);
 
         if (user == null) {
-            throw new RuntimeException("User not found");
+            throw new RuntimeException("Username does not exist");
         }
 
-        if (!user.getPassword().equals(password)) {
+        boolean correctPassword = HashUtil.checkPassword(password, user.getPassword());
+
+        if (!correctPassword) {
             throw new RuntimeException("Wrong password");
         }
 
