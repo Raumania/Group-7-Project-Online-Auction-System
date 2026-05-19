@@ -16,6 +16,7 @@ public class Auction extends Entity{
     private double startingPrice;
     private double currentPrice;
     private Integer highestBidderId;
+    private String highestBidderUsername;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
@@ -105,6 +106,14 @@ public class Auction extends Entity{
         this.highestBidderId = highestBidderId;
     }
 
+    public String getHighestBidderUsername() {
+        return highestBidderUsername;
+    }
+
+    public void setHighestBidderUsername(String highestBidderUsername) {
+        this.highestBidderUsername = highestBidderUsername;
+    }
+
     public LocalDateTime getStartTime() {
         return startTime;
     }
@@ -133,6 +142,7 @@ public class Auction extends Entity{
                 ", startingPrice=" + startingPrice +
                 ", currentPrice=" + currentPrice +
                 ", highestBidderId=" + highestBidderId +
+                ", highestBidderUsername='" + highestBidderUsername + '\'' +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
                 '}';
