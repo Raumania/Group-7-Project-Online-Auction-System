@@ -322,6 +322,7 @@ public class AuctionDAO {
         auction.setCurrentPrice(resultSet.getDouble("current_price"));
 
         auction.setHighestBidderId(resultSet.getObject("highest_bidder_id", Integer.class));
+        auction.setHighestBidderUserName(resultSet.getString("highest_bidder_username"));
 
         String statusStr = resultSet.getString("status");
         if (statusStr != null) {
@@ -352,7 +353,7 @@ public class AuctionDAO {
         auction.setCurrentPrice(resultSet.getDouble("current_price"));
 
         auction.setHighestBidderId(resultSet.getObject("highest_bidder_id", Integer.class));
-
+        auction.setHighestBidderUserName(resultSet.getString("highest_bidder_id"));
         String typeStr = resultSet.getString("type");
         if (typeStr != null) {
             auction.setType(ItemType.valueOf(typeStr.toUpperCase()));
