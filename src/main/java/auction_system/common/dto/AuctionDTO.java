@@ -14,6 +14,7 @@ public class AuctionDTO {
     private double startingPrice;
     private double currentPrice;
     private int highestBidderId;
+    private String highestBidderUsername;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
@@ -101,6 +102,14 @@ public class AuctionDTO {
 
     public void setHighestBidderId(int highestBidderId) {
         this.highestBidderId = highestBidderId;
+    }
+
+    public String getHighestBidderUsername() {
+        return highestBidderUsername;
+    }
+
+    public void setHighestBidderUsername(String highestBidderUsername) {
+        this.highestBidderUsername = highestBidderUsername;
     }
 
     public LocalDateTime getStartTime() {

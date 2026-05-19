@@ -16,7 +16,7 @@ public class Auction extends Entity{
     private double startingPrice;
     private double currentPrice;
     private Integer highestBidderId;
-    private String highestBidderUserName; // Thuộc tính mới được thêm vào
+    private String highestBidderUsername;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
@@ -106,14 +106,12 @@ public class Auction extends Entity{
         this.highestBidderId = highestBidderId;
     }
 
-    // Getter cho highestBidderUserName
-    public String getHighestBidderUserName() {
-        return highestBidderUserName;
+    public String getHighestBidderUsername() {
+        return highestBidderUsername;
     }
 
-    // Setter cho highestBidderUserName
-    public void setHighestBidderUserName(String highestBidderUserName) {
-        this.highestBidderUserName = highestBidderUserName;
+    public void setHighestBidderUsername(String highestBidderUsername) {
+        this.highestBidderUsername = highestBidderUsername;
     }
 
     public LocalDateTime getStartTime() {
@@ -144,7 +142,7 @@ public class Auction extends Entity{
                 ", startingPrice=" + startingPrice +
                 ", currentPrice=" + currentPrice +
                 ", highestBidderId=" + highestBidderId +
-                ", highestBidderUserName='" + highestBidderUserName + '\'' +
+                ", highestBidderUsername='" + highestBidderUsername + '\'' +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
                 '}';
