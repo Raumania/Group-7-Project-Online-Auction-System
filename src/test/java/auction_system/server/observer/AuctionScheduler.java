@@ -20,8 +20,7 @@ public class AuctionScheduler {
 
     private final Map<Integer, Auction> auctions = new ConcurrentHashMap<>();
 
-    private final ScheduledExecutorService scheduler =
-            Executors.newScheduledThreadPool(3);
+    private ScheduledExecutorService scheduler;
 
     private AuctionScheduler() {
     }
@@ -34,6 +33,8 @@ public class AuctionScheduler {
     }
 
     public void start() {
+        scheduler =
+                Executors.newScheduledThreadPool(3);
         scheduler.scheduleAtFixedRate(
                 this::syncFromDatabase,
                 0, 30, TimeUnit.SECONDS
