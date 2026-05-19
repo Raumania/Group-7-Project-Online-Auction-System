@@ -45,8 +45,8 @@ public class AuctionDAO {
     public int save(Connection connection, Auction auction) {
         String sql = """
                 INSERT INTO auctions
-                (seller_id, starting_price, current_price, highest_bidder_id, status, starting_time, ending_time)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (seller_id, starting_price, current_price, highest_bidder_id, highest_bidder_username, status, starting_time, ending_time)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -57,18 +57,20 @@ public class AuctionDAO {
 
             if (auction.getHighestBidderId() == null) {
                 statement.setNull(4, Types.INTEGER);
+                statement.setNull(5, Types.VARCHAR);
             } else {
                 statement.setInt(4, auction.getHighestBidderId());
+                statement.setString(5, auction.getHighestBidderUsername());
             }
 
-            statement.setString(5, auction.getStatus().name());
-            statement.setTimestamp(6, Timestamp.valueOf(auction.getStartTime()));
-            statement.setTimestamp(7, Timestamp.valueOf(auction.getEndTime()));
+            statement.setString(6, auction.getStatus().name());
+            statement.setTimestamp(7, Timestamp.valueOf(auction.getStartTime()));
+            statement.setTimestamp(8, Timestamp.valueOf(auction.getEndTime()));
 
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (.next()) {
+                if (generatedKeys.next()) {
                     int generatedId = generatedKeys.getInt(1);
                     auction.setId(generatedId);
                     return generatedId;
@@ -86,7 +88,7 @@ public class AuctionDAO {
         Tìm auction bình thường.
     */
     public Auction findById(int id) {
-        String sql = "SELECT * FROM auctions WHERE id = ?";
+        String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE a.id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -114,7 +116,7 @@ public class AuctionDAO {
         - deleteAuction()
        */
     public Auction findByIdForUpdate(Connection connection, int id) {
-        String sql = "SELECT * FROM auctions WHERE id = ? FOR UPDATE";
+        String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE a.id = ? FOR UPDATE";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
@@ -134,7 +136,7 @@ public class AuctionDAO {
     }
 
     public List<Auction> findAllOpenAuctions() {
-        String sql = "SELECT * FROM auctions WHERE status IN (?, ?)";
+        String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE status IN (?, ?)";
 
         List<Auction> auctions = new ArrayList<>();
 
@@ -158,7 +160,7 @@ public class AuctionDAO {
     }
 
     public List<Auction> findAll() {
-        String sql = "SELECT * FROM auctions";
+        String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id";
 
         List<Auction> auctions = new ArrayList<>();
 
@@ -243,6 +245,7 @@ public class AuctionDAO {
                     starting_price = ?,
                     current_price = ?,
                     highest_bidder_id = ?,
+                    highest_bidder_username = ?,
                     starting_time = ?,
                     ending_time = ?
                 WHERE id = ?
@@ -257,13 +260,15 @@ public class AuctionDAO {
 
             if (auction.getHighestBidderId() == null) {
                 statement.setNull(5, Types.INTEGER);
+                statement.setNull(6, Types.VARCHAR);
             } else {
                 statement.setInt(5, auction.getHighestBidderId());
+                statement.setString(6, auction.getHighestBidderUsername());
             }
 
-            statement.setTimestamp(6, Timestamp.valueOf(auction.getStartTime()));
-            statement.setTimestamp(7, Timestamp.valueOf(auction.getEndTime()));
-            statement.setInt(8, auction.getId());
+            statement.setTimestamp(7, Timestamp.valueOf(auction.getStartTime()));
+            statement.setTimestamp(8, Timestamp.valueOf(auction.getEndTime()));
+            statement.setInt(9, auction.getId());
 
             statement.executeUpdate();
 
@@ -301,7 +306,7 @@ public class AuctionDAO {
     }
 
     public List<Auction> findbystatus(String status) {
-        String sql = "SELECT * FROM auctions where status = ?";
+        String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id where status = ?";
         List<Auction> auctions = new ArrayList<>();
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -323,7 +328,7 @@ public class AuctionDAO {
         auction.setStartingPrice(resultSet.getDouble("starting_price"));
         auction.setCurrentPrice(resultSet.getDouble("current_price"));
 
-        auction.setHighestBidderId(resultSet.getObject("highest_bidder_id", Integer.class));
+        auction.setHighestBidderId(resultSet.getObject("highest_bidder_.id", Integer.class));
         auction.setHighestBidderUsername(resultSet.getString("highest_bidder_username"));
 
         String statusStr = resultSet.getString("status");
