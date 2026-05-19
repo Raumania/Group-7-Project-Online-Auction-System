@@ -30,13 +30,13 @@ class AuctionSchedulerTest {
 
     private final Map<Integer, Auction> auctions = new ConcurrentHashMap<>();
 
-//    @Test
-//    void createAu () {
-//        assertDoesNotThrow(() -> {
-//        Auction auction = new Auction(auctionList.getFirst());
-//        auctionService.createAuction(auction);
-//        });
-//    }
+    @Test
+    void createAu () {
+        assertDoesNotThrow(() -> {
+        Auction auction = new Auction(auctionList.get(3));
+        auctionService.createAuction(auction);
+        });
+    }
 
 //    @BeforeAll
 //    static void beforeAll() {

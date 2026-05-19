@@ -328,7 +328,7 @@ public class AuctionDAO {
         auction.setStartingPrice(resultSet.getDouble("starting_price"));
         auction.setCurrentPrice(resultSet.getDouble("current_price"));
 
-        auction.setHighestBidderId(resultSet.getObject("highest_bidder_.id", Integer.class));
+        auction.setHighestBidderId(resultSet.getObject("highest_bidder_id", Integer.class));
         auction.setHighestBidderUsername(resultSet.getString("highest_bidder_username"));
 
         String statusStr = resultSet.getString("status");
