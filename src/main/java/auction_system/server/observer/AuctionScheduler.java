@@ -6,15 +6,19 @@ import auction_system.server.dao.AuctionDAO;
 import auction_system.server.model.Auction;
 import auction_system.server.service.AuctionService;
 import auction_system.server.service.BidService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.*;
 //
 //Tự động update trạng thái tất cả auction (tested)
 public class AuctionScheduler {
-    private static AuctionScheduler instance;
+    private static AuctionScheduler instance = new AuctionScheduler();
     BidService bidService =BidService.getInstance();
     AuctionDAO auctionRepository = AuctionDAO.getInstance();
+    private static final Logger logger =
+            LoggerFactory.getLogger(AuctionService.class);
 
     private final Map<Integer, Auction> auctions = new ConcurrentHashMap<>();
 
@@ -34,18 +38,11 @@ public class AuctionScheduler {
     public void start() {
         scheduler.scheduleAtFixedRate(
                 this::syncFromDatabase,
-                0, 30, TimeUnit.SECONDS
+                0, 360, TimeUnit.MILLISECONDS
         );
 
         scheduler.scheduleAtFixedRate(
                 this::updateAuctions,
-                0,
-                360,
-                TimeUnit.MILLISECONDS
-        );
-
-        scheduler.scheduleAtFixedRate(
-                this::syncToDatabase,
                 0,
                 360,
                 TimeUnit.MILLISECONDS
@@ -58,37 +55,31 @@ public class AuctionScheduler {
             bidService.updateStatus(auction.getId());
             if (old != auction.getStatus()) {
                 auctionRepository.update(auction);
-                System.out.println(
-                        "Auction "
-                                + auction.getId()
-                                + " changed from "
-                                + old
-                ); //in để test
+                logger.info("Auction {} changed from {} to {}",
+                        auction.getId(), old, auction.getStatus());
+                ; //in để test
             }
         });
     }
 
     private void syncFromDatabase() {
         auctionRepository.findAllOpenAuctions()
-                .forEach(a -> auctions.put(a.getId(), a));
+                .forEach(a -> {auctions.putIfAbsent(a.getId(), a);});
 
         // Xóa phiên đã kết thúc khỏi RAM
         auctions.values().removeIf(this::canRemove);
     }
 
-    private boolean canRemove(Auction auction) {
+    public boolean canRemove(Auction auction) {
         return auction.getStatus() != AuctionStatus.OPEN
                 && auction.getStatus() != AuctionStatus.RUNNING;
     }
 
-    private void syncToDatabase() {
-
-    }
-
-    // vấn đề: kph nh thead vào 1 hàm mà nh hàm cx update database
-
     public void shutdown() {
         scheduler.shutdown();
+    }
+
+    public Map<Integer, Auction> getAuctions() { return auctions;
     }
 }
 

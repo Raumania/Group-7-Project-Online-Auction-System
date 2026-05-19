@@ -20,8 +20,7 @@ public class AuctionScheduler {
 
     private final Map<Integer, Auction> auctions = new ConcurrentHashMap<>();
 
-    private final ScheduledExecutorService scheduler =
-            Executors.newScheduledThreadPool(3);
+    private ScheduledExecutorService scheduler;
 
     private AuctionScheduler() {
     }
@@ -34,6 +33,8 @@ public class AuctionScheduler {
     }
 
     public void start() {
+        scheduler =
+                Executors.newScheduledThreadPool(3);
         scheduler.scheduleAtFixedRate(
                 this::syncFromDatabase,
                 0, 30, TimeUnit.SECONDS
@@ -41,14 +42,7 @@ public class AuctionScheduler {
 
         scheduler.scheduleAtFixedRate(
                 this::updateAuctions,
-                0,
-                360,
-                TimeUnit.MILLISECONDS
-        );
-
-        scheduler.scheduleAtFixedRate(
-                this::syncToDatabase,
-                0,
+                5,
                 360,
                 TimeUnit.MILLISECONDS
         );
@@ -71,20 +65,16 @@ public class AuctionScheduler {
     }
 
     private void syncFromDatabase() {
-        auctionRepository.getAllOpenAuctions()
-                .forEach(a -> auctions.put(a.getId(), a));
+        auctionRepository.findAllOpenAuctions()
+                .forEach(a -> auctions.putIfAbsent(a.getId(), a));
 
         // Xóa phiên đã kết thúc khỏi RAM
         auctions.values().removeIf(this::canRemove);
     }
 
-    private boolean canRemove(Auction auction) {
+    public boolean canRemove(Auction auction) {
         return auction.getStatus() != AuctionStatus.OPEN
                 && auction.getStatus() != AuctionStatus.RUNNING;
-    }
-
-    private void syncToDatabase() {
-
     }
 
     // vấn đề: kph nh thead vào 1 hàm mà nh hàm cx update database
@@ -92,5 +82,7 @@ public class AuctionScheduler {
     public void shutdown() {
         scheduler.shutdown();
     }
+
+    public Map<Integer, Auction> getAuctions() {return auctions;}
 }
 
