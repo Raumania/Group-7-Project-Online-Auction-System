@@ -24,7 +24,7 @@ public class AuctionService {
     private final AuctionDAO auctionDAO = AuctionDAO.getInstance();
     private final ItemDAO itemDAO = ItemDAO.getInstance();
     private final UserDAO userDAO = UserDAO.getInstance();
-
+    private final ImageService imageService=new ImageService();
     private AuctionService() {
     }
 
@@ -49,25 +49,34 @@ public class AuctionService {
     //throwRuntime
     public void createAuction(Auction auction) {
         Connection connection = null;
-        validateItemData(auction);
 
         try {
             connection = DatabaseConnection.getConnection();
             connection.setAutoCommit(false);
-            int id = auctionDAO.save(connection, auction);
+
+            validateItemData(auction);
+            String path =imageService.saveBase64Image(auction.getImagebase64(),auction.getId());
+            if(path!=null) {
+                int id = auctionDAO.save(connection, auction);
+            }
+            int id = auctionDAO.save(connection, auction,path);
+            auction.setId(id);
+
             itemDAO.save(connection, auction, id);
 
             connection.commit();
 
         } catch (Exception e) {
-            rollback(connection);
-            throw new RuntimeException("Cannot create auction", e);
+        rollback(connection);
 
-        } finally {
-            closeConnection(connection);
-        }
+        e.printStackTrace();
+
+        throw new RuntimeException("Cannot create auction: " + e.getMessage(), e);
+
+    } finally {
+        closeConnection(connection);
+     }
     }
-
     /*
         Xóa auction.
 
@@ -339,11 +348,6 @@ public class AuctionService {
             if (auction.getName() == null || auction.getName().trim().isEmpty()) {
                 throw new RuntimeException("Item name cannot be null or empty");
             }
-
-            if (auction.getDescription() == null || auction.getDescription().trim().isEmpty()) {
-                throw new RuntimeException("Item description cannot be null or empty");
-            }
-
             if (auction.getStartTime() == null) {
                 throw new RuntimeException("Starting time cannot be null");
             }

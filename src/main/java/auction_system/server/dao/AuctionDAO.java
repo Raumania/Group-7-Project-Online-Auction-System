@@ -29,28 +29,59 @@ public class AuctionDAO {
     /*
         Hàm save bình thường.
         Dùng khi bạn chỉ muốn lưu auction riêng lẻ.
+        Hàm save dùng chung connection.
+        Dùng trong transaction ở AuctionService.createAuction().
     */
-    public int save(Auction auction) {
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            return save(connection, auction);
+    public int save(Connection connection,Auction auction,String path){
+
+        String sql = """
+                INSERT INTO auctions
+                (seller_id, starting_price, current_price, highest_bidder_id, highest_bidder_username, status, starting_time, ending_time, path)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
+                """;
+        try (
+                PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)){
+            statement.setInt(1, auction.getSellerId());
+            statement.setDouble(2, auction.getStartingPrice());
+            statement.setDouble(3, auction.getCurrentPrice());
+
+            if (auction.getHighestBidderId() == null) {
+                statement.setNull(4, Types.INTEGER);
+                statement.setNull(5, Types.VARCHAR);
+            } else {
+                statement.setInt(4, auction.getHighestBidderId());
+                statement.setString(5, auction.getHighestBidderUsername());
+            }
+
+            statement.setString(6, auction.getStatus().name());
+            statement.setTimestamp(7, Timestamp.valueOf(auction.getStartTime()));
+            statement.setTimestamp(8, Timestamp.valueOf(auction.getEndTime()));
+            statement.setString(9, path);
+
+            statement.executeUpdate();
+
+            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    int generatedId = generatedKeys.getInt(1);
+                    auction.setId(generatedId);
+                    return generatedId;
+                }
+
+                throw new SQLException("Creating auction failed, no ID obtained.");
+            }
+
         } catch (SQLException e) {
             throw new savingException("Cannot save auction");
         }
     }
-
-    /*
-        Hàm save dùng chung connection.
-        Dùng trong transaction ở AuctionService.createAuction().
-    */
-    public int save(Connection connection, Auction auction) {
+    public int save(Connection connection,Auction auction) {
         String sql = """
                 INSERT INTO auctions
                 (seller_id, starting_price, current_price, highest_bidder_id, highest_bidder_username, status, starting_time, ending_time)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
-
-        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
+        try (
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)){
             statement.setInt(1, auction.getSellerId());
             statement.setDouble(2, auction.getStartingPrice());
             statement.setDouble(3, auction.getCurrentPrice());
@@ -160,17 +191,33 @@ public class AuctionDAO {
     }
 
     public List<Auction> findAll() {
-        String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id";
+        String sql = """
+            SELECT
+                a.id,
+                a.seller_id,
+                i.name,
+                i.description,
+                i.type,
+                a.status,
+                a.starting_price,
+                a.current_price,
+                a.highest_bidder_id,
+                u.username AS highest_bidder_username,
+                a.starting_time,
+                a.ending_time
+            FROM auctions a
+            INNER JOIN items i ON a.id = i.id
+            LEFT JOIN users u ON a.highest_bidder_id = u.id
+            """;
 
         List<Auction> auctions = new ArrayList<>();
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-
             ResultSet resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
-                auctions.add(mapResultSetToAuction(resultSet));
+                auctions.add(mapResultSetToAuctionWithItem(resultSet));
             }
 
         } catch (SQLException e) {

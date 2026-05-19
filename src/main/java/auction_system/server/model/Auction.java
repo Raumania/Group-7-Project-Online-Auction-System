@@ -19,7 +19,7 @@ public class Auction extends Entity{
     private String highestBidderUsername;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-
+    private transient String imagebase64;
     public Auction() {
     }
 
@@ -32,12 +32,15 @@ public class Auction extends Entity{
         this.startTime = auctionDTO.getStartTime();
         this.endTime = auctionDTO.getEndTime();
         this.status = AuctionStatus.OPEN;
+        this.imagebase64=auctionDTO.getImagebase64();
     }
 
     public int getId() {
         return id;
     }
-
+    public String  getImagebase64(){
+        return this.imagebase64;
+    }
     public void setId(int id) {
         this.id = id;
     }
