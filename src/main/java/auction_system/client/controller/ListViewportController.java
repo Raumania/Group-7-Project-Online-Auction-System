@@ -1,6 +1,9 @@
 package auction_system.client.controller;
 
-import javafx.collections.FXCollections;
+import auction_system.client.service.AuctionListService;
+import auction_system.client.store.AuctionStore;
+import auction_system.common.dto.AuctionDTO;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -20,41 +23,55 @@ public class ListViewportController implements Initializable {
     @FXML private ComboBox<String> sortByComboBox;
     @FXML private ComboBox<String> statusComboBox;
 
+    private final ObservableList<AuctionDTO> allAuctions = AuctionStore.getInstance().getAuctions();
+
     @FXML
     void handleFilterChange(ActionEvent event) {
 
     }
+
     public void initialize(URL location, ResourceBundle resources) {
-        // Add item after login
-        for(int qty = 1;qty <= 10;qty++) {
-            try {
-                FXMLLoader loader = new FXMLLoader();
-                loader.setLocation(getClass().getResource("/fxml/itemCard.fxml"));
-                VBox pane = loader.load();
-                ItemCardController itemCardController = loader.getController();
-                itemContainer.getChildren().add(pane);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
         //Categories
-        ObservableList<String> categoryOptions = FXCollections.observableArrayList(
+        ObservableList<String> categoryOptions = javafx.collections.FXCollections.observableArrayList(
                 "All Category", "Electronics", "Art","Vehicle"
         );
         categoryComboBox.setItems(categoryOptions);
         categoryComboBox.getSelectionModel().selectFirst();
         //Status
-        ObservableList<String> statusOptions = FXCollections.observableArrayList(
+        ObservableList<String> statusOptions = javafx.collections.FXCollections.observableArrayList(
                 "All Status", "OPEN", "RUNNING","FINISHED","PAID/CANCELED"
         );
         statusComboBox.setItems(statusOptions);
         statusComboBox.getSelectionModel().selectFirst();
         //Sortby
-        ObservableList<String> sortByOptions = FXCollections.observableArrayList(
+        ObservableList<String> sortByOptions = javafx.collections.FXCollections.observableArrayList(
                 "Newest","Oldest"
         );
         sortByComboBox.setItems(sortByOptions);
         sortByComboBox.getSelectionModel().selectFirst();
+
+        allAuctions.addListener((ListChangeListener<AuctionDTO>) c -> renderAuctions());
+        
+        AuctionListService.getInstance().fetchAllAuctions();
     }
 
+    private void renderAuctions() {
+        itemContainer.getChildren().clear();
+        for (AuctionDTO auction : allAuctions) {
+            try {
+                FXMLLoader loader = new FXMLLoader();
+                loader.setLocation(getClass().getResource("/fxml/itemCard.fxml"));
+                VBox pane = loader.load();
+                ItemCardController itemCardController = loader.getController();
+                itemCardController.setData(auction);
+                itemContainer.getChildren().add(pane);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshList(ActionEvent event) {
+        AuctionListService.getInstance().fetchAllAuctions();
+    }
 }

@@ -5,43 +5,70 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Line?>
 
-<VBox alignment="TOP_CENTER" prefWidth="220.0" spacing="10.0" styleClass="auction-card" stylesheets="@../css/itemCard.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.ItemCardController">
+<VBox alignment="TOP_CENTER" prefWidth="220.0" spacing="10.0" styleClass="auction-card" stylesheets="@../css/itemCard.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.ItemCardController">
    <children>
-      <ImageView fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
+
+      <Label fx:id="statusLabel" styleClass="badge-running" text="● RUNNING" />
+      <ImageView fx:id="itemImageView" fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
          <image>
             <Image url="@../images/items/iphone%2036%20pro%20max.png" />
          </image>
       </ImageView>
-      <Label styleClass="text-white-bold" text="iPhone 36 Pro Max" />
-      <Label styleClass="card-tag" text="Electronics" />
-      <Label styleClass="card-price" text="\$1,000" />
-      <Label style="-fx-font-size: 10px;" styleClass="text-muted" text="Highest Bidder: user123" />
+
+      <Label fx:id="nameLabel" styleClass="text-white-bold" text="iPhone 36 Pro Max" />
+      <Label fx:id="categoryLable" styleClass="card-tag" text="Electronics" />
+      <Label fx:id="currentPriceLabel" styleClass="card-price" text="\$1,000" />
+
+      <HBox alignment="CENTER" prefHeight="50.0" spacing="4.0" styleClass="highest-bidder-box-compact">
+         <children>
+            <VBox alignment="CENTER_LEFT" spacing="0.0">
+               <children>
+                  <Label minWidth="-Infinity" styleClass="sub-text-compact" text="HIGHEST BIDDER" />
+                  <Label fx:id="HighestBidderUsernameLabel" minWidth="-Infinity" styleClass="main-text-compact" text="user123" />
+               </children>
+            </VBox>
+
+            <Region HBox.hgrow="ALWAYS" />
+
+            <Line endY="22.0" startY="0.0" styleClass="divider-compact" />
+
+            <HBox alignment="CENTER" spacing="4.0">
+               <children>
+                  <Label minWidth="-Infinity" styleClass="shield-icon-compact" text="✔" />
+                  <Label minWidth="-Infinity" styleClass="verified-text-compact" text="Verified" />
+               </children>
+            </HBox>
+         </children>
+      </HBox>
       <HBox alignment="CENTER" spacing="10.0" styleClass="timer-box">
          <children>
             <VBox alignment="CENTER">
                <children>
-                  <Label styleClass="timer-num" text="02" />
+                  <Label fx:id="hourLabel" styleClass="timer-num" text="02" />
                   <Label styleClass="timer-label" text="HRS" />
                </children>
             </VBox>
             <Label styleClass="timer-colon" text=":" />
             <VBox alignment="CENTER">
                <children>
-                  <Label styleClass="timer-num" text="15" />
+                  <Label fx:id="minLabel" styleClass="timer-num" text="15" />
                   <Label styleClass="timer-label" text="MINS" />
                </children>
             </VBox>
             <Label styleClass="timer-colon" text=":" />
             <VBox alignment="CENTER">
                <children>
-                  <Label styleClass="timer-num" text="30" />
+                  <Label fx:id="secLabel" styleClass="timer-num" text="30" />
                   <Label styleClass="timer-label" text="SECS" />
                </children>
             </VBox>
          </children>
       </HBox>
+
       <Button maxWidth="1.7976931348623157E308" onAction="#detailViewportBtn" styleClass="place-bid-btn" text="Place Bid" />
    </children>
 </VBox>

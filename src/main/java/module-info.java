@@ -13,7 +13,7 @@ module com.auction_system {
     opens auction_system.client to javafx.fxml;
     opens auction_system.common.enums to com.google.gson;
     opens auction_system.common.protocol to com.google.gson;
-    opens auction_system.common.dto to com.google.gson;
+    opens auction_system.common.dto to com.google.gson, javafx.base;
 
     exports auction_system.client.controller;
     exports auction_system.client;

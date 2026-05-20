@@ -38,6 +38,9 @@ public class MainAuctionController implements Initializable{
     private VBox sellerViewport;
     private VBox AIViewport;
 
+    private ListViewportController listViewController;
+    private SellerViewportController sellerViewController;
+
     public void initialize(URL location, ResourceBundle resources) {
         try {
             //load user's info
@@ -57,6 +60,10 @@ public class MainAuctionController implements Initializable{
             listViewport = listLoader.load();
             sellerViewport = sellerLoader.load();
             AIViewport = AILoader.load();
+
+            listViewController = listLoader.getController();
+            sellerViewController = sellerLoader.getController();
+
             viewport.getChildren().setAll(listViewport);
         }
         catch (IOException e) {
@@ -66,10 +73,16 @@ public class MainAuctionController implements Initializable{
 
     @FXML
     void listViewportBtn(ActionEvent event) throws IOException{
+        if (listViewController != null) {
+            listViewController.refreshList(null);
+        }
         viewport.getChildren().setAll(listViewport);
     }
     @FXML
     void sellerViewportBtn(ActionEvent event) throws IOException{
+        if (sellerViewController != null) {
+            sellerViewController.refreshTable(null);
+        }
         viewport.getChildren().setAll(sellerViewport);
     }
     @FXML

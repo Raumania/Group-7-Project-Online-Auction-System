@@ -1,5 +1,6 @@
 package auction_system.client.socket;
 
+import auction_system.client.Util.GsonUtil;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import com.google.gson.*;
@@ -26,13 +27,6 @@ public class SocketClient {
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
-    
-    private Gson gson = new GsonBuilder()
-            .registerTypeAdapter(LocalDateTime.class, (JsonSerializer<LocalDateTime>) (src, type, context) -> 
-                    new JsonPrimitive(src.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)))
-            .registerTypeAdapter(LocalDateTime.class, (JsonDeserializer<LocalDateTime>) (json, type, context) -> 
-                    LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME))
-            .create();
 
     public void connect(String URL, int PORT) {
         try {
@@ -46,10 +40,27 @@ public class SocketClient {
         }
     }
 
+    private String readMessage(DataInputStream in) throws IOException {
+        int length = in.readInt();
+
+        byte[] data = new byte[length];
+        in.readFully(data);
+
+        return new String(data, "UTF-8");
+    }
+
+    private void writeMessage(DataOutputStream out, String message) throws IOException {
+        byte[] data = message.getBytes("UTF-8");
+
+        out.writeInt(data.length);
+        out.write(data);
+        out.flush();
+    }
+
     public <T> void send(Request<T> request) {
         try {
-            String json = gson.toJson(request);
-            out.writeUTF(json);
+            String json = GsonUtil.toJson(request);
+            writeMessage(new DataOutputStream(new BufferedOutputStream(socket.getOutputStream())),json);
             out.flush();
             System.out.println(json);
         }
@@ -60,8 +71,9 @@ public class SocketClient {
 
     public Response receive() {
         try {
-            String json = in.readUTF();
-            return gson.fromJson(json,Response.class);
+            String json = readMessage(in);
+            System.out.println(json);
+            return GsonUtil.fromJson(json,Response.class);
         }
         catch (IOException e) {
             e.printStackTrace();

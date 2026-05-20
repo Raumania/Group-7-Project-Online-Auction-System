@@ -3,12 +3,10 @@ package auction_system.client.service;
 import auction_system.client.session.UserSession;
 import auction_system.client.socket.SocketClient;
 import auction_system.common.dto.UserDTO;
-import auction_system.common.protocol.MessageType;
+import auction_system.common.enums.Action;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import com.google.gson.Gson;
-
-import java.net.Socket;
 
 public class AuthService {
     //Singleton for AuthService
@@ -25,7 +23,7 @@ public class AuthService {
 
     public boolean checkLogin(UserDTO user) {
 
-        Request<UserDTO> request = new Request<>(MessageType.LOGIN, user);
+        Request<UserDTO> request = new Request<>(Action.LOGIN, user);
         SocketClient.getInstance().send(request);
         Response response = SocketClient.getInstance().receive();
         if(response.getStatus().equals("SUCCESS")) {
@@ -39,7 +37,7 @@ public class AuthService {
     }
 
     public boolean checkRegister(UserDTO user) {
-        Request<UserDTO> request = new Request<>(MessageType.REGISTER,user);
+        Request<UserDTO> request = new Request<>(Action.REGISTER,user);
         SocketClient.getInstance().send(request);
         Response response = SocketClient.getInstance().receive();
         if(response.getStatus().equals("SUCCESS")) {
