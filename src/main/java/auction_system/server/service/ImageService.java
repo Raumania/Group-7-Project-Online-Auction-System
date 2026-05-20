@@ -8,7 +8,7 @@ public class ImageService {
     private static long  dem=0;
     private static ImageService instance;
     private static final String IMAGE_FOLDER = "data/images";
-    private ImageService(){
+    ImageService(){
     }
     public static ImageService getInstance() {
         if (instance == null) {

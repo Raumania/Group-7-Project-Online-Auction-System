@@ -1,6 +1,7 @@
 package auction_system.server.dao;
 
 import auction_system.common.enums.UserRole;
+import auction_system.server.exception.daoException.FindingException;
 import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;
 
@@ -115,6 +116,8 @@ public class BidTransactionDAO {
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot find bid history", e);
+        } catch (FindingException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -137,7 +140,7 @@ public class BidTransactionDAO {
 
             return null;
 
-        } catch (SQLException e) {
+        } catch (SQLException | FindingException e) {
             throw new RuntimeException("Cannot find latest bid", e);
         }
     }
@@ -171,7 +174,7 @@ public class BidTransactionDAO {
     */
     
 
-    private BidTransaction mapResultSetToBidTransaction(ResultSet resultSet) throws SQLException {
+    private BidTransaction mapResultSetToBidTransaction(ResultSet resultSet) throws SQLException, FindingException {
         int id = resultSet.getInt("id");
 
         int bidderId = resultSet.getInt("bidder_id");

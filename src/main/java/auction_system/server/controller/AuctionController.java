@@ -9,10 +9,13 @@ import auction_system.server.model.Auction;
 import auction_system.server.service.AuctionService;
 import auction_system.server.util.GsonUtil;
 import com.google.gson.JsonElement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class AuctionController implements RequestHandler {
+    Logger logger = LoggerFactory.getLogger(AuctionController.class);
 
     private final AuctionService auctionService = AuctionService.getInstance();
 
@@ -40,22 +43,25 @@ public class AuctionController implements RequestHandler {
                     return new Response(Status.ERROR, "Unknown action: " + action, null);
             }
         } catch (Exception e) {
+            logger.error(e.getMessage());
             return new Response(Status.ERROR, e.getMessage(), null);
         }
     }
 
     private Response getAllAuctions() {
-        List<Auction> auctions = auctionService.getAllAuctions();
-        return new Response(Status.SUCCESS, "List returned", auctions);
+            List<Auction> auctions = auctionService.getAllAuctions();
+            logger.info("Get all auctions");
+            return new Response(Status.SUCCESS, "List returned", auctions);
     }
 
     private Response getSellerItems(JsonElement data) {
         try {
             int sellerId = GsonUtil.fromJson(data, Integer.class);
             List<Auction> auctions = auctionService.getMyAuctions(sellerId);
+            logger.info(auctions.toString());
             return new Response(Status.SUCCESS, "Seller Items List returned", auctions);
         } catch (Exception e){
-            System.err.println(e.getMessage());
+            logger.error(e.getMessage(), e);
             return new Response(Status.ERROR, e.getMessage(), null);
         }
     }
@@ -63,6 +69,7 @@ public class AuctionController implements RequestHandler {
     private Response getAuctionDetail(JsonElement data) {
         int auctionId = GsonUtil.fromJson(data, Integer.class);
         Auction auction = auctionService.getAuctionById(auctionId);
+        logger.info("Auction ID: {}", auctionId);
         return new Response(Status.SUCCESS, "Auction detail", auction);
     }
 
@@ -72,9 +79,10 @@ public class AuctionController implements RequestHandler {
 
             Auction auction = new Auction(auctionDTO);
             auctionService.createAuction(auction);
+            logger.info("Created auction: " + auction);
             return new Response(Status.SUCCESS, "Auction created", auction);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
             return new Response(Status.ERROR, "Create auction failed: " + e.getMessage(), null);
         }
     }
@@ -86,7 +94,7 @@ public class AuctionController implements RequestHandler {
             auctionService.editAuction(auction);
             return new Response(Status.SUCCESS, "Auction edited", auction);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
             return new Response(Status.ERROR, "Edit auction failed: " + e.getMessage(), null);
         }
     }
@@ -97,7 +105,7 @@ public class AuctionController implements RequestHandler {
             auctionService.deleteAuction(auctionId);
             return new Response(Status.SUCCESS, "Auction deleted", null);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
             return new Response(Status.ERROR, "Delete auction failed: " + e.getMessage(), null);
         }
     }
@@ -105,6 +113,7 @@ public class AuctionController implements RequestHandler {
     private Response closeAuction(JsonElement data) {
         int auctionId = GsonUtil.fromJson(data, Integer.class);
         auctionService.closeAuction(auctionId);
+        logger.info("Closed auction: {}", auctionId);
         return new Response(Status.SUCCESS, "Auction closed", null);
     }
 }

@@ -61,11 +61,16 @@ public class BidController implements RequestHandler {
 
     // Helper method chuyển Object/JsonElement thành đối tượng T
     private <T> T parseData(Object dataObj, Class<T> clazz) {
-        if (dataObj instanceof JsonElement) {
-            return GsonUtil.fromJson((JsonElement) dataObj, clazz);
-        } else {
-            String json = GsonUtil.toJson(dataObj);
-            return GsonUtil.fromJson(json, clazz);
+        try {
+            if (dataObj instanceof JsonElement) {
+                return GsonUtil.fromJson((JsonElement) dataObj, clazz);
+            } else {
+                String json = GsonUtil.toJson(dataObj);
+                return GsonUtil.fromJson(json, clazz);
+            }
+        }catch (Exception e) {
+            System.err.println("Parse data failed: " + e.getMessage());
+            throw  new RuntimeException(e);
         }
     }
 }

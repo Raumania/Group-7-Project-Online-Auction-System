@@ -3,6 +3,14 @@ package auction_system.server.service;
 import auction_system.common.enums.UserRole;
 import auction_system.server.dao.UserDAO;
 import auction_system.server.exception.ControllerException.*;
+import auction_system.server.exception.serviceException.User.AuthenticationException;
+import auction_system.server.exception.serviceException.Bid.AuthorizationException;
+import auction_system.server.exception.serviceException.User.UserNotFoundException;
+import auction_system.server.exception.serviceException.User.UserInformationException;
+import auction_system.server.exception.daoException.DeletingException;
+import auction_system.server.exception.daoException.FindingException;
+import auction_system.server.exception.daoException.SavingException;
+import auction_system.server.exception.daoException.UpdatingException;
 import auction_system.server.model.User;
 import auction_system.server.util.HashUtil;
 
@@ -24,7 +32,7 @@ public class UserService {
         return instance;
     }
 
-    public User registerUser(String fullname, String username, String password) {
+    public User registerUser(String fullname, String username, String password) throws FindingException, SavingException {
         return registerUser(
                 fullname,
                 username,
@@ -33,15 +41,15 @@ public class UserService {
         );
     }
 
-    public User registerUser(String fullname, String username, String password, Set<UserRole> roles) {
+    public User registerUser(String fullname, String username, String password, Set<UserRole> roles) throws FindingException, SavingException {
         User existingUser = userDAO.findByUsername(username);
 
         if (existingUser != null) {
-            throw new DuplicateResourceException("Username already exists");
+            throw new RuntimeException("Username already exists");
         }
 
         if (roles == null || roles.isEmpty()) {
-            throw new InvalidInputException("User must have at least one role");
+            throw new UserInformationException("User must have at least one role");
         }
         String hashpassword = HashUtil.hashPassword(password);
         User user = new User(fullname, username, hashpassword, roles);
@@ -59,7 +67,7 @@ public class UserService {
         Nhưng bản chất bây giờ không tạo Seller object nữa,
         mà tạo User có role SELLER.
     */
-    public User createSeller(String fullname, String username, String password) {
+    public User createSeller(String fullname, String username, String password) throws FindingException, SavingException {
         return registerUser(
                 fullname,
                 username,
@@ -76,7 +84,7 @@ public class UserService {
         Nhưng bản chất bây giờ không tạo Bidder object nữa,
         mà tạo User có role BIDDER.
     */
-    public User createBidder(String fullname, String username, String password) {
+    public User createBidder(String fullname, String username, String password) throws FindingException, SavingException {
         return registerUser(
                 fullname,
                 username,
@@ -94,7 +102,7 @@ public class UserService {
         Thực ra hàm này bây giờ giống registerUser(fullname, username, password).
         Giữ lại để code dễ đọc.
     */
-    public User createBidderAndSeller(String fullname, String username, String password) {
+    public User createBidderAndSeller(String fullname, String username, String password) throws FindingException, SavingException {
         return registerUser(fullname, username, password);
     }
 
@@ -104,7 +112,7 @@ public class UserService {
         Không nên cho mọi user mặc định là ADMIN.
         Admin nên tạo riêng bằng hàm này hoặc bằng seed data.
     */
-    public User createAdmin(String fullname, String username, String password) {
+    public User createAdmin(String fullname, String username, String password) throws FindingException, SavingException {
         return registerUser(
                 fullname,
                 username,
@@ -118,7 +126,7 @@ public class UserService {
 
         Dùng nếu bạn muốn admin cũng có thể mua/bán.
     */
-    public User createFullAdmin(String fullname, String username, String password) {
+    public User createFullAdmin(String fullname, String username, String password) throws FindingException, SavingException {
         return registerUser(
                 fullname,
                 username,
@@ -132,7 +140,7 @@ public class UserService {
 
         Nếu DAO trả về null nghĩa là database không có user đó.
     */
-    public User getUserById(int id) {
+    public User getUserById(int id) throws FindingException {
         User user = userDAO.findById(id);
 
         if (user == null) {
@@ -145,7 +153,7 @@ public class UserService {
     /*
         Tìm user theo username.
     */
-    public User getUserByUsername(String username) {
+    public User getUserByUsername(String username) throws FindingException {
         User user = userDAO.findByUsername(username);
 
         if (user == null) {
@@ -165,7 +173,7 @@ public class UserService {
         - không dùng instanceof nữa
         - dùng hasRole(UserRole.SELLER)
     */
-    public User getSellerById(int id) {
+    public User getSellerById(int id) throws FindingException {
         User user = getUserById(id);
 
         if (user.hasRole(UserRole.SELLER)) {
@@ -178,7 +186,7 @@ public class UserService {
     /*
         Lấy user theo id và kiểm tra user đó có role ADMIN hay không.
     */
-    public User getAdminById(int id) {
+    public User getAdminById(int id) throws FindingException {
         User user = getUserById(id);
 
         if (user.hasRole(UserRole.ADMIN)) {
@@ -196,7 +204,7 @@ public class UserService {
         - sau đó muốn user đó đăng bán sản phẩm
         - thì thêm role SELLER
     */
-    public void addRole(int userId, UserRole role) {
+    public void addRole(int userId, UserRole role) throws FindingException, UpdatingException {
         User user = getUserById(userId);
 
         user.addRole(role);
@@ -213,7 +221,7 @@ public class UserService {
 
         Trong class User nên chặn trường hợp xóa hết role.
     */
-    public void removeRole(int userId, UserRole role) {
+    public void removeRole(int userId, UserRole role) throws FindingException, UpdatingException {
         User user = getUserById(userId);
 
         user.removeRole(role);
@@ -228,7 +236,7 @@ public class UserService {
         Bước 2: kiểm tra password.
         Bước 3: đúng thì trả về user.
     */
-    public User login(String username, String password) {
+    public User login(String username, String password) throws FindingException {
         User user = userDAO.findByUsername(username);
 
         if (user == null) {
@@ -249,7 +257,7 @@ public class UserService {
 
         Muốn dùng hàm này thì trong UserDAO cần có findAll().
     */
-    public List<User> getAllUsers() {
+    public List<User> getAllUsers() throws FindingException {
         return userDAO.findAll();
     }
 
@@ -260,7 +268,7 @@ public class UserService {
         Nếu UserDAO của bạn đang là void deleteById(String id),
         mình khuyên sửa thành boolean.
     */
-    public void removeUser(int id) {
+    public void removeUser(int id) throws DeletingException {
         boolean removed = userDAO.deleteById(id);
 
         if (!removed) {
@@ -268,7 +276,7 @@ public class UserService {
         }
     }
 
-    public void deposit(int userId, double amount) {
+    public void deposit(int userId, double amount) throws UpdatingException, FindingException {
         User user = getUserById(userId);
 
         user.deposit(amount);
@@ -280,7 +288,7 @@ public class UserService {
         }
     }
 
-    public void withdraw(int userId, double amount) {
+    public void withdraw(int userId, double amount) throws FindingException, UpdatingException {
         User user = getUserById(userId);
 
         user.withdraw(amount);

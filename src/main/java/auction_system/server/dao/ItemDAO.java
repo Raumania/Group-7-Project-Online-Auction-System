@@ -2,8 +2,9 @@ package auction_system.server.dao;
 
 import auction_system.common.enums.ItemType;
 import auction_system.common.enums.UserRole;
-import auction_system.server.exception.AuthorizationException;
-import auction_system.server.exception.ItemInformationException;
+
+import auction_system.server.exception.serviceException.Bid.AuthorizationException;
+import auction_system.server.exception.serviceException.Item.ItemInformationException;
 import auction_system.server.exception.daoException.DeletingException;
 import auction_system.server.exception.daoException.FindingException;
 import auction_system.server.exception.daoException.SavingException;
@@ -221,7 +222,7 @@ public class ItemDAO {
 
         return items;
     }
-    private Item mapResultSetToItem(ResultSet resultSet) throws SQLException {
+    private Item mapResultSetToItem(ResultSet resultSet) throws SQLException, FindingException {
         int id = resultSet.getInt("id");
         String name = resultSet.getString("name");
         String description = resultSet.getString("description");

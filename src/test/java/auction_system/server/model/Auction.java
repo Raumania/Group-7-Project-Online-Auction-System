@@ -19,7 +19,7 @@ public class Auction extends Entity{
     private String highestBidderUsername;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private transient String imagebase64;
+    private String imagebase64;
     public Auction() {
     }
 
@@ -132,7 +132,9 @@ public class Auction extends Entity{
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
     }
-
+    public void setImagebase64(String imagebase64){
+        this.imagebase64=imagebase64;
+    }
     @Override
     public String toString() {
         return "Auction{" +
@@ -145,9 +147,9 @@ public class Auction extends Entity{
                 ", startingPrice=" + startingPrice +
                 ", currentPrice=" + currentPrice +
                 ", highestBidderId=" + highestBidderId +
-                ", highestBidderUsername='" + highestBidderUsername + '\'' +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
+                ", imagebase64='" + imagebase64 + '\'' +
                 '}';
     }
 }

@@ -3,6 +3,8 @@ package auction_system.server.observer;
 
 import auction_system.common.enums.AuctionStatus;
 import auction_system.server.dao.AuctionDAO;
+import auction_system.server.exception.daoException.FindingException;
+import auction_system.server.exception.daoException.UpdatingException;
 import auction_system.server.model.Auction;
 import auction_system.server.service.AuctionService;
 import auction_system.server.service.BidService;
@@ -54,7 +56,11 @@ public class AuctionScheduler {
             AuctionStatus old = auction.getStatus();
             bidService.updateStatus(auction.getId());
             if (old != auction.getStatus()) {
-                auctionRepository.update(auction);
+                try {
+                    auctionRepository.update(auction);
+                } catch (UpdatingException e) {
+                    logger.error(e.getMessage());
+                }
                 logger.info("Auction {} changed from {} to {}",
                         auction.getId(), old, auction.getStatus());
                 ; //in để test
@@ -63,11 +69,17 @@ public class AuctionScheduler {
     }
 
     private void syncFromDatabase() {
-        auctionRepository.findAllOpenAuctions()
-                .forEach(a -> {auctions.putIfAbsent(a.getId(), a);});
+        try {
+            auctionRepository.findAllOpenAuctions()
+                    .forEach(a -> {
+                        auctions.putIfAbsent(a.getId(), a);
+                    });
 
-        // Xóa phiên đã kết thúc khỏi RAM
-        auctions.values().removeIf(this::canRemove);
+            // Xóa phiên đã kết thúc khỏi RAM
+            auctions.values().removeIf(this::canRemove);
+        }catch (Exception e) {
+            logger.error(e.getMessage());
+        }
     }
 
     public boolean canRemove(Auction auction) {

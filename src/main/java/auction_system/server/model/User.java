@@ -1,7 +1,7 @@
 package auction_system.server.model;
 
 import auction_system.common.enums.UserRole;
-import auction_system.server.exception.UserInformationException;
+import auction_system.server.exception.serviceException.User.UserInformationException;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -2,6 +2,13 @@ package auction_system.server.dao;
 
 import auction_system.common.enums.ItemType;
 import auction_system.common.enums.UserRole;
+
+import auction_system.server.exception.serviceException.Bid.AuthorizationException;
+import auction_system.server.exception.serviceException.Item.ItemInformationException;
+import auction_system.server.exception.daoException.DeletingException;
+import auction_system.server.exception.daoException.FindingException;
+import auction_system.server.exception.daoException.SavingException;
+import auction_system.server.exception.daoException.UpdatingException;
 import auction_system.server.model.*;
 
 import java.sql.*;
@@ -32,7 +39,7 @@ public class ItemDAO {
         Save dùng chung connection.
         Dùng trong AuctionService.createAuction().
     */
-    public void save(Connection connection, Auction auction, int id) {
+    public void save(Connection connection, Auction auction, int id) throws SavingException {
         String sql = "INSERT INTO items(id, name, description, type) VALUES (?, ?, ?, ?)";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -45,7 +52,7 @@ public class ItemDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot save item for auction", e);
+            throw new SavingException("Cannot save item for auction");
         }
     }
 
@@ -53,11 +60,11 @@ public class ItemDAO {
         Update bình thường.
         Dùng khi không cần transaction bên ngoài.
     */
-    public void update(Auction auction) {
+    public void update(Auction auction) throws UpdatingException {
         try (Connection connection = DatabaseConnection.getConnection()) {
             update(connection, auction);
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot update item", e);
+            throw new UpdatingException("Cannot update item");
         }
     }
 
@@ -65,7 +72,7 @@ public class ItemDAO {
         Update dùng chung connection.
         Dùng trong AuctionService.editAuction().
     */
-    public void update(Connection connection, Auction auction) {
+    public void update(Connection connection, Auction auction) throws UpdatingException {
         String sql = "UPDATE items SET name = ?, description = ?, type = ? WHERE id = ?";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -78,7 +85,7 @@ public class ItemDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot update item", e);
+            throw new UpdatingException("Cannot update item");
         }
     }
 
@@ -86,11 +93,11 @@ public class ItemDAO {
         Delete bình thường.
         Dùng khi không cần transaction bên ngoài.
     */
-    public void delete(int id) {
+    public void delete(int id) throws DeletingException {
         try (Connection connection = DatabaseConnection.getConnection()) {
             delete(connection, id);
-        } catch (SQLException e) {
-            throw new RuntimeException("Cannot delete item", e);
+        } catch (SQLException | DeletingException e) {
+            throw new DeletingException("Cannot delete item");
         }
     }
 
@@ -98,7 +105,7 @@ public class ItemDAO {
         Delete dùng chung connection.
         Dùng trong AuctionService.deleteAuction().
     */
-    public void delete(Connection connection, int id) {
+    public void delete(Connection connection, int id) throws DeletingException {
         String sql = "DELETE FROM items WHERE id = ?";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -107,11 +114,11 @@ public class ItemDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot delete item", e);
+            throw new DeletingException("Cannot delete item");
         }
     }
 
-    public Item findById(int id) {
+    public Item findById(int id) throws FindingException {
         String sql = """
                 SELECT
                     i.id,
@@ -140,11 +147,11 @@ public class ItemDAO {
             return null;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find item by id", e);
+            throw new FindingException("Cannot find item by id");
         }
     }
 
-    public List<Item> findByType(String type) {
+    public List<Item> findByType(String type) throws FindingException {
         List<Item> items = new ArrayList<>();
 
         String sql = """
@@ -174,13 +181,13 @@ public class ItemDAO {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find items by type", e);
+            throw new FindingException("Cannot find items by type");
         }
 
         return items;
     }
 
-    public List<Item> findByItemName(String name) {
+    public List<Item> findByItemName(String name) throws FindingException {
         List<Item> items = new ArrayList<>();
 
         String sql = """
@@ -210,12 +217,12 @@ public class ItemDAO {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find items by name", e);
+            throw new FindingException("Cannot find items by name");
         }
 
         return items;
     }
-    private Item mapResultSetToItem(ResultSet resultSet) throws SQLException {
+    private Item mapResultSetToItem(ResultSet resultSet) throws SQLException, FindingException {
         int id = resultSet.getInt("id");
         String name = resultSet.getString("name");
         String description = resultSet.getString("description");
@@ -240,11 +247,11 @@ public class ItemDAO {
         User owner = userDAO.findById(sellerId);
 
         if (owner == null) {
-            throw new RuntimeException("Owner not found for item id = " + id);
+            throw new NullPointerException("Owner not found for item id = " + id);
         }
 
         if (!owner.hasRole(UserRole.SELLER)) {
-            throw new RuntimeException("Owner must have SELLER role");
+            throw new AuthorizationException("Owner must have SELLER role");
         }
 
         ItemType type = ItemType.valueOf(typeText);
@@ -258,7 +265,7 @@ public class ItemDAO {
         } else if (type == ItemType.VEHICLE) {
             item = new Vehicle(name, description, startTime, endTime);
         } else {
-            throw new RuntimeException("Invalid item type: " + typeText);
+            throw new ItemInformationException("Invalid item type: " + typeText);
         }
 
         item.setId(id);

@@ -5,8 +5,10 @@ import auction_system.common.enums.UserRole;
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.BidTransactionDAO;
 import auction_system.server.dao.DatabaseConnection;
-import auction_system.server.exception.InvalidBidException;
-import auction_system.server.exception.serviceException.AuctionNotFoundException;
+import auction_system.server.exception.serviceException.Bid.AuthorizationException;
+import auction_system.server.exception.serviceException.Bid.InvalidBidException;
+import auction_system.server.exception.serviceException.Auctioon.StatusException;
+import auction_system.server.exception.daoException.FindingException;
 import auction_system.server.model.Auction;
 import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;
@@ -90,7 +92,7 @@ public class BidService {
 
         } catch (Exception e) {
             rollback(connection);
-            throw new RuntimeException("Cannot update auction status", e);
+            throw new RuntimeException("Cannot update auction status - " + e.getMessage());
 
         } finally {
             closeConnection(connection);
@@ -121,10 +123,6 @@ public class BidService {
             Integer previousBidderId = auction.getHighestBidderId();
             double previousPrice = auction.getCurrentPrice();
 
-            if (auction == null) {
-                throw new RuntimeException("Auction not found");
-            }
-
             updateStatusInternal(auction);
 
             if (bidder == null) {
@@ -132,7 +130,7 @@ public class BidService {
             }
 
             if (!bidder.hasRole(UserRole.BIDDER)) {
-                throw new RuntimeException("Only bidder can place bid");
+                throw new AuthorizationException("Only bidder can place bid");
             }
 
             if (amount <= 0) {
@@ -140,7 +138,7 @@ public class BidService {
             }
 
             if (auction.getStatus() != AuctionStatus.RUNNING) {
-                throw new RuntimeException("Auction is not running");
+                throw new StatusException("Auction is not running");
             }
 
             if (auction.getCurrentPrice() == 0) {
@@ -176,7 +174,7 @@ public class BidService {
 
         } catch (Exception e) {
             rollback(connection);
-            throw new RuntimeException("Cannot place bid", e);
+            throw new RuntimeException("Cannot place bid" + e.getMessage());
 
         } finally {
             closeConnection(connection);
@@ -216,12 +214,8 @@ public class BidService {
         Lấy người đang giữ giá cao nhất.
         Chỉ đọc nên không cần transaction/lock.
     */
-    public User getHighestBidder(int auctionId) {
+    public User getHighestBidder(int auctionId) throws FindingException {
         Auction auction = findAuctionOrThrow(auctionId);
-
-        if (auction.getHighestBidderId() == null) {
-            throw new RuntimeException("This auction has no highest bidder yet");
-        }
 
         return userService.getUserById(auction.getHighestBidderId());
     }

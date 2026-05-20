@@ -1,6 +1,10 @@
 package auction_system.server.dao;
 
 import auction_system.common.enums.UserRole;
+import auction_system.server.exception.daoException.DeletingException;
+import auction_system.server.exception.daoException.FindingException;
+import auction_system.server.exception.daoException.SavingException;
+import auction_system.server.exception.daoException.UpdatingException;
 import auction_system.server.model.User;
 
 import java.sql.*;
@@ -36,7 +40,7 @@ public class UserDAO {
         Không còn email.
         Không còn bảng user_roles.
     */
-    public void save(User user) {
+    public void save(User user) throws SavingException {
         String sql = "INSERT INTO users(fullname, username, password, roles, balance) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -50,7 +54,7 @@ public class UserDAO {
 
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot save user", e);
+            throw new SavingException("Cannot save user");
         }
     }
 
@@ -64,7 +68,7 @@ public class UserDAO {
         StringBuilder result = new StringBuilder();
 
         for (UserRole role : roles) {
-            if (result.length() > 0) {
+            if (!result.isEmpty()) {
                 result.append(",");
             }
 
@@ -103,7 +107,7 @@ public class UserDAO {
         - login
         - kiểm tra username đã tồn tại chưa
     */
-    public User findByUsername(String username) {
+    public User findByUsername(String username) throws FindingException {
         String sql = "SELECT * FROM users WHERE username = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -120,13 +124,13 @@ public class UserDAO {
             return null;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find user by username", e);
+            throw new FindingException("Cannot find user by username");
         }
     }
     /*
         Hàm findById dùng để tìm user theo id.
     */
-    public User findById(int id) {
+    public User findById(int id) throws FindingException {
         String sql = "SELECT * FROM users WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -143,7 +147,7 @@ public class UserDAO {
             return null;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find user by id", e);
+            throw new FindingException("Cannot find user by id");
         }
     }
 
@@ -153,7 +157,7 @@ public class UserDAO {
         Không còn email.
         roles nằm trực tiếp trong bảng users.
     */
-    public void update(User user) {
+    public void update(User user) throws UpdatingException {
         String sql = "UPDATE users SET fullname = ?, username = ?, password = ?, roles = ?, balance = ? WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -169,7 +173,7 @@ public class UserDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot update user", e);
+            throw new UpdatingException("Cannot update user");
         }
     }
 
@@ -179,7 +183,7 @@ public class UserDAO {
         Không còn bảng user_roles,
         nên chỉ cần xóa trong bảng users.
     */
-    public boolean deleteById(int id) {
+    public boolean deleteById(int id) throws DeletingException {
         String sql = "DELETE FROM users WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -192,14 +196,14 @@ public class UserDAO {
             return affectedRows > 0;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot delete user", e);
+            throw new DeletingException("Cannot delete user");
         }
     }
 
     /*
         Hàm updateBalance dùng để cập nhật số dư của user.
     */
-    public boolean updateBalance(int userId, double newBalance) {
+    public boolean updateBalance(int userId, double newBalance) throws UpdatingException {
         String sql = "UPDATE users SET balance = ? WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -213,7 +217,7 @@ public class UserDAO {
             return affectedRows > 0;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot update balance", e);
+            throw new UpdatingException("Cannot update balance");
         }
     }
 
@@ -254,7 +258,7 @@ public class UserDAO {
     /*
         Lấy tất cả user trong bảng users.
     */
-    public List<User> findAll() {
+    public List<User> findAll() throws FindingException {
         String sql = "SELECT * FROM users";
 
         List<User> users = new ArrayList<>();
@@ -272,7 +276,7 @@ public class UserDAO {
             return users;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find all users", e);
+            throw new FindingException("Cannot find all users");
         }
     }
 }

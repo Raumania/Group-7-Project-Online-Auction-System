@@ -39,7 +39,7 @@ public class LoginController implements RequestHandler {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
             return new Response(Status.ERROR, "Login failed: " + e.getMessage(), null);
         }
     }

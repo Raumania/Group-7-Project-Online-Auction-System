@@ -1,6 +1,8 @@
 package auction_system.server;
 
 import auction_system.server.dao.UserDAO;
+import auction_system.server.exception.daoException.FindingException;
+import auction_system.server.exception.daoException.UpdatingException;
 import auction_system.server.model.User;
 import auction_system.server.observer.EventBus;
 import auction_system.server.service.BidService;
@@ -15,7 +17,7 @@ public class EventBusTest {
     NotificationService notificationService = NotificationService.getInstance();
     BidService bidService = BidService.getInstance();
     UserService userService = UserService.getInstance();
-    void main() {
+    void main() throws FindingException, UpdatingException {
         User rauma  = userDAO.findById(1);//au ID: 6
         System.out.println(rauma.getUsername());
         notificationService.register(6,1);

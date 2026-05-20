@@ -8,8 +8,13 @@ import auction_system.server.exception.daoException.SavingException;
 import auction_system.server.exception.daoException.UpdatingException;
 import auction_system.server.model.Auction;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 public class AuctionDAO {
@@ -31,7 +36,7 @@ public class AuctionDAO {
         Hàm save dùng chung connection.
         Dùng trong transaction ở AuctionService.createAuction().
     */
-    public int save(Connection connection,Auction auction,String path){
+    public int save(Connection connection,Auction auction,String path) throws SavingException {
 
         String sql = """
                 INSERT INTO auctions
@@ -73,7 +78,7 @@ public class AuctionDAO {
             throw new SavingException("Cannot save auction");
         }
     }
-    public int save(Connection connection,Auction auction) {
+    public int save(Connection connection,Auction auction) throws SavingException {
         String sql = """
                 INSERT INTO auctions
                 (seller_id, starting_price, current_price, highest_bidder_id, highest_bidder_username, status, starting_time, ending_time)
@@ -117,7 +122,7 @@ public class AuctionDAO {
     /*
         Tìm auction bình thường.
     */
-    public Auction findById(int id) {
+    public Auction findById(int id) throws FindingException {
         String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE a.id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -145,7 +150,7 @@ public class AuctionDAO {
         - editAuction()
         - deleteAuction()
        */
-    public Auction findByIdForUpdate(Connection connection, int id) {
+    public Auction findByIdForUpdate(Connection connection, int id) throws FindingException {
         String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE a.id = ? FOR UPDATE";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -165,7 +170,7 @@ public class AuctionDAO {
         }
     }
 
-    public List<Auction> findAllOpenAuctions() {
+    public List<Auction> findAllOpenAuctions() throws FindingException {
         String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE status IN (?, ?)";
 
         List<Auction> auctions = new ArrayList<>();
@@ -189,7 +194,7 @@ public class AuctionDAO {
         return auctions;
     }
 
-    public List<Auction> findAll() {
+    public List<Auction> findAll() throws FindingException {
         String sql = """
             SELECT
                 a.id,
@@ -203,7 +208,8 @@ public class AuctionDAO {
                 a.highest_bidder_id,
                 u.username AS highest_bidder_username,
                 a.starting_time,
-                a.ending_time
+                a.ending_time,
+                a.path
             FROM auctions a
             INNER JOIN items i ON a.id = i.id
             LEFT JOIN users u ON a.highest_bidder_id = u.id
@@ -214,7 +220,6 @@ public class AuctionDAO {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             ResultSet resultSet = statement.executeQuery();
-
             while (resultSet.next()) {
                 auctions.add(mapResultSetToAuctionWithItem(resultSet));
             }
@@ -226,7 +231,7 @@ public class AuctionDAO {
         return auctions;
     }
 
-    public List<Auction> findAllBySellerId(int sellerId) {
+    public List<Auction> findAllBySellerId(int sellerId) throws FindingException {
         String sql = """
             SELECT
                 a.id,
@@ -271,7 +276,7 @@ public class AuctionDAO {
         Update bình thường.
         Không dùng transaction bên ngoài.
     */
-    public void update(Auction auction) {
+    public void update(Auction auction) throws UpdatingException {
         try (Connection connection = DatabaseConnection.getConnection()) {
             update(connection, auction);
         } catch (SQLException e) {
@@ -283,7 +288,7 @@ public class AuctionDAO {
         Update dùng chung connection.
         Dùng trong transaction ở Service.
     */
-    public void update(Connection connection, Auction auction) {
+    public void update(Connection connection, Auction auction) throws UpdatingException {
         String sql = """
                 UPDATE auctions
                 SET seller_id = ?,
@@ -326,7 +331,7 @@ public class AuctionDAO {
     /*
         Delete bình thường.
     */
-    public void delete(int id) {
+    public void delete(int id) throws DeletingException {
         try (Connection connection = DatabaseConnection.getConnection()) {
             delete(connection, id);
         } catch (SQLException e) {
@@ -338,7 +343,7 @@ public class AuctionDAO {
         Delete dùng chung connection.
         Dùng trong transaction ở Service.
     */
-    public void delete(Connection connection, int id) {
+    public void delete(Connection connection, int id) throws DeletingException {
         String sql = "DELETE FROM auctions WHERE id = ?";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -351,7 +356,7 @@ public class AuctionDAO {
         }
     }
 
-    public List<Auction> findbystatus(String status) {
+    public List<Auction> findbystatus(String status) throws FindingException {
         String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id where status = ?";
         List<Auction> auctions = new ArrayList<>();
         try (Connection connection = DatabaseConnection.getConnection();
@@ -392,7 +397,37 @@ public class AuctionDAO {
             auction.setEndTime(endTimestamp.toLocalDateTime());
         }
 
+        // LẤY ĐƯỜNG DẪN ẢNH VÀ CHUYỂN SANG BASE64
+        // Giả sử tên cột lưu đường dẫn trong DB là "image_path"
+        String imagePath = resultSet.getString("path");
+        if (imagePath != null && !imagePath.trim().isEmpty()) {
+            String base64Image = convertImagePathToBase64(imagePath);
+            auction.setImagebase64(base64Image); // Gán chuỗi Base64 vào object Auction
+        }
+
         return auction;
+    }
+
+    /**
+     * Hàm phụ trợ: Đọc file từ đường dẫn vật lý và chuyển đổi sang chuỗi Base64
+     */
+    private String convertImagePathToBase64(String imagePath) {
+        try {
+            Path path = Paths.get(imagePath);
+            // Kiểm tra xem file có thực sự tồn tại trên ổ cứng không
+            if (Files.exists(path)) {
+                byte[] fileContent = Files.readAllBytes(path);
+                return Base64.getEncoder().encodeToString(fileContent);
+            } else {
+                System.err.println("Không tìm thấy file ảnh tại đường dẫn: " + imagePath);
+            }
+        } catch (IOException e) {
+            System.err.println("Lỗi khi đọc file ảnh: " + e.getMessage());
+            // Khuyến khích dùng Logger (ví dụ: log.error(...)) thay cho System.err trong thực tế
+        }
+
+        // Trả về null nếu không đọc được ảnh để tránh lỗi dữ liệu rác
+        return null;
     }
 
     private Auction mapResultSetToAuctionWithItem(ResultSet resultSet) throws SQLException {
