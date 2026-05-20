@@ -1,22 +1,24 @@
 package auction_system.server.service;
 
-import auction_system.server.exception.ControllerException.DatabaseException;
-import auction_system.server.exception.ControllerException.InvalidInputException;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 
 public class ImageService {
-    private static long dem = 0;
+    private static long  dem=0;
+    private static ImageService instance;
     private static final String IMAGE_FOLDER = "data/images";
-
+    private ImageService(){
+    }
+    public static ImageService getInstance() {
+        if (instance == null) {
+            instance = new ImageService();
+        }
+        return instance;
+    }
     public String saveBase64Image(String imageBase64, int auctionId) {
         try {
-            validateImageData(imageBase64);
-
-            imageBase64 = removeBase64Prefix(imageBase64);
-
+            //validateImageData(imageBase64);
             byte[] imageBytes = Base64.getMimeDecoder().decode(imageBase64);
 
             Path folderPath = Path.of(IMAGE_FOLDER);
@@ -33,13 +35,13 @@ public class ImageService {
             return imagePath.toString();
 
         } catch (Exception e) {
-            throw new DatabaseException("Cannot save image", e);
+            throw new RuntimeException("Cannot save image", e);
         }
     }
 
     private void validateImageData(String imageBase64) {
         if (imageBase64 == null || imageBase64.isBlank()) {
-            throw new InvalidInputException("Image base64 is empty");
+            throw new RuntimeException("Image base64 is empty");
         }
     }
 
@@ -54,7 +56,7 @@ public class ImageService {
     }
 
     private String createSafeFileName(int auctionId) {
-        dem = dem + 1;
+        dem=dem+1;
         return "auction_" + dem + ".png";
     }
 }
