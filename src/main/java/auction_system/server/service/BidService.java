@@ -142,12 +142,6 @@ public class BidService {
                 throw new RuntimeException("Auction is not running");
             }
 
-            /*
-                Vì bạn nói currentPrice ban đầu = 0,
-                nên:
-                - nếu currentPrice == 0: bid đầu tiên phải > startingPrice
-                - nếu currentPrice > 0: bid sau phải > currentPrice
-            */
             if (auction.getCurrentPrice() == 0) {
                 if (amount < auction.getStartingPrice()) {
                     throw new InvalidBidException("Bid amount must not be lower than minBid");
@@ -166,18 +160,9 @@ public class BidService {
             }
 
             logger.info("đặt giá thành công");
-            /*
-                Lưu bid transaction xuống database.
-                Nên dùng cùng connection để nằm trong cùng transaction.
-            */
 
                 BidTransaction latestTransaction = new BidTransaction(bidder, amount);
                 bidTransactionDAO.save(connection,auctionId, latestTransaction);
-            /*
-                Cập nhật auction sau khi bid thành công.
-                Đây là phần code cũ của bạn đang thiếu.
-            */
-
                 auction.setCurrentPrice(amount);
                 auction.setHighestBidderId(bidder.getId());
                 auctionDAO.update(connection, auction);
@@ -194,8 +179,6 @@ public class BidService {
 
         } finally {
             closeConnection(connection);
-            connection.close();
-
             if (eventToPublish != null) {
                 EventBus.publish(eventToPublish);
             }

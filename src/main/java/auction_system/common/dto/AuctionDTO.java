@@ -17,7 +17,7 @@ public class AuctionDTO {
     private String highestBidderUsername;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private String imagebase64;
+    private String imageBase64;
     // request for server
     public AuctionDTO() {
     }
@@ -39,7 +39,7 @@ public class AuctionDTO {
         this.startingPrice = startingPrice;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.imagebase64=imagebase64;
+        this.imageBase64=imagebase64;
     }
 
     public int getId() {
@@ -122,7 +122,7 @@ public class AuctionDTO {
         this.highestBidderUsername = highestBidderUsername;
     }
     public String getImagebase64(){
-        return this.imagebase64;
+        return this.imageBase64;
     }
 
     public LocalDateTime getStartTime() {
@@ -139,5 +139,8 @@ public class AuctionDTO {
 
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
+    }
+    public void setImagebase64(String imagebase64){
+        this.imageBase64=imagebase64;
     }
 }

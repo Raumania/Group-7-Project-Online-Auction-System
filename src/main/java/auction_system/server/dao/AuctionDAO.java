@@ -9,8 +9,13 @@ import auction_system.server.exception.daoException.updatingException;
 import auction_system.server.model.Auction;
 import auction_system.server.observer.AuctionScheduler;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 public class AuctionDAO {
@@ -204,7 +209,8 @@ public class AuctionDAO {
                 a.highest_bidder_id,
                 u.username AS highest_bidder_username,
                 a.starting_time,
-                a.ending_time
+                a.ending_time,
+                a.path
             FROM auctions a
             INNER JOIN items i ON a.id = i.id
             LEFT JOIN users u ON a.highest_bidder_id = u.id
@@ -215,7 +221,6 @@ public class AuctionDAO {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             ResultSet resultSet = statement.executeQuery();
-
             while (resultSet.next()) {
                 auctions.add(mapResultSetToAuctionWithItem(resultSet));
             }
@@ -393,7 +398,37 @@ public class AuctionDAO {
             auction.setEndTime(endTimestamp.toLocalDateTime());
         }
 
+        // LẤY ĐƯỜNG DẪN ẢNH VÀ CHUYỂN SANG BASE64
+        // Giả sử tên cột lưu đường dẫn trong DB là "image_path"
+        String imagePath = resultSet.getString("path");
+        if (imagePath != null && !imagePath.trim().isEmpty()) {
+            String base64Image = convertImagePathToBase64(imagePath);
+            auction.setImagebase64(base64Image); // Gán chuỗi Base64 vào object Auction
+        }
+
         return auction;
+    }
+
+    /**
+     * Hàm phụ trợ: Đọc file từ đường dẫn vật lý và chuyển đổi sang chuỗi Base64
+     */
+    private String convertImagePathToBase64(String imagePath) {
+        try {
+            Path path = Paths.get(imagePath);
+            // Kiểm tra xem file có thực sự tồn tại trên ổ cứng không
+            if (Files.exists(path)) {
+                byte[] fileContent = Files.readAllBytes(path);
+                return Base64.getEncoder().encodeToString(fileContent);
+            } else {
+                System.err.println("Không tìm thấy file ảnh tại đường dẫn: " + imagePath);
+            }
+        } catch (IOException e) {
+            System.err.println("Lỗi khi đọc file ảnh: " + e.getMessage());
+            // Khuyến khích dùng Logger (ví dụ: log.error(...)) thay cho System.err trong thực tế
+        }
+
+        // Trả về null nếu không đọc được ảnh để tránh lỗi dữ liệu rác
+        return null;
     }
 
     private Auction mapResultSetToAuctionWithItem(ResultSet resultSet) throws SQLException {

@@ -24,7 +24,7 @@ public class AuctionService {
     private final AuctionDAO auctionDAO = AuctionDAO.getInstance();
     private final ItemDAO itemDAO = ItemDAO.getInstance();
     private final UserDAO userDAO = UserDAO.getInstance();
-    private final ImageService imageService=new ImageService();
+    private final ImageService imageService=ImageService.getInstance();
     private AuctionService() {
     }
 
@@ -53,16 +53,20 @@ public class AuctionService {
         try {
             connection = DatabaseConnection.getConnection();
             connection.setAutoCommit(false);
-
+            int m=0;
             validateItemData(auction);
             String path =imageService.saveBase64Image(auction.getImagebase64(),auction.getId());
-            if(path!=null) {
+            if(path==null) {
                 int id = auctionDAO.save(connection, auction);
+                m=id;
             }
-            int id = auctionDAO.save(connection, auction,path);
-            auction.setId(id);
+            else {
+                int id = auctionDAO.save(connection, auction, path);
+                m=id;
+            }
+            auction.setId(m);
 
-            itemDAO.save(connection, auction, id);
+            itemDAO.save(connection, auction,m);
 
             connection.commit();
 

@@ -6,14 +6,19 @@ import java.util.Base64;
 
 public class ImageService {
     private static long  dem=0;
+    private static ImageService instance;
     private static final String IMAGE_FOLDER = "data/images";
-
+    private ImageService(){
+    }
+    public static ImageService getInstance() {
+        if (instance == null) {
+            instance = new ImageService();
+        }
+        return instance;
+    }
     public String saveBase64Image(String imageBase64, int auctionId) {
         try {
-            validateImageData(imageBase64);
-
-            imageBase64 = removeBase64Prefix(imageBase64);
-
+            //validateImageData(imageBase64);
             byte[] imageBytes = Base64.getMimeDecoder().decode(imageBase64);
 
             Path folderPath = Path.of(IMAGE_FOLDER);
