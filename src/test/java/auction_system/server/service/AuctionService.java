@@ -5,6 +5,9 @@ import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.DatabaseConnection;
 import auction_system.server.dao.ItemDAO;
 import auction_system.server.dao.UserDAO;
+import auction_system.server.exception.ControllerException.*;
+import auction_system.server.exception.serviceException.AuctionNotFoundException;
+import auction_system.server.exception.serviceException.InValidAuctionData;
 import auction_system.server.model.*;
 
 import java.sql.Connection;
@@ -20,6 +23,7 @@ public class AuctionService {
     private final AuctionDAO auctionDAO = AuctionDAO.getInstance();
     private final ItemDAO itemDAO = ItemDAO.getInstance();
     private final UserDAO userDAO = UserDAO.getInstance();
+    private final ImageService imageService = new ImageService();
 
     private AuctionService() {
     }
@@ -41,24 +45,29 @@ public class AuctionService {
         Nếu lưu auction thành công nhưng lưu item lỗi
         thì phải rollback để database không bị lệch.
     */
-
-    //throwRuntime
     public void createAuction(Auction auction) {
         Connection connection = null;
-        validateItemData(auction);
 
         try {
             connection = DatabaseConnection.getConnection();
             connection.setAutoCommit(false);
-            int id = auctionDAO.save(connection, auction);
+
+            validateItemData(auction);
+            String path = imageService.saveBase64Image(auction.getImagebase64(), auction.getId());
+            if (path != null) {
+                int id = auctionDAO.save(connection, auction);
+            }
+            int id = auctionDAO.save(connection, auction, path);
+            auction.setId(id);
+
             itemDAO.save(connection, auction, id);
 
             connection.commit();
 
         } catch (Exception e) {
             rollback(connection);
-            throw new RuntimeException("Cannot create auction", e);
-
+            e.printStackTrace();
+            throw new DatabaseException("Cannot create auction: " + e.getMessage(), e);
         } finally {
             closeConnection(connection);
         }
@@ -84,7 +93,7 @@ public class AuctionService {
             Auction auction = auctionDAO.findByIdForUpdate(connection, id);
 
             if (auction == null) {
-                throw new RuntimeException("Auction not found");
+                throw new auction_system.server.exception.serviceException.AuctionNotFoundException(id);
             }
 
             /*
@@ -92,7 +101,7 @@ public class AuctionService {
                 Thường không nên cho xóa auction đã có lịch sử bid.
             */
             if (auction.getCurrentPrice() > 0) {
-                throw new RuntimeException("Cannot delete auction after bidding started");
+                throw new BidException("Cannot delete auction after bidding started");
             }
 
             itemDAO.delete(connection, id);
@@ -102,8 +111,7 @@ public class AuctionService {
 
         } catch (Exception e) {
             rollback(connection);
-            throw new RuntimeException("Cannot delete auction", e);
-
+            throw new DatabaseException("Cannot delete auction", e);
         } finally {
             closeConnection(connection);
         }
@@ -126,7 +134,7 @@ public class AuctionService {
             Auction oldAuction = auctionDAO.findByIdForUpdate(connection, auction.getId());
 
             if (oldAuction == null) {
-                throw new RuntimeException("Auction not found");
+                throw new auction_system.server.exception.serviceException.AuctionNotFoundException(auction.getId());
             }
 
             /*
@@ -134,7 +142,7 @@ public class AuctionService {
                 Vì sửa startingPrice, time, status... sau khi có bid dễ sai nghiệp vụ.
             */
             if (oldAuction.getCurrentPrice() > 0) {
-                throw new RuntimeException("Cannot edit auction after bidding started");
+                throw new BidException("Cannot edit auction after bidding started");
             }
 
             auctionDAO.update(connection, auction);
@@ -144,41 +152,43 @@ public class AuctionService {
 
         } catch (Exception e) {
             rollback(connection);
-            throw new RuntimeException("Cannot edit auction", e);
-
+            throw new DatabaseException("Cannot edit auction", e);
         } finally {
             closeConnection(connection);
         }
     }
-    public void UpdateAll(List<Auction> auctions){
-        Connection connection=null;
+
+    public void UpdateAll(List<Auction> auctions) {
+        Connection connection = null;
         try {
-            connection =DatabaseConnection.getConnection();
+            connection = DatabaseConnection.getConnection();
             for (Auction auction : auctions) {
                 auctionDAO.update(auction);
             }
-        }catch(Exception e) {
+        } catch (Exception e) {
             rollback(connection);
-            throw new RuntimeException("cannot update auctions", e);
-        }finally {
+            throw new DatabaseException("cannot update auctions", e);
+        } finally {
             closeConnection(connection);
         }
     }
+
     /*
         Tìm danh sách auction theo loại item.
         Chỉ đọc dữ liệu nên không cần transaction/lock.
     */
     public List<Auction> findbyStatus(String status) {
         if (status == null) {
-            throw new RuntimeException("status cannot be null");
+            throw new InvalidInputException("status cannot be null");
         }
 
         List<Auction> auctions = auctionDAO.findbystatus(status);
         return auctions;
     }
+
     public List<Auction> findbyItemType(String type) {
         if (type == null) {
-            throw new RuntimeException("Item type cannot be null");
+            throw new InvalidInputException("Item type cannot be null");
         }
 
         List<Auction> auctions = new ArrayList<>();
@@ -186,7 +196,6 @@ public class AuctionService {
 
         for (Item item : items) {
             Auction auction = auctionDAO.findById(item.getId());
-
             if (auction != null) {
                 auctions.add(auction);
             }
@@ -201,7 +210,7 @@ public class AuctionService {
     */
     public List<Auction> findbyItemName(String name) {
         if (name == null || name.trim().isEmpty()) {
-            throw new RuntimeException("Item name cannot be empty");
+            throw new InvalidInputException("Item name cannot be empty");
         }
 
         List<Auction> auctions = new ArrayList<>();
@@ -209,7 +218,6 @@ public class AuctionService {
 
         for (Item item : items) {
             Auction auction = auctionDAO.findById(item.getId());
-
             if (auction != null) {
                 auctions.add(auction);
             }
@@ -253,24 +261,22 @@ public class AuctionService {
             Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
 
             if (auction == null) {
-                throw new RuntimeException("Auction not found");
+                throw new AuctionNotFoundException(auctionId);
             }
 
             if (auction.getStatus() != AuctionStatus.OPEN &&
                     auction.getStatus() != AuctionStatus.RUNNING) {
-                throw new RuntimeException("Auction is not open");
+                throw new ControllerException("Auction is not open");
             }
 
             auction.setStatus(AuctionStatus.FINISHED);
-
             auctionDAO.update(connection, auction);
 
             connection.commit();
 
         } catch (Exception e) {
             rollback(connection);
-            throw new RuntimeException("Cannot close auction", e);
-
+            throw new DatabaseException("Cannot close auction", e);
         } finally {
             closeConnection(connection);
         }
@@ -293,11 +299,9 @@ public class AuctionService {
 
     public Item getItemById(int id) {
         Item item = itemDAO.findById(id);
-
         if (item == null) {
-            throw new RuntimeException("Item not found");
+            throw new ItemNotFoundException(id);
         }
-
         return item;
     }
 
@@ -310,7 +314,8 @@ public class AuctionService {
                 connection.rollback();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Rollback failed", e);
+            System.err.println("Rollback failed");
+            throw new DatabaseException("Rollback failed", e);
         }
     }
 
@@ -324,45 +329,35 @@ public class AuctionService {
                 connection.close();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Cannot close Database connection");
+            throw new DatabaseException("Cannot close Database connection", e);
         }
     }
 
     public void validateItemData(Auction auction) {
-        if (auction.getName() == null || auction.getName().trim().isEmpty()) {
-            throw new RuntimeException("Item name cannot be null or empty");
-        }
-
-        if (auction.getDescription() == null || auction.getDescription().trim().isEmpty()) {
-            throw new RuntimeException("Item description cannot be null or empty");
-        }
-
-        if (auction.getStartTime() == null) {
-            throw new RuntimeException("Starting time cannot be null");
-        }
-
-        if (auction.getEndTime() == null) {
-            throw new RuntimeException("Ending time cannot be null");
-        }
-
-        if (!auction.getEndTime().isAfter(auction.getStartTime())) {
-            throw new RuntimeException("Ending time must be after starting time");
-        }
-
-        if (userDAO.findById(auction.getSellerId()) == null) {
-            throw new RuntimeException("Owner cannot be null");
-        }
-
-        if (auction.getStartingPrice() <= 0) {
-            throw new RuntimeException("Starting price must be greater than 0");
-        }
-
-        if (auction.getType() == null) {
-            throw new RuntimeException("Status cannot be null");
-        }
+        try {
+            if (auction.getName() == null || auction.getName().trim().isEmpty()) {
+                throw new InvalidInputException("Item name cannot be null or empty");
+            }
+            if (auction.getStartTime() == null) {
+                throw new InvalidInputException("Starting time cannot be null");
+            }
+            if (auction.getEndTime() == null) {
+                throw new InvalidInputException("Ending time cannot be null");
+            }
+            if (!auction.getEndTime().isAfter(auction.getStartTime())) {
+                throw new InvalidInputException("Ending time must be after starting time");
+            }
+            if (userDAO.findById(auction.getSellerId()) == null) {
+                throw new InvalidInputException("Owner cannot be null");
+            }
+            if (auction.getStartingPrice() <= 0) {
+                throw new InvalidInputException("Starting price must be greater than 0");
+            }
+            if (auction.getType() == null) {
+                throw new InvalidInputException("Status cannot be null");
+            }
+        }catch (RuntimeException e) {
+            throw new InValidAuctionData(e.getMessage());}
     }
-
-    public ItemDAO getItemDAO() {
-        return itemDAO;
     }
-}

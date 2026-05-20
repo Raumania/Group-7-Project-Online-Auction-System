@@ -50,9 +50,14 @@ public class AuctionController implements RequestHandler {
     }
 
     private Response getSellerItems(JsonElement data) {
-        int sellerId = GsonUtil.fromJson(data, Integer.class);
-        List<Auction> auctions = auctionService.getMyAuctions(sellerId);
-        return new Response(Status.SUCCESS, "Seller Items List returned", auctions);
+        try {
+            int sellerId = GsonUtil.fromJson(data, Integer.class);
+            List<Auction> auctions = auctionService.getMyAuctions(sellerId);
+            return new Response(Status.SUCCESS, "Seller Items List returned", auctions);
+        } catch (Exception e){
+            System.err.println(e.getMessage());
+            return new Response(Status.ERROR, e.getMessage(), null);
+        }
     }
 
     private Response getAuctionDetail(JsonElement data) {

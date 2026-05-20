@@ -8,6 +8,7 @@ import auction_system.server.model.BidTransaction;
 import auction_system.server.service.BidService;
 import com.google.gson.Gson;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BidHistoryController implements RequestHandler{

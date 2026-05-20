@@ -16,9 +16,10 @@ public class Auction extends Entity{
     private double startingPrice;
     private double currentPrice;
     private Integer highestBidderId;
+    private String highestBidderUsername;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-
+    private transient String imagebase64;
     public Auction() {
     }
 
@@ -31,12 +32,15 @@ public class Auction extends Entity{
         this.startTime = auctionDTO.getStartTime();
         this.endTime = auctionDTO.getEndTime();
         this.status = AuctionStatus.OPEN;
+        this.imagebase64=auctionDTO.getImagebase64();
     }
 
     public int getId() {
         return id;
     }
-
+    public String  getImagebase64(){
+        return this.imagebase64;
+    }
     public void setId(int id) {
         this.id = id;
     }
@@ -105,6 +109,14 @@ public class Auction extends Entity{
         this.highestBidderId = highestBidderId;
     }
 
+    public String getHighestBidderUsername() {
+        return highestBidderUsername;
+    }
+
+    public void setHighestBidderUsername(String highestBidderUsername) {
+        this.highestBidderUsername = highestBidderUsername;
+    }
+
     public LocalDateTime getStartTime() {
         return startTime;
     }
@@ -133,6 +145,7 @@ public class Auction extends Entity{
                 ", startingPrice=" + startingPrice +
                 ", currentPrice=" + currentPrice +
                 ", highestBidderId=" + highestBidderId +
+                ", highestBidderUsername='" + highestBidderUsername + '\'' +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
                 '}';

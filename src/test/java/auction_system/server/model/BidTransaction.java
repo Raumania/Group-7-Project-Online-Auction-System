@@ -3,6 +3,7 @@ package auction_system.server.model;
 import auction_system.common.enums.UserRole;
 import auction_system.server.exception.AuthorizationException;
 import auction_system.server.exception.InvalidBidException;
+import auction_system.server.util.IdGenerator;
 
 import java.time.LocalDateTime;
 

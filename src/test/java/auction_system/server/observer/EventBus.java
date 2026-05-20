@@ -1,7 +1,10 @@
 package auction_system.server.observer;
 
-import auction_system.server.model.Auction;
+import auction_system.server.service.NotificationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -11,8 +14,9 @@ public class EventBus {
     private static final BlockingQueue<BidEvent> queue =
             new LinkedBlockingQueue<>();
 
-    private static final Map<Integer, Set<Integer>> auctions =
+    private static final Map<String, Set<String>> auctions =
             new ConcurrentHashMap<>();  //FAKE DATABASE
+    private static final Logger log = LoggerFactory.getLogger(EventBus.class);
 
     // Thread pool riêng cho việc notify — không dùng chung với bid thread
     private final ExecutorService dispatcher =
@@ -53,12 +57,12 @@ public class EventBus {
 
     private void notifyAll(BidEvent event) {
         Set<Integer> subscribers =
-                new CopyOnWriteArraySet<>(auctions.get(event.auctionId()));
-        for (int subscriber : subscribers) {
+                new CopyOnWriteArraySet<>(NotificationService.auctions.get(event.auctionId()));
+        for (Integer subscriber : subscribers) {
             dispatcher.submit(() -> {
                 try {
                     //print để test -thực te la response
-                    System.out.println("Thông báo biến động của phiên: " + event.auctionId() + event.newBidderId());
+                    System.out.println("Thông báo biến động của phiên: " + event.auctionId());
                 } catch (Exception e) {
                     // Một observer lỗi không làm hỏng observer khác
                     System.err.println("Observer error: " + e.getMessage());
@@ -70,9 +74,5 @@ public class EventBus {
     public void shutdown() {
         running = false;
         dispatcher.shutdown();
-    }
-
-    public static Map<Integer, Set<Integer>> getAu_Sub() {
-        return auctions;
     }
 }

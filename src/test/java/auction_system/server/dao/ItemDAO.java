@@ -28,14 +28,6 @@ public class ItemDAO {
         Save bình thường.
         Dùng khi không cần transaction bên ngoài.
     */
-    public void save(Auction auction, int id) {
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            save(connection, auction, id);
-        } catch (SQLException e) {
-            throw new RuntimeException("Cannot save item for auction", e);
-        }
-    }
-
     /*
         Save dùng chung connection.
         Dùng trong AuctionService.createAuction().

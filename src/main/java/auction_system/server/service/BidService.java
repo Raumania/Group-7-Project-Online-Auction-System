@@ -7,6 +7,7 @@ import auction_system.server.dao.BidTransactionDAO;
 import auction_system.server.dao.DatabaseConnection;
 import auction_system.server.exception.ControllerException.*;
 import auction_system.server.exception.InvalidBidException;
+import auction_system.server.exception.serviceException.AuctionNotFoundException;
 import auction_system.server.model.Auction;
 import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;

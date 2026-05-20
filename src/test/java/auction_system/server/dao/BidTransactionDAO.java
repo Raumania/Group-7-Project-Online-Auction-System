@@ -4,8 +4,14 @@ import auction_system.common.enums.UserRole;
 import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 import java.time.LocalDateTime;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,12 +43,11 @@ public class BidTransactionDAO {
         - bidder_id là INT
         - bidtime là DATETIME
     */
-    public void save(int auctionId, BidTransaction transaction) {
+    public void save(Connection connection,int auctionId, BidTransaction transaction) {
         String sql = "INSERT INTO bid_transactions(auction_id, bidder_id, amount, biddingtime) " +
                 "VALUES (?, ?, ?, ?)";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             if (transaction.getBidder() == null) {
                 throw new RuntimeException("Bidder cannot be null");

@@ -4,6 +4,7 @@ module com.auction_system {
     requires java.desktop;
     requires spring.security.crypto;
     requires org.slf4j;
+    requires mysql.connector.j;
     // Nếu bạn dùng Swing
 
     // 1. MỞ KHÓA (opens) cho Gson sử dụng Reflection để parse JSON

@@ -2,7 +2,6 @@ package auction_system.server.factory;
 
 import auction_system.common.enums.ItemType;
 import auction_system.server.model.*;
-
 import java.time.LocalDateTime;
 
 public class ItemFactory {

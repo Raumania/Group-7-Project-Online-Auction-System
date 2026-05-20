@@ -1,12 +1,13 @@
 package auction_system.server.controller;
 
-import auction_system.common.dto.UserDTO;
 import auction_system.common.enums.Status;
+import auction_system.server.model.User;
+import auction_system.common.dto.UserDTO;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
-import auction_system.server.model.User;
 import auction_system.server.service.UserService;
 import auction_system.server.util.GsonUtil;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 public class RegisterController implements RequestHandler {

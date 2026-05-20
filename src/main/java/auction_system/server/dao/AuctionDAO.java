@@ -2,12 +2,11 @@ package auction_system.server.dao;
 
 import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.ItemType;
-import auction_system.server.exception.daoException.deletingException;
-import auction_system.server.exception.daoException.findingException;
-import auction_system.server.exception.daoException.savingException;
-import auction_system.server.exception.daoException.updatingException;
+import auction_system.server.exception.daoException.DeletingException;
+import auction_system.server.exception.daoException.FindingException;
+import auction_system.server.exception.daoException.SavingException;
+import auction_system.server.exception.daoException.UpdatingException;
 import auction_system.server.model.Auction;
-import auction_system.server.observer.AuctionScheduler;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -32,7 +31,7 @@ public class AuctionDAO {
         Hàm save dùng chung connection.
         Dùng trong transaction ở AuctionService.createAuction().
     */
-    public int save(Connection connection,Auction auction,String path){
+    public int save(Connection connection,Auction auction,String path) throws SavingException {
 
         String sql = """
                 INSERT INTO auctions
@@ -71,10 +70,10 @@ public class AuctionDAO {
             }
 
         } catch (SQLException e) {
-            throw new savingException("Cannot save auction");
+            throw new SavingException("Cannot save auction");
         }
     }
-    public int save(Connection connection,Auction auction) {
+    public int save(Connection connection,Auction auction) throws SavingException {
         String sql = """
                 INSERT INTO auctions
                 (seller_id, starting_price, current_price, highest_bidder_id, highest_bidder_username, status, starting_time, ending_time)
@@ -111,14 +110,14 @@ public class AuctionDAO {
             }
 
         } catch (SQLException e) {
-            throw new savingException("Cannot save auction");
+            throw new SavingException("Cannot save auction");
         }
     }
 
     /*
         Tìm auction bình thường.
     */
-    public Auction findById(int id) {
+    public Auction findById(int id) throws FindingException {
         String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE a.id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -135,7 +134,7 @@ public class AuctionDAO {
             return null;
 
         } catch (SQLException e) {
-            throw new findingException("Cannot find auction by id");
+            throw new FindingException("Cannot find auction by id");
         }
     }
     /*
@@ -146,7 +145,7 @@ public class AuctionDAO {
         - editAuction()
         - deleteAuction()
        */
-    public Auction findByIdForUpdate(Connection connection, int id) {
+    public Auction findByIdForUpdate(Connection connection, int id) throws FindingException {
         String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE a.id = ? FOR UPDATE";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -162,11 +161,11 @@ public class AuctionDAO {
             return null;
 
         } catch (SQLException e) {
-            throw new findingException("Cannot find auction by id for update");
+            throw new FindingException("Cannot find auction by id for update");
         }
     }
 
-    public List<Auction> findAllOpenAuctions() {
+    public List<Auction> findAllOpenAuctions() throws FindingException {
         String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE status IN (?, ?)";
 
         List<Auction> auctions = new ArrayList<>();
@@ -184,13 +183,13 @@ public class AuctionDAO {
             }
 
         } catch (SQLException e) {
-            throw new findingException("Cannot find all open auctions");
+            throw new FindingException("Cannot find all open auctions");
         }
 
         return auctions;
     }
 
-    public List<Auction> findAll() {
+    public List<Auction> findAll() throws FindingException {
         String sql = """
             SELECT
                 a.id,
@@ -221,13 +220,13 @@ public class AuctionDAO {
             }
 
         } catch (SQLException e) {
-            throw new findingException("Cannot find all auctions");
+            throw new FindingException("Cannot find all auctions");
         }
 
         return auctions;
     }
 
-    public List<Auction> findAllBySellerId(int sellerId) {
+    public List<Auction> findAllBySellerId(int sellerId) throws FindingException {
         String sql = """
             SELECT
                 a.id,
@@ -262,7 +261,7 @@ public class AuctionDAO {
             }
 
         } catch (SQLException e) {
-            throw new findingException("Cannot find auctions for seller ID: " + sellerId);
+            throw new FindingException("Cannot find auctions for seller ID: " + sellerId);
         }
 
         return auctions;
@@ -272,11 +271,11 @@ public class AuctionDAO {
         Update bình thường.
         Không dùng transaction bên ngoài.
     */
-    public void update(Auction auction) {
+    public void update(Auction auction) throws UpdatingException {
         try (Connection connection = DatabaseConnection.getConnection()) {
             update(connection, auction);
         } catch (SQLException e) {
-            throw new updatingException("Cannot update auction");
+            throw new UpdatingException("Cannot update auction");
         }
     }
 
@@ -284,7 +283,7 @@ public class AuctionDAO {
         Update dùng chung connection.
         Dùng trong transaction ở Service.
     */
-    public void update(Connection connection, Auction auction) {
+    public void update(Connection connection, Auction auction) throws UpdatingException {
         String sql = """
                 UPDATE auctions
                 SET seller_id = ?,
@@ -320,18 +319,18 @@ public class AuctionDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            throw new updatingException("Cannot update auction");
+            throw new UpdatingException("Cannot update auction");
         }
     }
 
     /*
         Delete bình thường.
     */
-    public void delete(int id) {
+    public void delete(int id) throws DeletingException {
         try (Connection connection = DatabaseConnection.getConnection()) {
             delete(connection, id);
         } catch (SQLException e) {
-            throw new deletingException("Cannot delete auction");
+            throw new DeletingException("Cannot delete auction");
         }
     }
 
@@ -339,7 +338,7 @@ public class AuctionDAO {
         Delete dùng chung connection.
         Dùng trong transaction ở Service.
     */
-    public void delete(Connection connection, int id) {
+    public void delete(Connection connection, int id) throws DeletingException {
         String sql = "DELETE FROM auctions WHERE id = ?";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -348,11 +347,11 @@ public class AuctionDAO {
             statement.executeUpdate();
 
         } catch (SQLException e) {
-            throw new deletingException("Cannot delete auction");
+            throw new DeletingException("Cannot delete auction");
         }
     }
 
-    public List<Auction> findbystatus(String status) {
+    public List<Auction> findbystatus(String status) throws FindingException {
         String sql = "SELECT a.*, u.username as highest_bidder_username FROM auctions a LEFT JOIN users u ON a.highest_bidder_id = u.id where status = ?";
         List<Auction> auctions = new ArrayList<>();
         try (Connection connection = DatabaseConnection.getConnection();
@@ -363,7 +362,7 @@ public class AuctionDAO {
                 auctions.add(mapResultSetToAuction(resultSet));
             }
         } catch (SQLException e) {
-            throw new findingException("Cannot find all auctions");
+            throw new FindingException("Cannot find all auctions");
         }
         return auctions;
     }

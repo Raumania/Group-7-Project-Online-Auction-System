@@ -5,6 +5,7 @@ import auction_system.common.enums.Status;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import auction_system.server.controller.*;
+//import auction_system.server.controller.BidController;
 import auction_system.server.util.GsonUtil;
 
 import java.io.*;
@@ -21,7 +22,21 @@ public class ClientHandler implements Runnable {
         this.socket = socket;
         initHandlers();
     }
+    private String readMessage(DataInputStream in) throws IOException {
+        int length = in.readInt();
 
+        byte[] data = new byte[length];
+        in.readFully(data);
+
+        return new String(data, "UTF-8");
+    }
+    private void writeMessage(DataOutputStream out, String message) throws IOException {
+        byte[] data = message.getBytes("UTF-8");
+
+        out.writeInt(data.length);
+        out.write(data);
+        out.flush();
+    }
     private void initHandlers() {
         handlers.put(Action.LOGIN, new LoginController());
         AuctionController auctionController = new AuctionController();
@@ -35,6 +50,8 @@ public class ClientHandler implements Runnable {
         handlers.put(Action.EDIT_AUCTION, auctionController);
         handlers.put(Action.PLACE_BID, new BidController());
         handlers.put(Action.GET_BID_HISTORY,new BidHistoryController());
+        handlers.put(Action.GET_OPEN_AUCTIONS,new AuctionController());
+        //handlers.put(Action.SENDING_IMAGES,new ImageController());
         //handlers.put(Action.FILTER_CATEGORY)
 
     }
@@ -52,7 +69,8 @@ public class ClientHandler implements Runnable {
 
                 try {
                     // SỬA: Đọc bằng readUTF() để khớp với out.writeUTF() của Client
-                    line = in.readUTF();
+                    //line = in.readUTF();
+                    line=readMessage(in);
                 } catch (EOFException e) {
                     // Client ngắt kết nối
                     System.out.println("Client disconnected.");
@@ -74,8 +92,9 @@ public class ClientHandler implements Runnable {
                 String jsonResponse = GsonUtil.toJson(res);
                 System.out.println("Respond: " + jsonResponse);
                 // SỬA: Gửi đi bằng writeUTF() để khớp với in.readUTF() của Client
-                out.writeUTF(jsonResponse);
-                out.flush();
+                //out.writeUTF(jsonResponse);
+                writeMessage(out, jsonResponse);
+                //out.flush();
             }
 
         } catch (IOException e) {

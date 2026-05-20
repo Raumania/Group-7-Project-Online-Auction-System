@@ -6,7 +6,9 @@ import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import auction_system.server.model.Auction;
 import auction_system.server.service.AuctionService;
+import auction_system.server.service.BidService;
 import auction_system.server.util.GsonUtil;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import java.util.List;

@@ -1,4 +1,4 @@
-package auction_system.server.exception;
+package auction_system.server.exception.ControllerException;
 
 public class AuthenticationException extends RuntimeException {
     public AuthenticationException(String message) {

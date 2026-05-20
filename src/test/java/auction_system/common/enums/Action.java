@@ -29,7 +29,8 @@ public enum Action {
     // ==================== XÁC THỰC ====================
     /** Đăng nhập */
     LOGIN,
-
+    /**Gửi ảnh của user về lưu */
+    SENDING_IMAGES,
     /** Đăng ký tài khoản mới */
     REGISTER,
 
