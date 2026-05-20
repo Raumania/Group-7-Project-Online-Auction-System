@@ -2,6 +2,7 @@ package auction_system.server.service;
 
 import auction_system.common.enums.UserRole;
 import auction_system.server.dao.UserDAO;
+import auction_system.server.exception.ControllerException.*;
 import auction_system.server.model.User;
 import auction_system.server.util.HashUtil;
 
@@ -12,7 +13,7 @@ public class UserService {
     private static UserService instance;
     private UserDAO userDAO;
 
-    private UserService() {
+    public UserService() {
         this.userDAO = UserDAO.getInstance();
     }
 
@@ -36,13 +37,13 @@ public class UserService {
         User existingUser = userDAO.findByUsername(username);
 
         if (existingUser != null) {
-            throw new RuntimeException("Username already exists");
+            throw new DuplicateResourceException("Username already exists");
         }
 
         if (roles == null || roles.isEmpty()) {
-            throw new RuntimeException("User must have at least one role");
+            throw new InvalidInputException("User must have at least one role");
         }
-        String hashpassword= HashUtil.hashPassword(password);
+        String hashpassword = HashUtil.hashPassword(password);
         User user = new User(fullname, username, hashpassword, roles);
 
         userDAO.save(user);
@@ -135,7 +136,7 @@ public class UserService {
         User user = userDAO.findById(id);
 
         if (user == null) {
-            throw new RuntimeException("User not found");
+            throw new UserNotFoundException(id);
         }
 
         return user;
@@ -148,7 +149,7 @@ public class UserService {
         User user = userDAO.findByUsername(username);
 
         if (user == null) {
-            throw new RuntimeException("User not found");
+            throw new UserNotFoundException(username);
         }
 
         return user;
@@ -171,7 +172,7 @@ public class UserService {
             return user;
         }
 
-        throw new RuntimeException("User with id " + id + " is not a seller");
+        throw new AuthorizationException("User with id " + id + " is not a seller");
     }
 
     /*
@@ -184,7 +185,7 @@ public class UserService {
             return user;
         }
 
-        throw new RuntimeException("User with id " + id + " is not an admin");
+        throw new AuthorizationException("User with id " + id + " is not an admin");
     }
 
     /*
@@ -231,13 +232,13 @@ public class UserService {
         User user = userDAO.findByUsername(username);
 
         if (user == null) {
-            throw new RuntimeException("Username does not exist");
+            throw new AuthenticationException("Username does not exist");
         }
 
         boolean correctPassword = HashUtil.checkPassword(password, user.getPassword());
 
         if (!correctPassword) {
-            throw new RuntimeException("Wrong password");
+            throw new AuthenticationException("Wrong password");
         }
 
         return user;
@@ -263,7 +264,7 @@ public class UserService {
         boolean removed = userDAO.deleteById(id);
 
         if (!removed) {
-            throw new RuntimeException("User not found");
+            throw new UserNotFoundException(id);
         }
     }
 
@@ -275,7 +276,7 @@ public class UserService {
         boolean updated = userDAO.updateBalance(user.getId(), user.getBalance());
 
         if (!updated) {
-            throw new RuntimeException("Cannot update balance");
+            throw new DatabaseException("Cannot update balance");
         }
     }
 
@@ -287,7 +288,7 @@ public class UserService {
         boolean updated = userDAO.updateBalance(user.getId(), user.getBalance());
 
         if (!updated) {
-            throw new RuntimeException("Cannot update balance");
+            throw new DatabaseException("Cannot update balance");
         }
     }
 }

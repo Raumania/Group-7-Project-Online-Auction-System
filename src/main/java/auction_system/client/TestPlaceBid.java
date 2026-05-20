@@ -1,8 +1,8 @@
 package auction_system.client;
 
-import auction_system.server.common.protocol.Action;
-import auction_system.server.common.protocol.BidData;
-import auction_system.server.common.protocol.Request;
+import auction_system.common.enums.Action;
+import auction_system.common.dto.BidDTO;
+import auction_system.common.protocol.Request;
 import auction_system.server.model.User;
 import auction_system.server.service.UserService;
 import com.google.gson.Gson;
@@ -33,12 +33,11 @@ public class TestPlaceBid {
             5. User bidder phải có tiền trong balance.
         */
         UserService userService=new UserService();
-        User user= userService.getUserById("1");
-        userService.deposit("1",1000000);
-        BidData data = new BidData(
-                "AUCTION _ 570a2731-c80a-4bc0-9285-a8443e001ec2",  // auctionId
+        User user= userService.getUserById(1);
+        userService.deposit(1,1000000);
+        BidDTO data = new BidDTO(1,  // auctionId
                 1500,    // amount
-                "1"      // bidderId
+                1      // bidderId
         );
 
         Request req = new Request(

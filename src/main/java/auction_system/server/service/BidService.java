@@ -5,6 +5,7 @@ import auction_system.common.enums.UserRole;
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.BidTransactionDAO;
 import auction_system.server.dao.DatabaseConnection;
+import auction_system.server.exception.ControllerException.*;
 import auction_system.server.exception.InvalidBidException;
 import auction_system.server.model.Auction;
 import auction_system.server.model.BidTransaction;
@@ -18,7 +19,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
-
 
 public class BidService {
     private static BidService instance;
@@ -78,7 +78,7 @@ public class BidService {
             Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
 
             if (auction == null) {
-                throw new RuntimeException("Auction not found");
+                throw new AuctionNotFoundException(auctionId);
             }
 
             updateStatusInternal(auction);
@@ -89,8 +89,7 @@ public class BidService {
 
         } catch (Exception e) {
             rollback(connection);
-            throw new RuntimeException("Cannot update auction status", e);
-
+            throw new DatabaseException("Cannot update auction status", e);
         } finally {
             closeConnection(connection);
         }
@@ -121,17 +120,17 @@ public class BidService {
             double previousPrice = auction.getCurrentPrice();
 
             if (auction == null) {
-                throw new RuntimeException("Auction not found");
+                throw new AuctionNotFoundException(auctionId);
             }
 
             updateStatusInternal(auction);
 
             if (bidder == null) {
-                throw new NullPointerException("Bidder cannot be null");
+                throw new InvalidInputException("Bidder cannot be null");
             }
 
             if (!bidder.hasRole(UserRole.BIDDER)) {
-                throw new RuntimeException("Only bidder can place bid");
+                throw new AuthorizationException("Only bidder can place bid");
             }
 
             if (amount <= 0) {
@@ -139,7 +138,7 @@ public class BidService {
             }
 
             if (auction.getStatus() != AuctionStatus.RUNNING) {
-                throw new RuntimeException("Auction is not running");
+                throw new ControllerException("Auction is not running");
             }
 
             /*
@@ -153,7 +152,6 @@ public class BidService {
                     throw new InvalidBidException("Bid amount must not be lower than minBid");
                 }
                 auction.setCurrentPrice(amount);
-
             } else {
                 double bidIncrement = getBidIncrement(auction.getCurrentPrice());
                 if (amount < auction.getCurrentPrice() + bidIncrement) {
@@ -162,7 +160,7 @@ public class BidService {
             }
 
             if (bidder.getBalance() < amount) {
-                throw new RuntimeException("Not enough balance");
+                throw new InsufficientBalanceException("Not enough balance");
             }
 
             logger.info("đặt giá thành công");
@@ -170,18 +168,16 @@ public class BidService {
                 Lưu bid transaction xuống database.
                 Nên dùng cùng connection để nằm trong cùng transaction.
             */
-
-                BidTransaction latestTransaction = new BidTransaction(bidder, amount);
-                bidTransactionDAO.save(connection,auctionId, latestTransaction);
+            BidTransaction latestTransaction = new BidTransaction(bidder, amount);
+            bidTransactionDAO.save(connection, auctionId, latestTransaction);
             /*
                 Cập nhật auction sau khi bid thành công.
                 Đây là phần code cũ của bạn đang thiếu.
             */
-
-                auction.setCurrentPrice(amount);
-                auction.setHighestBidderId(bidder.getId());
-                auctionDAO.update(connection, auction);
-                connection.commit();
+            auction.setCurrentPrice(amount);
+            auction.setHighestBidderId(bidder.getId());
+            auctionDAO.update(connection, auction);
+            connection.commit();
 
             eventToPublish = new BidEvent(
                     auctionId, bidder.getId(), previousBidderId,
@@ -190,12 +186,10 @@ public class BidService {
 
         } catch (Exception e) {
             rollback(connection);
-            throw new RuntimeException("Cannot place bid", e);
-
+            throw new DatabaseException("Cannot place bid", e);
         } finally {
             closeConnection(connection);
-            connection.close();
-
+            // connection.close(); // Dòng này thừa vì closeConnection đã đóng, gây lỗi. Đã comment.
             if (eventToPublish != null) {
                 EventBus.publish(eventToPublish);
             }
@@ -208,7 +202,6 @@ public class BidService {
     */
     public List<BidTransaction> getHistoryBid(int auctionId) {
         findAuctionOrThrow(auctionId);
-
         return bidTransactionDAO.findByAuctionId(auctionId);
     }
 
@@ -222,7 +215,7 @@ public class BidService {
         BidTransaction transaction = bidTransactionDAO.findLatestByAuctionId(auctionId);
 
         if (transaction == null) {
-            throw new RuntimeException("This auction has no bids yet");
+            throw new BidException("This auction has no bids yet");
         }
 
         return transaction;
@@ -236,7 +229,7 @@ public class BidService {
         Auction auction = findAuctionOrThrow(auctionId);
 
         if (auction.getHighestBidderId() == null) {
-            throw new RuntimeException("This auction has no highest bidder yet");
+            throw new BidException("This auction has no highest bidder yet");
         }
 
         return userService.getUserById(auction.getHighestBidderId());
@@ -253,13 +246,13 @@ public class BidService {
 
     private Auction findAuctionOrThrow(int auctionId) {
         if (auctionId <= 0) {
-            throw new RuntimeException("Auction id must be greater than 0");
+            throw new InvalidInputException("Auction id must be greater than 0");
         }
 
         Auction auction = auctionService.getAuctionById(auctionId);
 
         if (auction == null) {
-            throw new RuntimeException("Auction not found");
+            throw new AuctionNotFoundException(auctionId);
         }
 
         return auction;
@@ -271,7 +264,7 @@ public class BidService {
                 connection.rollback();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Rollback failed", e);
+            throw new DatabaseException("Rollback failed", e);
         }
     }
 
@@ -282,7 +275,7 @@ public class BidService {
                 connection.close();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new DatabaseException("Failed to close connection", e);
         }
     }
 
