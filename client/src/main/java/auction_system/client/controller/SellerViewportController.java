@@ -301,6 +301,11 @@ public class SellerViewportController implements Initializable {
         File file = fileChooser.showOpenDialog(stage);
 
         if (file != null) {
+            long MAX_SIZE = 5 * 1024 * 1024; // 5MB
+            if (file.length() > MAX_SIZE) {
+                showError("Kích thước ảnh không được vượt quá 5MB. Vui lòng chọn ảnh khác!");
+                return;
+            }
             this.selectedImageFile = file;
             productImageView.setImage(new Image(file.toURI().toString()));
             imageVbox.setVisible(false);
