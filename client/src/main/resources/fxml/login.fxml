@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<StackPane alignment="BOTTOM_LEFT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.LoginController">
+   <children>
+      <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" stylesheets="@../css/login.css">
+         <children>
+            <AnchorPane prefHeight="720.0" prefWidth="640.0" stylesheets="@../css/login.css">
+               <children>
+                  <Label layoutX="80.0" layoutY="100.0" styleClass="head-label" stylesheets="@../css/login.css" text="Register" textFill="#2264d1">
+                     <font>
+                        <Font size="36.0" />
+                     </font>
+                  </Label>
+                  <VBox layoutX="170.0" layoutY="200.0" spacing="25.0">
+                     <children>
+                        <TextField fx:id="registerFullnameTextField" prefHeight="45.0" prefWidth="300.0" promptText="Full name" style="-fx-font-size: 16px;" styleClass="textfield" />
+                        <TextField fx:id="registerUsernameTextField" prefHeight="45.0" prefWidth="300.0" promptText="Username" style="-fx-font-size: 16px;" styleClass="textfield" />
+                        <PasswordField fx:id="registerPasswordTextField" prefHeight="45.0" prefWidth="300.0" promptText="Password" style="-fx-font-size: 16px;" styleClass="textfield" />
+                        <PasswordField fx:id="registerConfirmPasswordTextField" prefHeight="45.0" prefWidth="300.0" promptText="Password" style="-fx-font-size: 16px;" styleClass="textfield" />
+                     </children>
+                  </VBox>
+                  <Button fx:id="registerBtn" layoutX="170.0" layoutY="510.0" mnemonicParsing="false" onAction="#registerBtnAction" prefHeight="50.0" prefWidth="300.0" style="-fx-font-size: 18px; -fx-font-weight: bold;" styleClass="login-btn" text="Sign Up" />
+                  <Label fx:id="RegisterStatusLabel" layoutX="170.0" layoutY="471.0" styleClass="error-label" />
+               </children>
+            </AnchorPane>
+
+            <AnchorPane prefHeight="720.0" prefWidth="640.0" AnchorPane.leftAnchor="640.0">
+               <children>
+                  <Label layoutX="80.0" layoutY="100.0" styleClass="head-label" stylesheets="@../css/login.css" text="Login" textFill="#2264d1">
+                     <font>
+                        <Font size="36.0" />
+                     </font>
+                  </Label>
+                  <VBox layoutX="170.0" layoutY="260.0" spacing="30.0">
+                     <children>
+                        <TextField fx:id="LoginUsernameTextField" prefHeight="45.0" prefWidth="300.0" promptText="Username" style="-fx-font-size: 16px;" styleClass="textfield" stylesheets="@../css/login.css" />
+                        <PasswordField fx:id="LoginPasswordTextField" prefHeight="45.0" prefWidth="300.0" promptText="Password" style="-fx-font-size: 16px;" styleClass="textfield" />
+                     </children>
+                  </VBox>
+                  <Button layoutX="170.0" layoutY="440.0" mnemonicParsing="false" onAction="#loginBtnAction" prefHeight="50.0" prefWidth="300.0" style="-fx-font-size: 18px; -fx-font-weight: bold;" styleClass="login-btn" stylesheets="@../css/login.css" text="Login" />
+                  <Label fx:id="LoginStatusLabel" layoutX="170.0" layoutY="401.0" styleClass="error-label" />
+               </children>
+            </AnchorPane>
+
+            <AnchorPane fx:id="side_form" prefHeight="720.0" prefWidth="640.0" styleClass="slide-pane" stylesheets="@../css/login.css">
+               <children>
+                  <ImageView fitHeight="800.0" fitWidth="640.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../images/login%20UI/background.png" />
+                     </image>
+                  </ImageView>
+                  <Button fx:id="side_CreateBtn" layoutX="175.0" layoutY="587.0" mnemonicParsing="false" onAction="#switchForm" prefHeight="50.0" prefWidth="300.0" style="-fx-font-size: 16px; -fx-font-weight: bold;" styleClass="create-btn" stylesheets="@../css/login.css" text="Create new Account" AnchorPane.bottomAnchor="82.60000000000002" />
+                  <Button fx:id="side_alreadyHave" layoutX="170.0" layoutY="587.0" mnemonicParsing="false" onAction="#switchForm" prefHeight="50.0" prefWidth="300.0" style="-fx-font-size: 16px; -fx-font-weight: bold;" styleClass="create-btn" text="Already have an Account" visible="false" />
+               </children>
+            </AnchorPane>
+         </children>
+      </AnchorPane>
+   </children>
+</StackPane>

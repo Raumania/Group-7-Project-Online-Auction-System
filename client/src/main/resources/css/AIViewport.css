@@ -1,0 +1,156 @@
+/* =========================================
+   GIỮ NGUYÊN BỘ MÀU GỐC CỦA ĐỨC
+   ========================================= */
+
+.viewport-container {
+    -fx-background-color: #F1F5F9;
+}
+
+.advisor-header {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 15;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 5);
+}
+
+.header-title {
+    -fx-text-fill: #1E293B;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.header-subtitle {
+    -fx-text-fill: #64748B;
+    -fx-font-size: 12px;
+}
+
+.status-online {
+    -fx-text-fill: #14B8A6;
+    -fx-font-weight: bold;
+}
+
+.chat-container {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 15;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 5);
+}
+
+.message-scroll {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent; /* Bổ sung: Xóa viền ScrollPane */
+}
+
+.message-scroll .viewport {
+    -fx-background-color: transparent;
+}
+
+/* =========================================
+   BỔ SUNG: TÙY CHỈNH THANH CUỘN (SCROLLBAR)
+   ========================================= */
+.message-scroll .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-width: 6;
+}
+.message-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: #CBD5E1; /* Xám nhạt */
+    -fx-background-radius: 10;
+}
+.message-scroll .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #94A3B8;
+}
+/* Ẩn các nút mũi tên trên thanh cuộn */
+.message-scroll .scroll-bar .increment-button,
+.message-scroll .scroll-bar .decrement-button {
+    -fx-padding: 0;
+}
+
+/* =========================================
+   BONG BÓNG TIN NHẮN & ẢNH
+   ========================================= */
+.bubble-ai {
+    -fx-background-color: #475569;
+    -fx-background-radius: 15 15 15 0;
+    -fx-padding: 12;
+    -fx-max-width: 500;
+}
+.bubble-ai .bubble-text {
+    -fx-text-fill: #FFFFFF;
+}
+
+.bubble-user {
+    -fx-background-color: #14B8A6;
+    -fx-background-radius: 15 15 0 15;
+    -fx-padding: 12;
+    -fx-max-width: 500;
+}
+.bubble-user .bubble-text {
+    -fx-text-fill: #FFFFFF;
+}
+
+.bubble-text {
+    -fx-font-size: 14px;
+    -fx-line-spacing: 5px;
+}
+
+/* Bổ sung: Bo góc cho ảnh trong bong bóng chat */
+.bubble-user .image-view, .bubble-ai .image-view {
+    -fx-background-radius: 10;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 0);
+}
+
+/* =========================================
+   Ô NHẬP LIỆU & TRẠNG THÁI ẢNH
+   ========================================= */
+.input-area {
+    -fx-background-color: #F8FAFC;
+    -fx-padding: 8;
+    -fx-background-radius: 10;
+    -fx-alignment: CENTER_LEFT;
+    -fx-border-color: #E2E8F0; /* Thêm viền nhẹ cho vùng nhập */
+    -fx-border-radius: 10;
+}
+
+.chat-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: #1E293B;
+    -fx-prompt-text-fill: #94A3B8;
+    -fx-font-size: 14px;
+}
+
+/* Bổ sung: Xử lý khi click vào ô nhập liệu */
+.chat-field:focused {
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+}
+
+/* Bổ sung: Định dạng cho nhãn báo đã chọn ảnh */
+#imageStatusLabel {
+    -fx-text-fill: #0D9488;
+    -fx-font-size: 12px;
+    -fx-font-style: italic;
+    -fx-padding: 0 0 0 5;
+}
+
+/* =========================================
+   NÚT BẤM (BUTTONS)
+   ========================================= */
+.btn-icon {
+    -fx-background-color: transparent;
+    -fx-text-fill: #64748B;
+    -fx-font-size: 18px;
+    -fx-cursor: hand;
+}
+.btn-icon:hover {
+    -fx-text-fill: #14B8A6;
+}
+
+.btn-send {
+    -fx-background-color: #14B8A6;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 8 20;
+    -fx-cursor: hand;
+}
+.btn-send:hover {
+    -fx-background-color: #0D9488;
+}
