@@ -108,18 +108,18 @@ public class AuctionServer {
     static void main(String[] args) {
         AuctionServer server = new AuctionServer();
 
-//        try {
-//            server.start();
-//
+        try {
+            server.start();
+
 //            System.out.println("Press Enter to stop server...");
 //
 //            // Chờ người dùng bấm Enter để tắt server
 //            System.in.read();
 //
 //            server.stop();
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
