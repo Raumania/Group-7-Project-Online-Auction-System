@@ -105,7 +105,7 @@ public class AuctionServer {
         System.out.println("Auction Server stopped.");
     }
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         AuctionServer server = new AuctionServer();
 
         try {

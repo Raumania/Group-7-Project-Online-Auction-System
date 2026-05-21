@@ -13,7 +13,8 @@ import com.google.gson.Gson;
 public class AuthService {
     //Singleton for AuthService
     private static AuthService instance;
-    private AuthService() {};
+    private AuthService() {}
+
     public static AuthService getInstance() {
         if(instance == null) {
             instance = new AuthService();
@@ -42,12 +43,7 @@ public class AuthService {
         Request request = new Request(Action.REGISTER, GsonUtil.getGson().toJsonTree(user));
         SocketClient.getInstance().send(request);
         Response response = SocketClient.getInstance().receive();
-        if(response.getStatus() == Status.SUCCESS) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        return response.getStatus() == Status.SUCCESS;
     }
 
 }

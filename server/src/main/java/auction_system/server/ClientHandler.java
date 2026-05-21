@@ -10,6 +10,7 @@ import auction_system.server.util.GsonUtil;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,10 +31,10 @@ public class ClientHandler implements Runnable {
         byte[] data = new byte[length];
         in.readFully(data);
 
-        return new String(data, "UTF-8");
+        return new String(data, StandardCharsets.UTF_8);
     }
     private void writeMessage(DataOutputStream out, String message) throws IOException {
-        byte[] data = message.getBytes("UTF-8");
+        byte[] data = message.getBytes(StandardCharsets.UTF_8);
 
         out.writeInt(data.length);
         out.write(data);

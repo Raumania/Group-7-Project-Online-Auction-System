@@ -12,7 +12,7 @@ import java.util.Set;
 
 public class UserService {
     private static UserService instance;
-    private UserDAO userDAO;
+    private final UserDAO userDAO;
 
     public UserService() {
         this.userDAO = UserDAO.getInstance();

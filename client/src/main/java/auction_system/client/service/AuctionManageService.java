@@ -34,11 +34,7 @@ public class AuctionManageService {
         SocketClient.getInstance().send(request);
         Response response = SocketClient.getInstance().receive();
 
-        if (response != null && response.getStatus() == Status.SUCCESS) {
-            return true;
-        } else {
-            return false;
-        }
+        return response != null && response.getStatus() == Status.SUCCESS;
     }
 
     public List<AuctionDTO> getAuctionsBySellerId(int sellerId) {
@@ -67,11 +63,7 @@ public class AuctionManageService {
 
         Response response = SocketClient.getInstance().receive();
 
-        if (response != null && response.getStatus() == Status.SUCCESS) {
-            return true;
-        } else {
-            return false;
-        }
+        return response != null && response.getStatus() == Status.SUCCESS;
     }
 
     /**
@@ -93,10 +85,6 @@ public class AuctionManageService {
         // Nhận phản hồi từ Server
         Response response = SocketClient.getInstance().receive();
 
-        if (response != null && response.getStatus() == Status.SUCCESS) {
-            return true;
-        } else {
-            return false;
-        }
+        return response != null && response.getStatus() == Status.SUCCESS;
     }
 }

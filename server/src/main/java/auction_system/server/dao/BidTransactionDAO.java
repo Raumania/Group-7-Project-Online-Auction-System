@@ -18,7 +18,7 @@ import java.util.List;
 
 public class BidTransactionDAO {
 
-    private UserDAO userDAO;
+    private final UserDAO userDAO;
 
     private static BidTransactionDAO instance;
 

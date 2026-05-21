@@ -3,7 +3,7 @@ import java.util.UUID;
 public class IdGenerator {
     private IdGenerator(){}
     public static String generationId(String prefix){
-        return prefix + " _ " + UUID.randomUUID().toString();
+        return prefix + " _ " + UUID.randomUUID();
     }
     public static String generationAdminId(){
         return generationId("ADMIN");
@@ -26,7 +26,7 @@ public class IdGenerator {
     public static String generateEntityId() {
         return UUID.randomUUID().toString();
     }
-    private static int bidTransactionCounter = 1;
+    private static final int bidTransactionCounter = 1;
 
     public static String generationBidTransactionId() {
         return generationId("BID_TRANSACTION");

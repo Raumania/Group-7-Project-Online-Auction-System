@@ -5,7 +5,8 @@ import auction_system.common.dto.UserDTO;
 public class UserSession {
     //singleton for user session
     private static UserSession instance;
-    private UserSession() {};
+    private UserSession() {}
+
     public static UserSession getInstance() {
         if(instance == null) instance = new UserSession();
         return instance;

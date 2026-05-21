@@ -12,13 +12,15 @@ import javafx.application.Platform;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class SocketClient {
     //Singleton for socket client
     private static SocketClient instance;
-    private SocketClient() {};
+    private SocketClient() {}
+
     public static synchronized SocketClient getInstance() {
         if(instance == null) {
             instance = new SocketClient();
@@ -144,7 +146,7 @@ public class SocketClient {
             int length = in.readInt();
             byte[] data = new byte[length];
             in.readFully(data);
-            return new String(data, "UTF-8");
+            return new String(data, StandardCharsets.UTF_8);
         } catch (EOFException e) {
             isRunning = false;
             return null;
@@ -152,7 +154,7 @@ public class SocketClient {
     }
 
     private void writeMessage(DataOutputStream out, String message) throws IOException {
-        byte[] data = message.getBytes("UTF-8");
+        byte[] data = message.getBytes(StandardCharsets.UTF_8);
         out.writeInt(data.length);
         out.write(data);
         out.flush();
