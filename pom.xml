@@ -7,7 +7,13 @@
     <groupId>com.onlineauctionsystem</groupId>
     <artifactId>Online-auction-system</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
     <name>Online-auction-system</name>
+    <modules>
+        <module>common</module>
+        <module>client</module>
+        <module>server</module>
+    </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
