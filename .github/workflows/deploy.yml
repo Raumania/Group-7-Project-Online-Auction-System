@@ -1,6 +1,5 @@
 name: CD to AWS EC2
 
-# Kịch bản này sẽ tự động chạy mỗi khi có code mới push lên nhánh 'main'
 on:
   push:
     branches: [ "main" ]
@@ -16,7 +15,6 @@ jobs:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
-        # Lệnh để GitHub robot gõ hộ em trên máy chủ EC2
         script: |
           cd Group-7-Project-Online-Auction-System
           git pull origin main
