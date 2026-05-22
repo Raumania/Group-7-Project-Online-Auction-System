@@ -133,6 +133,13 @@ public class ClientHandler implements Runnable {
                 writeMessage(out, message);
             } catch (IOException e) {
                 System.err.println("Failed to send message to client: " + e.getMessage());
+                // Loại bỏ client đã ngắt mạng khỏi danh sách hoạt động và đóng socket
+                activeClients.remove(this);
+                try {
+                    socket.close();
+                } catch (IOException ex) {
+                    // ignore
+                }
             }
         }
     }
