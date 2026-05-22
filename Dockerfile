@@ -11,4 +11,4 @@ COPY --from=build /app/server/target/bidmaster-server-jar-with-dependencies.jar 
 
 EXPOSE 3636
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx512m", "-Xms256m", "-jar", "app.jar"]
