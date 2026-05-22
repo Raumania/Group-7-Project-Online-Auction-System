@@ -56,6 +56,15 @@ public enum Action {
     /** Cập nhật thông tin người dùng */
     UPDATE_USER,
 
+    /** Lấy tất cả người dùng */
+    GET_ALL_USERS,
+
+    /** Tạo người dùng mới */
+    CREATE_USER,
+
+    /** Xóa người dùng */
+    DELETE_USER,
+
     // ==================== QUẢN LÝ SẢN PHẨM (Item) ====================
     /** Lấy danh sách sản phẩm của seller */
     GET_SELLER_ITEMS,

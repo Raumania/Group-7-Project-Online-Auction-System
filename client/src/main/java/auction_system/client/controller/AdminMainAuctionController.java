@@ -11,17 +11,15 @@ import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
-import javafx.scene.layout.*;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class MainAuctionController implements Initializable{
-    @FXML
-    private Label balanceCardLabel;
-
+public class AdminMainAuctionController implements Initializable {
     @FXML
     private Label fullnameCardLabel;
 
@@ -34,37 +32,36 @@ public class MainAuctionController implements Initializable{
     @FXML
     private StackPane viewport;
 
-    private VBox listViewport;
-    private VBox sellerViewport;
+    private VBox userViewport;
+    private VBox auctionViewport;
     private VBox AIViewport;
 
-    private ListViewportController listViewController;
-    private SellerViewportController sellerViewController;
+    private AdminUserManageController userController;
+    private AdminAuctionManageController auctionController;
 
     public void initialize(URL location, ResourceBundle resources) {
         try {
-            //load user's info
+            //load admin's info
             UserDTO user = UserSession.getInstance().getUser();
             fullnameCardLabel.setText(user.getFullname());
             fullnameHeaderLabel.setText(user.getFullname());
             usernameCardLabel.setText(user.getUsername());
-            balanceCardLabel.setText(String.valueOf(user.getBalance()));
             //load stage
             ViewSingleton.getInstance().setViewport(viewport);
-            FXMLLoader listLoader = new FXMLLoader();
-            FXMLLoader sellerLoader = new FXMLLoader();
+            FXMLLoader userLoader = new FXMLLoader();
+            FXMLLoader auctionLoader = new FXMLLoader();
             FXMLLoader AILoader = new FXMLLoader();
-            listLoader.setLocation(getClass().getResource("/fxml/ListViewport.fxml"));
-            sellerLoader.setLocation(getClass().getResource("/fxml/sellerViewport.fxml"));
+            userLoader.setLocation(getClass().getResource("/fxml/AdminUserManageViewport.fxml"));
+            auctionLoader.setLocation(getClass().getResource("/fxml/AdminAuctionManageViewport.fxml"));
             AILoader.setLocation(getClass().getResource("/fxml/AIViewport.fxml"));
-            listViewport = listLoader.load();
-            sellerViewport = sellerLoader.load();
+            userViewport = userLoader.load();
+            auctionViewport = auctionLoader.load();
             AIViewport = AILoader.load();
 
-            listViewController = listLoader.getController();
-            sellerViewController = sellerLoader.getController();
+            userController = userLoader.getController();
+            auctionController = auctionLoader.getController();
 
-            viewport.getChildren().setAll(listViewport);
+            viewport.getChildren().setAll(userViewport);
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -72,28 +69,31 @@ public class MainAuctionController implements Initializable{
     }
 
     @FXML
-    void listViewportBtn(ActionEvent event) throws IOException{
-        viewport.getChildren().setAll(listViewport);
+    void adminAuctionManageViewportBtn(ActionEvent event)  {
+        viewport.getChildren().setAll(auctionViewport);
     }
+
     @FXML
-    void sellerViewportBtn(ActionEvent event) throws IOException{
-        viewport.getChildren().setAll(sellerViewport);
+    void adminUserManageViewportBtn(ActionEvent event) {
+        viewport.getChildren().setAll(userViewport);
     }
+
     @FXML
     void AIViewportBtn(ActionEvent event) {
         viewport.getChildren().setAll(AIViewport);
     }
+
     @FXML
     void logoutBtn(ActionEvent event) {
         Node node = viewport;
-        Stage stage = (Stage)node.getScene().getWindow();
+        Stage stage = (Stage) node.getScene().getWindow();
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Logout");
         alert.setHeaderText("You're about to logout!");
         alert.setContentText("Do you want to logout?:");
 
-        if(alert.showAndWait().get() == ButtonType.OK) {
+        if (alert.showAndWait().get() == ButtonType.OK) {
             stage.close();
         }
     }

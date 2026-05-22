@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane maxHeight="720.0" maxWidth="1280.0" minHeight="720.0" minWidth="1280.0" prefHeight="720.0" prefWidth="1280.0" styleClass="main-root" stylesheets="@../css/mainAuction.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.AdminMainAuctionController">
+
+   <top>
+      <HBox alignment="CENTER_LEFT" spacing="20.0" styleClass="top-bar" BorderPane.alignment="CENTER">
+         <children>
+            <Label styleClass="app-title" text="Online Auction" />
+            <Region HBox.hgrow="ALWAYS" />
+            <HBox alignment="CENTER" spacing="10.0">
+               <children>
+                  <TextField prefWidth="350.0" promptText="Search for auctions..." styleClass="search-field" />
+                  <Button styleClass="search-btn" text="Search" />
+               </children>
+            </HBox>
+            <Region HBox.hgrow="ALWAYS" />
+            <Label fx:id="fullnameHeaderLabel" styleClass="user-name-header" text="Tran Vu Duc" />
+         </children>
+      </HBox>
+   </top>
+
+   <left>
+      <VBox prefWidth="250.0" spacing="15.0" styleClass="sidebar" BorderPane.alignment="CENTER">
+         <children>
+            <Button maxWidth="1.7976931348623157E308" onAction="#adminUserManageViewportBtn" styleClass="sidebar-btn" text="📋 User Manage" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#adminAuctionManageViewportBtn" styleClass="sidebar-btn" text="📦 Auction Manage" />
+            <Button maxWidth="1.7976931348623157E308" onAction="#AIViewportBtn" styleClass="sidebar-btn" text="🤖 AI Assistant" />
+
+            <Region VBox.vgrow="ALWAYS" />
+
+            <VBox spacing="10.0" styleClass="user-info-card">
+               <children>
+                  <HBox alignment="CENTER_LEFT" spacing="10.0">
+                     <children>
+                        <Label prefHeight="46.0" prefWidth="38.0" styleClass="user-icon" text="👤" />
+                        <VBox prefHeight="46.0" prefWidth="139.0">
+                           <children>
+                              <Label fx:id="fullnameCardLabel" styleClass="text-white-bold" text="ADMIN" />
+                              <Label fx:id="usernameCardLabel" styleClass="text-muted" text="52ducbanh" />
+                           </children>
+                        </VBox>
+                     </children>
+                  </HBox>
+               </children>
+            </VBox>
+            <Button maxWidth="1.7976931348623157E308" onAction="#logoutBtn" styleClass="logout-btn" text="[→ Logout" />
+         </children>
+      </VBox>
+   </left>
+
+   <center>
+      <!-- Đã xóa khối <top> rỗng ở đây -->
+      <BorderPane styleClass="main-content" BorderPane.alignment="CENTER">
+         <center>
+            <StackPane fx:id="viewport" BorderPane.alignment="CENTER" />
+         </center>
+      </BorderPane>
+   </center>
+</BorderPane>

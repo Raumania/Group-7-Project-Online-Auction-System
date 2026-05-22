@@ -5,10 +5,13 @@ import auction_system.client.socket.SocketClient;
 import auction_system.common.dto.UserDTO;
 import auction_system.common.enums.Action;
 import auction_system.common.enums.Status;
+import auction_system.common.enums.UserRole;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import auction_system.client.Util.GsonUtil;
 import com.google.gson.Gson;
+
+import java.util.Set;
 
 public class AuthService {
     //Singleton for AuthService
@@ -24,7 +27,7 @@ public class AuthService {
     Gson gson = new Gson();
     //Main code in below
 
-    public boolean checkLogin(UserDTO user) {
+    public int checkLogin(UserDTO user) {
 
         Request request = new Request(Action.LOGIN, GsonUtil.getGson().toJsonTree(user));
         SocketClient.getInstance().send(request);
@@ -32,10 +35,13 @@ public class AuthService {
         if(response.getStatus() == Status.SUCCESS) {
             //fill full data for user session hehe :>
             UserSession.getInstance().setUser(gson.fromJson(GsonUtil.getGson().toJsonTree(response.getData()),UserDTO.class));
-            return true;
+            if(UserSession.getInstance().getUser().getRoles().contains(UserRole.ADMIN)) {
+                return -1;
+            }
+            else return 1;
         }
         else {
-            return false;
+            return 0;
         }
     }
 

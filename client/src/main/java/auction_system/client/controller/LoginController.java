@@ -41,13 +41,28 @@ public class LoginController  {
             return;
         }
 
-        if(AuthService.getInstance().checkLogin(user)) {
+        int varCheck = AuthService.getInstance().checkLogin(user);
+        if(varCheck == 1) {
             // BẮT ĐẦU TẢI DỮ LIỆU NGAY SAU KHI ĐĂNG NHẬP THÀNH CÔNG
             AuctionListService.getInstance().fetchAllAuctions();
 
             try {
                 FXMLLoader loader = new FXMLLoader();
                 loader.setLocation(getClass().getResource("/fxml/mainAuction.fxml"));
+                Parent root = loader.load();
+                Scene scene = new Scene(root);
+                Stage stage = (Stage) side_form.getScene().getWindow();
+                stage.setScene(scene);
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else if(varCheck == -1) {
+            //Admin will be load in here :>
+            try {
+                FXMLLoader loader = new FXMLLoader();
+                loader.setLocation(getClass().getResource("/fxml/AdminMainAuction.fxml"));
                 Parent root = loader.load();
                 Scene scene = new Scene(root);
                 Stage stage = (Stage) side_form.getScene().getWindow();

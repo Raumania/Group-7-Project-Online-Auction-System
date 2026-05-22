@@ -54,6 +54,12 @@ public class ClientHandler implements Runnable {
         handlers.put(Action.PLACE_BID, new BidController());
         handlers.put(Action.GET_BID_HISTORY,new BidHistoryController());
         handlers.put(Action.GET_OPEN_AUCTIONS,new AuctionController());
+
+        UserController userController = new UserController();
+        handlers.put(Action.GET_ALL_USERS, userController);
+        handlers.put(Action.CREATE_USER, userController);
+        handlers.put(Action.UPDATE_USER, userController);
+        handlers.put(Action.DELETE_USER, userController);
         //handlers.put(Action.SENDING_IMAGES,new ImageController());
         //handlers.put(Action.FILTER_CATEGORY)
 

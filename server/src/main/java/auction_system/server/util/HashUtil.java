@@ -17,4 +17,5 @@ public class HashUtil {
 
         return encoder.matches(rawPassword, hashedPassword);
     }
+
 }
