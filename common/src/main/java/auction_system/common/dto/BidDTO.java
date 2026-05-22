@@ -1,9 +1,11 @@
 package auction_system.common.dto;
 
+import java.math.BigDecimal;
+
 public class BidDTO {
     // CẬP NHẬT: Đổi kiểu dữ liệu từ String sang int
     private int auctionId;
-    private double amount;
+    private BigDecimal amount;
     private int bidderId;
 
     public BidDTO() {
@@ -11,7 +13,7 @@ public class BidDTO {
     }
 
     // CẬP NHẬT: Tham số auctionId đổi thành int
-    public BidDTO(int auctionId, double amount, int bidderId) {
+    public BidDTO(int auctionId, BigDecimal amount, int bidderId) {
         this.auctionId = auctionId;
         this.amount = amount;
         this.bidderId = bidderId;
@@ -27,11 +29,11 @@ public class BidDTO {
         this.auctionId = auctionId;
     }
 
-    public double getAmount() {
+    public BigDecimal getAmount() {
         return amount;
     }
 
-    public void setAmount(double amount) {
+    public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
 

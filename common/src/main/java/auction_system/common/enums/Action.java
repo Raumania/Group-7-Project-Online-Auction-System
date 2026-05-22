@@ -2,7 +2,7 @@ package auction_system.common.enums;
 
 public enum Action {
 
-    CREATE_AUCTION,DELETE_AUCTION,EDIT_AUCTION,
+    CREATE_AUCTION,DELETE_AUCTION,EDIT_AUCTION,CANCEL_AUCTION,
 
     /** Lấy danh sách tất cả phiên đấu giá */
     GET_ALL,

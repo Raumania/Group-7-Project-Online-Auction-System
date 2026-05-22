@@ -87,4 +87,18 @@ public class AuctionManageService {
 
         return response != null && response.getStatus() == Status.SUCCESS;
     }
+
+    public boolean cancelAuction(AuctionDTO auctionDTO) {
+        if (auctionDTO == null || (auctionDTO.getStatus() != AuctionStatus.OPEN && auctionDTO.getStatus() != AuctionStatus.RUNNING)) {
+            System.out.println("Không thể hủy: Phiên đấu giá không ở trạng thái OPEN hoặc RUNNING!");
+            return false;
+        }
+
+        Request request = new Request(Action.CANCEL_AUCTION, GsonUtil.getGson().toJsonTree(auctionDTO.getId()));
+        SocketClient.getInstance().send(request);
+
+        Response response = SocketClient.getInstance().receive();
+
+        return response != null && response.getStatus() == Status.SUCCESS;
+    }
 }

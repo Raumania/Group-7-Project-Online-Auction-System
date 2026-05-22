@@ -2,6 +2,7 @@ package auction_system.common.dto;
 
 import auction_system.common.enums.UserRole;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
 public class UserDTO {
@@ -9,7 +10,7 @@ public class UserDTO {
     private String fullname;
     private String username;
     private String password;
-    private double balance;
+    private BigDecimal balance;
     private Set<UserRole> roles;
 
     public UserDTO() {
@@ -27,7 +28,7 @@ public class UserDTO {
         this.password = password;
     }
     
-    public UserDTO(int id, String fullname, String username, Set<UserRole> roles, double balance) {
+    public UserDTO(int id, String fullname, String username, Set<UserRole> roles, BigDecimal balance) {
         this.id = id;
         this.fullname = fullname;
         this.username = username;
@@ -51,12 +52,16 @@ public class UserDTO {
         return password;
     }
 
-    public double getBalance() {
+    public BigDecimal getBalance() {
         return balance;
     }
 
     public Set<UserRole> getRoles() {
         return roles;
+    }
+
+    public boolean isAdmin() {
+        return roles != null && roles.contains(UserRole.ADMIN);
     }
 
     public void setId(int id) {
@@ -75,7 +80,7 @@ public class UserDTO {
         this.password = password;
     }
 
-    public void setBalance(double balance) {
+    public void setBalance(BigDecimal balance) {
         this.balance = balance;
     }
 

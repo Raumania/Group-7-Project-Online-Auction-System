@@ -130,14 +130,14 @@ public class User extends Entity {
         if (balance.compareTo(BigDecimal.ZERO) < 0) {
             throw new UserInformationException("Balance cannot be negative");
         }
-        this.balance = balance;
+        this.balance = balance.setScale(4, java.math.RoundingMode.HALF_UP);
     }
 
     public void deposit(BigDecimal amount) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new UserInformationException("Deposit amount must be greater than 0");
         }
-        this.balance = this.balance.add(amount);
+        this.balance = this.balance.add(amount).setScale(4, java.math.RoundingMode.HALF_UP);
     }
 
     public void withdraw(BigDecimal amount) {
@@ -149,7 +149,7 @@ public class User extends Entity {
             throw new UserInformationException("Not enough balance");
         }
 
-        this.balance = this.balance.subtract(amount);
+        this.balance = this.balance.subtract(amount).setScale(4, java.math.RoundingMode.HALF_UP);
     }
 
 

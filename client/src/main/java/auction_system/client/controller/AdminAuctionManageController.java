@@ -58,6 +58,7 @@ public class AdminAuctionManageController implements Initializable {
 
     @FXML private Button btnAdd;
     @FXML private Button btnEdit;
+    @FXML private Button btnCancel;
     @FXML private Button btnDelete;
 
     private File selectedImageFile;
@@ -73,9 +74,10 @@ public class AdminAuctionManageController implements Initializable {
         setupTable();
         setupTableSelectionListener();
 
-        // Ban đầu form trống: Cho phép Add, mờ Edit và Delete
+        // Ban đầu form trống: Cho phép Add, mờ Edit, Delete và Cancel
         btnEdit.setDisable(true);
         btnDelete.setDisable(true);
+        btnCancel.setDisable(true);
         btnAdd.setDisable(false);
 
         refreshTable(null);
@@ -286,6 +288,7 @@ public class AdminAuctionManageController implements Initializable {
         btnAdd.setDisable(false);                          // Mở lại nút Add
         btnEdit.setDisable(true);                          // Làm mờ nút Edit
         btnDelete.setDisable(true);                        // Làm mờ nút Delete
+        btnCancel.setDisable(true);                        // Làm mờ nút Cancel
     }
 
     @FXML
@@ -447,6 +450,43 @@ public class AdminAuctionManageController implements Initializable {
     }
 
     @FXML void handleFilterChange(ActionEvent event) {}
+
+    @FXML
+    void handleCancel(ActionEvent event) {
+        AuctionDTO selectedAuction = productTable.getSelectionModel().getSelectedItem();
+
+        if (selectedAuction == null) {
+            showError("Vui lòng chọn phiên đấu giá cần hủy!");
+            return;
+        }
+
+        if (selectedAuction.getStatus() != AuctionStatus.OPEN && selectedAuction.getStatus() != AuctionStatus.RUNNING) {
+            showError("Chỉ có thể hủy phiên đấu giá đang ở trạng thái OPEN hoặc RUNNING!");
+            return;
+        }
+
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Xác nhận hủy phiên đấu giá");
+        confirmAlert.setHeaderText(null);
+        confirmAlert.setContentText("Bạn có chắc chắn muốn hủy phiên đấu giá \"" + selectedAuction.getName() + "\"? Hành động này không thể hoàn tác và sẽ cấm mọi người đặt giá.");
+
+        if (confirmAlert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            boolean isCancelled = AuctionManageService.getInstance().cancelAuction(selectedAuction);
+
+            if (isCancelled) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Thông báo");
+                alert.setHeaderText(null);
+                alert.setContentText("Hủy phiên đấu giá thành công!");
+                alert.showAndWait();
+
+                refreshAddProduct(null);
+                refreshTable(null);
+            } else {
+                showError("Hủy phiên đấu giá thất bại từ hệ thống!");
+            }
+        }
+    }
     
     @FXML
     void refreshTable(ActionEvent event) {
@@ -508,8 +548,12 @@ public class AdminAuctionManageController implements Initializable {
                 }
 
                 btnAdd.setDisable(true);
-                btnEdit.setDisable(false);
-                btnDelete.setDisable(false);
+                boolean isOpen = newSelection.getStatus() == AuctionStatus.OPEN;
+                btnEdit.setDisable(!isOpen);
+                btnDelete.setDisable(!isOpen);
+                
+                boolean canCancel = newSelection.getStatus() == AuctionStatus.OPEN || newSelection.getStatus() == AuctionStatus.RUNNING;
+                btnCancel.setDisable(!canCancel);
             }
         });
     }

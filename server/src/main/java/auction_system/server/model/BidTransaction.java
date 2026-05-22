@@ -38,7 +38,7 @@ public class BidTransaction extends Entity {
         }
 
         this.bidder = bidder;
-        this.amount = amount;
+        this.amount = amount != null ? amount.setScale(4, java.math.RoundingMode.HALF_UP) : null;
 
         /*
             Thời điểm đặt bid hiện tại.

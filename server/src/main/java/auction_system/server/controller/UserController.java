@@ -57,10 +57,10 @@ public class UserController implements RequestHandler {
                 userDTO.getRoles()
             );
             // Set balance if provided
-            if (userDTO.getBalance() > 0) {
-                user.setBalance(java.math.BigDecimal.valueOf(userDTO.getBalance()));
+            if (userDTO.getBalance() != null && userDTO.getBalance().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                user.setBalance(userDTO.getBalance());
                 // Save balance update
-                userService.deposit(user.getId(), java.math.BigDecimal.valueOf(userDTO.getBalance()));
+                userService.deposit(user.getId(), userDTO.getBalance());
             }
             user.setPassword(null);
             return new Response(Status.SUCCESS, action, user, "User created successfully");
@@ -77,7 +77,7 @@ public class UserController implements RequestHandler {
             user.setFullname(userDTO.getFullname());
             user.setUsername(userDTO.getUsername());
             user.setRoles(userDTO.getRoles());
-            user.setBalance(java.math.BigDecimal.valueOf(userDTO.getBalance()));
+            user.setBalance(userDTO.getBalance());
             
             // Save to DB
             auction_system.server.dao.UserDAO.getInstance().update(user);

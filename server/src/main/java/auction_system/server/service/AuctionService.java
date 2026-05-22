@@ -94,6 +94,10 @@ public class AuctionService {
                 throw new RuntimeException("Auction not found");
             }
 
+            if (auction.getStatus() != AuctionStatus.OPEN) {
+                throw new RuntimeException("Cannot delete auction: status is not OPEN");
+            }
+
             if (auction.getCurrentPrice() != null && auction.getCurrentPrice().compareTo(BigDecimal.ZERO) > 0) {
                 throw new RuntimeException("Cannot delete auction after bidding started");
             }
@@ -132,6 +136,10 @@ public class AuctionService {
 
             if (oldAuction == null) {
                 throw new RuntimeException("Auction not found");
+            }
+
+            if (oldAuction.getStatus() != AuctionStatus.OPEN) {
+                throw new RuntimeException("Cannot edit auction: status is not OPEN");
             }
 
             if (oldAuction.getCurrentPrice() != null && oldAuction.getCurrentPrice().compareTo(BigDecimal.ZERO) > 0) {
@@ -290,6 +298,10 @@ public class AuctionService {
     }
 
     public List<Auction> getMyAuctions(int sellerId) {
+        User user = userDAO.findById(sellerId);
+        if (user != null && user.hasRole(auction_system.common.enums.UserRole.ADMIN)) {
+            return auctionDAO.findAll();
+        }
         return auctionDAO.findAllBySellerId(sellerId);
     }
 
@@ -321,6 +333,40 @@ public class AuctionService {
         } catch (Exception e) {
             rollback(connection);
             throw new RuntimeException("Cannot close auction", e);
+
+        } finally {
+            closeConnection(connection);
+        }
+    }
+
+    public void cancelAuction(int auctionId) {
+        Connection connection = null;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+            connection.setAutoCommit(false);
+
+            Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
+
+            if (auction == null) {
+                throw new RuntimeException("Auction not found");
+            }
+
+            if (auction.getStatus() != AuctionStatus.OPEN &&
+                    auction.getStatus() != AuctionStatus.RUNNING) {
+                throw new RuntimeException("Auction is not in OPEN or RUNNING state");
+            }
+
+            auction.setStatus(AuctionStatus.CANCELLED);
+
+            auctionDAO.update(connection, auction);
+
+            connection.commit();
+            auction_system.server.observer.EventBus.publishAuctionEdited(auction);
+
+        } catch (Exception e) {
+            rollback(connection);
+            throw new RuntimeException("Cannot cancel auction", e);
 
         } finally {
             closeConnection(connection);

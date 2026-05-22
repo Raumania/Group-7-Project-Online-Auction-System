@@ -36,6 +36,8 @@ public class AuctionController implements RequestHandler {
                     return deleteAuction(action, request.getData());
                 case CLOSE_AUCTION:
                     return closeAuction(action, request.getData());
+                case CANCEL_AUCTION:
+                    return cancelAuction(action, request.getData());
                 default:
                     return new Response(Status.ERROR, action, null, "Unknown action: " + action);
             }
@@ -106,5 +108,16 @@ public class AuctionController implements RequestHandler {
         int auctionId = GsonUtil.fromJson(data, Integer.class);
         auctionService.closeAuction(auctionId);
         return new Response(Status.SUCCESS, action, null, "Auction closed");
+    }
+
+    private Response cancelAuction(Action action, JsonElement data) {
+        try {
+            int auctionId = GsonUtil.fromJson(data, Integer.class);
+            auctionService.cancelAuction(auctionId);
+            return new Response(Status.SUCCESS, action, null, "Auction cancelled");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new Response(Status.ERROR, action, null, "Cancel auction failed: " + e.getMessage());
+        }
     }
 }

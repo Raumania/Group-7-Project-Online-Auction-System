@@ -5,6 +5,7 @@ import auction_system.client.service.ImageService;
 import auction_system.client.session.UserSession;
 import auction_system.client.store.SellerAuctionStore;
 import auction_system.common.dto.AuctionDTO;
+import auction_system.common.dto.UserDTO;
 import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.ItemType;
 import javafx.collections.FXCollections;
@@ -512,8 +513,10 @@ public class SellerViewportController implements Initializable {
                 }
 
                 btnAdd.setDisable(true);
-                btnEdit.setDisable(false);
-                btnDelete.setDisable(false);
+                
+                boolean isOpen = newSelection.getStatus() == AuctionStatus.OPEN;
+                btnEdit.setDisable(!isOpen);
+                btnDelete.setDisable(!isOpen);
             }
         });
     }

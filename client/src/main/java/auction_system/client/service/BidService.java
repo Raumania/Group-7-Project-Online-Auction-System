@@ -29,14 +29,14 @@ public class BidService {
 
     //core in below
     public Response placeBid(int auctionId, BigDecimal amount, int bidderId) {
-        BidDTO bidDTO = new BidDTO(auctionId, amount.doubleValue(), bidderId);
+        BidDTO bidDTO = new BidDTO(auctionId, amount, bidderId);
         Request request = new Request(Action.PLACE_BID, GsonUtil.getGson().toJsonTree(bidDTO));
         SocketClient.getInstance().send(request);
         return SocketClient.getInstance().receive();
     }
 
     public List<BidTransactionDTO> getBidHistory(int auctionId) {
-        BidDTO bidDTO = new BidDTO(auctionId, 0.0, 0);
+        BidDTO bidDTO = new BidDTO(auctionId, BigDecimal.ZERO, 0);
         Request request = new Request(Action.GET_BID_HISTORY, GsonUtil.getGson().toJsonTree(bidDTO));
         SocketClient.getInstance().send(request);
         Response response = SocketClient.getInstance().receive();

@@ -16,6 +16,8 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
+import java.text.NumberFormat;
+import java.util.Locale;
 import java.util.ResourceBundle;
 
 public class MainAuctionController implements Initializable{
@@ -48,13 +50,18 @@ public class MainAuctionController implements Initializable{
             fullnameCardLabel.setText(user.getFullname());
             fullnameHeaderLabel.setText(user.getFullname());
             usernameCardLabel.setText(user.getUsername());
-            balanceCardLabel.setText(String.valueOf(user.getBalance()));
+            if (user.getBalance() != null) {
+                NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("en", "US"));
+                balanceCardLabel.setText(currencyFormatter.format(user.getBalance()));
+            } else {
+                balanceCardLabel.setText("$0.00");
+            }
             //load stage
             ViewSingleton.getInstance().setViewport(viewport);
             FXMLLoader listLoader = new FXMLLoader();
             FXMLLoader sellerLoader = new FXMLLoader();
             FXMLLoader AILoader = new FXMLLoader();
-            listLoader.setLocation(getClass().getResource("/fxml/ListViewport.fxml"));
+            listLoader.setLocation(getClass().getResource("/fxml/listViewport.fxml"));
             sellerLoader.setLocation(getClass().getResource("/fxml/sellerViewport.fxml"));
             AILoader.setLocation(getClass().getResource("/fxml/AIViewport.fxml"));
             listViewport = listLoader.load();
@@ -73,10 +80,16 @@ public class MainAuctionController implements Initializable{
 
     @FXML
     void listViewportBtn(ActionEvent event) throws IOException{
+//        if (listViewController != null) {
+//            listViewController.refreshList(null);
+//        }
         viewport.getChildren().setAll(listViewport);
     }
     @FXML
     void sellerViewportBtn(ActionEvent event) throws IOException{
+//        if (sellerViewController != null) {
+//            sellerViewController.refreshTable(null);
+//        }
         viewport.getChildren().setAll(sellerViewport);
     }
     @FXML
@@ -97,4 +110,7 @@ public class MainAuctionController implements Initializable{
             stage.close();
         }
     }
+
+
+
 }

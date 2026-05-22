@@ -47,7 +47,7 @@ public class BidController implements RequestHandler {
             bidService.placeBid(
                     bidDTO.getAuctionId(),
                     bidder,
-                    java.math.BigDecimal.valueOf(bidDTO.getAmount())
+                    bidDTO.getAmount()
             );
 
             // Lấy giao dịch mới nhất để trả về (tuỳ chọn)

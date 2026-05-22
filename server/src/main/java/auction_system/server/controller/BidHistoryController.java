@@ -43,7 +43,7 @@ public class BidHistoryController implements RequestHandler {
             List<BidTransactionDTO> historyDTO = new ArrayList<>();
             for (BidTransaction tx : history) {
                 User bidder = tx.getBidder();
-                UserDTO bidderDTO = new UserDTO(bidder.getId(), bidder.getFullname(), bidder.getUsername(), bidder.getRoles(), bidder.getBalance().doubleValue());
+                UserDTO bidderDTO = new UserDTO(bidder.getId(), bidder.getFullname(), bidder.getUsername(), bidder.getRoles(), bidder.getBalance());
                 BidTransactionDTO txDTO = new BidTransactionDTO(tx.getId(), bidderDTO, tx.getAmount(), tx.getBidTime());
                 historyDTO.add(txDTO);
             }

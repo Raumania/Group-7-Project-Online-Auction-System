@@ -10,11 +10,17 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+
+import java.math.BigDecimal;
 import java.net.URL;
+import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.Optional;
 
@@ -26,7 +32,7 @@ public class AdminUserManageController implements Initializable {
     @FXML private TableColumn<UserDTO, String> colUsername;
     @FXML private TableColumn<UserDTO, String> colPassword;
     @FXML private TableColumn<UserDTO, String> colRoles;
-    @FXML private TableColumn<UserDTO, Double> colBalance;
+    @FXML private TableColumn<UserDTO, BigDecimal> colBalance;
 
     @FXML private TextField txtFullname;
     @FXML private TextField txtUsername;
@@ -38,11 +44,13 @@ public class AdminUserManageController implements Initializable {
     @FXML private Button btnDelete;
 
     private final ObservableList<UserDTO> userList = AdminUserStore.getInstance().getUsers();
+    private final NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("en", "US"));
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         setupTable();
         setupTableSelectionListener();
+        setupBalanceInput();
 
         btnEdit.setDisable(true);
         btnDelete.setDisable(true);
@@ -52,12 +60,36 @@ public class AdminUserManageController implements Initializable {
         handleRefreshTable(null);
     }
 
+    private void setupBalanceInput() {
+        Pattern validDoubleText = Pattern.compile("^\\d*\\.?\\d{0,2}$");
+        UnaryOperator<TextFormatter.Change> filter = change -> {
+            String newText = change.getControlNewText();
+            if (validDoubleText.matcher(newText).matches()) {
+                return change;
+            }
+            return null;
+        };
+        txtBalance.setTextFormatter(new TextFormatter<>(filter));
+    }
+
     private void setupTable() {
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colFullname.setCellValueFactory(new PropertyValueFactory<>("fullname"));
         colUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
         colPassword.setCellValueFactory(new PropertyValueFactory<>("password"));
         colBalance.setCellValueFactory(new PropertyValueFactory<>("balance"));
+
+        colBalance.setCellFactory(column -> new TableCell<UserDTO, BigDecimal>() {
+            @Override
+            protected void updateItem(BigDecimal item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(currencyFormatter.format(item));
+                }
+            }
+        });
 
         colRoles.setCellFactory(column -> new TableCell<UserDTO, String>() {
             @Override
@@ -87,7 +119,7 @@ public class AdminUserManageController implements Initializable {
             if (newSelection != null) {
                 txtFullname.setText(newSelection.getFullname());
                 txtUsername.setText(newSelection.getUsername());
-                txtBalance.setText(String.valueOf(newSelection.getBalance()));
+                txtBalance.setText(newSelection.getBalance() != null ? newSelection.getBalance().toPlainString() : "");
                 
                 if (newSelection.getRoles() != null) {
                     String rolesStr = newSelection.getRoles().stream()
@@ -117,9 +149,9 @@ public class AdminUserManageController implements Initializable {
             return;
         }
 
-        double balance;
+        BigDecimal balance;
         try {
-            balance = Double.parseDouble(balanceStr);
+            balance = new BigDecimal(balanceStr);
         } catch (NumberFormatException e) {
             showError("Balance phải là một số hợp lệ!");
             return;
@@ -162,9 +194,9 @@ public class AdminUserManageController implements Initializable {
             return;
         }
 
-        double balance;
+        BigDecimal balance;
         try {
-            balance = Double.parseDouble(balanceStr);
+            balance = new BigDecimal(balanceStr);
         } catch (NumberFormatException e) {
             showError("Balance phải là một số hợp lệ!");
             return;

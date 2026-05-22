@@ -113,7 +113,7 @@ public class Auction extends Entity{
     }
 
     public void setStartingPrice(BigDecimal startingPrice) {
-        this.startingPrice = startingPrice;
+        this.startingPrice = startingPrice != null ? startingPrice.setScale(4, java.math.RoundingMode.HALF_UP) : null;
     }
 
     public BigDecimal getCurrentPrice() {
@@ -121,7 +121,7 @@ public class Auction extends Entity{
     }
 
     public void setCurrentPrice(BigDecimal currentPrice) {
-        this.currentPrice = currentPrice;
+        this.currentPrice = currentPrice != null ? currentPrice.setScale(4, java.math.RoundingMode.HALF_UP) : null;
     }
 
     public Integer getHighestBidderId() {

@@ -42,7 +42,7 @@ public class ListViewportController implements Initializable {
         categoryComboBox.getSelectionModel().selectFirst();
         //Status
         ObservableList<String> statusOptions = javafx.collections.FXCollections.observableArrayList(
-                "All Status", "OPEN", "RUNNING","FINISHED","PAID/CANCELED"
+                "All Status", "OPEN", "RUNNING","FINISHED","PAID","CANCELLED"
         );
         statusComboBox.setItems(statusOptions);
         statusComboBox.getSelectionModel().selectFirst();
@@ -83,11 +83,10 @@ public class ListViewportController implements Initializable {
         if (selectedStatus != null && !selectedStatus.equals("All Status")) {
             filteredList.removeIf(auction -> {
                 if (auction.getStatus() == null) return true;
-                if (selectedStatus.equals("PAID/CANCELED")) {
-                    return auction.getStatus() != AuctionStatus.PAID && auction.getStatus() != AuctionStatus.CANCELLED;
-                }
                 return !auction.getStatus().name().equalsIgnoreCase(selectedStatus);
             });
+        } else {
+            filteredList.removeIf(auction -> auction.getStatus() == AuctionStatus.CANCELLED);
         }
 
         // Sort
