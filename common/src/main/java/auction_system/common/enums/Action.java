@@ -74,5 +74,7 @@ public enum Action {
     // Event from server to all clients
     EVENT_NEW_AUCTION_ADDED,
     EVENT_AUCTION_EDITED,
-    EVENT_AUCTION_DELETED
+    EVENT_AUCTION_DELETED,
+    //AI Chat
+    CHAT_AI
 }

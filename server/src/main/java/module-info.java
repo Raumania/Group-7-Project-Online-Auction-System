@@ -3,8 +3,11 @@ module com.auction_system.server {
     requires spring.security.crypto;
     requires com.google.gson;
     requires org.slf4j;
+    requires jdk.unsupported;
     
-    requires com.auction_system.common; 
+    requires com.auction_system.common;
+    requires langchain4j.core;
+    requires langchain4j.open.ai;
 
     opens auction_system.server.model to com.google.gson;
     opens auction_system.server to com.google.gson;

@@ -5,6 +5,7 @@ import auction_system.common.enums.Action;
 import auction_system.common.enums.Status;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
+import auction_system.server.model.RequestHandler;
 import auction_system.server.model.User;
 import auction_system.server.service.UserService;
 import auction_system.server.util.GsonUtil;

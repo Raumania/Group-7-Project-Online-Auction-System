@@ -1,4 +1,4 @@
-package auction_system.server.controller;
+package auction_system.server.model;
 
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;

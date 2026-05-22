@@ -3,6 +3,7 @@ package auction_system.server.controller;
 import auction_system.common.dto.BidDTO;
 import auction_system.common.dto.BidTransactionDTO;
 import auction_system.common.dto.UserDTO;
+import auction_system.server.model.RequestHandler;
 import auction_system.server.model.User;
 import auction_system.common.enums.Action;
 import auction_system.common.enums.Status;

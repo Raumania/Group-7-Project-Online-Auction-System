@@ -6,6 +6,7 @@ import auction_system.common.enums.Status;
 import auction_system.common.enums.UserRole;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
+import auction_system.server.model.RequestHandler;
 import auction_system.server.model.User;
 import auction_system.server.service.BidService;
 import auction_system.server.service.UserService;

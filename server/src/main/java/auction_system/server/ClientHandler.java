@@ -6,6 +6,7 @@ import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import auction_system.server.controller.*;
 //import auction_system.server.controller.BidController;
+import auction_system.server.model.RequestHandler;
 import auction_system.server.util.GsonUtil;
 
 import java.io.*;
@@ -55,6 +56,7 @@ public class ClientHandler implements Runnable {
         handlers.put(Action.PLACE_BID, new BidController());
         handlers.put(Action.GET_BID_HISTORY,new BidHistoryController());
         handlers.put(Action.GET_OPEN_AUCTIONS,new AuctionController());
+        handlers.put(Action.CHAT_AI, new AIController());
         //handlers.put(Action.SENDING_IMAGES,new ImageController());
         //handlers.put(Action.FILTER_CATEGORY)
 
