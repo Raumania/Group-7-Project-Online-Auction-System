@@ -33,6 +33,7 @@ public class SocketClient {
     private DataInputStream in;
     private DataOutputStream out;
     private boolean isRunning = false;
+    private java.util.concurrent.ScheduledExecutorService heartbeatScheduler;
 
     // Hàng đợi an toàn đa luồng chứa các phản hồi đồng bộ (Login, Bid, v.v.)
     private final BlockingQueue<Response> responseQueue = new LinkedBlockingQueue<>();
@@ -40,6 +41,8 @@ public class SocketClient {
     public void connect(String URL, int PORT) {
         try {
             socket = new Socket(URL,PORT);
+            socket.setKeepAlive(true);
+            socket.setTcpNoDelay(true);
             System.out.println("Connected to server");
             in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
             out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
@@ -47,6 +50,9 @@ public class SocketClient {
             // Bắt đầu luồng lắng nghe ngầm khi kết nối thành công
             isRunning = true;
             startReaderThread();
+            
+            // Khởi động heartbeat gửi ping định kỳ
+            startHeartbeat();
         }
         catch(IOException e) {
             e.printStackTrace();
@@ -58,34 +64,73 @@ public class SocketClient {
         Thread readerThread = new Thread(() -> {
             try {
                 while (isRunning) {
-                    String json = readMessage(in);
-                    if (json == null) continue;
-                    
-                    System.out.println("Received raw JSON from server: " + maskImageBase64(json));
-                    Response response = GsonUtil.fromJson(json, Response.class);
-                    
-                    if (response != null) {
-                        // Kiểm tra các sự kiện bất đồng bộ đẩy từ Server (Push Notifications)
-                        if (response.getType() == Action.EVENT_NEW_AUCTION_ADDED) {
-                            handleNewAuctionEvent(response);
-                        } else if (response.getType() == Action.EVENT_AUCTION_EDITED) {
-                            handleAuctionEditedEvent(response);
-                        } else if (response.getType() == Action.EVENT_AUCTION_DELETED) {
-                            handleAuctionDeletedEvent(response);
-                        } else {
-                            // Nếu là phản hồi bình thường của Request, đưa vào hàng đợi để phương thức receive() lấy ra
-                            responseQueue.put(response);
+                    try {
+                        String json = readMessage(in);
+                        if (json == null) continue;
+                        
+                        System.out.println("Received raw JSON from server: " + maskImageBase64(json));
+                        Response response = GsonUtil.fromJson(json, Response.class);
+                        
+                        if (response != null) {
+                            // Kiểm tra các sự kiện bất đồng bộ đẩy từ Server (Push Notifications)
+                            if (response.getType() == Action.EVENT_NEW_AUCTION_ADDED) {
+                                handleNewAuctionEvent(response);
+                            } else if (response.getType() == Action.EVENT_AUCTION_EDITED) {
+                                handleAuctionEditedEvent(response);
+                            } else if (response.getType() == Action.EVENT_AUCTION_DELETED) {
+                                handleAuctionDeletedEvent(response);
+                            } else if (response.getType() == Action.PING) {
+                                // Phản hồi PING/PONG giữ kết nối (heartbeat), chỉ cần log và bỏ qua
+                                System.out.println("Heartbeat: received PONG from server");
+                            } else {
+                                // Nếu là phản hồi bình thường của Request, đưa vào hàng đợi để phương thức receive() lấy ra
+                                responseQueue.put(response);
+                            }
                         }
+                    } catch (IOException e) {
+                        System.out.println("Socket read error (inside loop): " + e.getMessage());
+                        throw e; // Rethrow to let outer catch block handle socket termination
+                    } catch (InterruptedException e) {
+                        System.out.println("Reader thread interrupted (inside loop): " + e.getMessage());
+                        Thread.currentThread().interrupt(); // Restore interrupted status
+                        break; // Exit the loop
+                    } catch (Throwable t) {
+                        System.err.println("Unexpected error processing incoming message: " + t.getMessage());
+                        t.printStackTrace();
+                        // Do not crash the reader thread, just continue reading
                     }
                 }
             } catch (IOException e) {
                 System.out.println("Socket connection closed or read error: " + e.getMessage());
-            } catch (InterruptedException e) {
-                System.out.println("Reader thread interrupted: " + e.getMessage());
+            } finally {
+                isRunning = false;
+                System.out.println("Reader thread stopped.");
             }
         });
         readerThread.setDaemon(true); // Để luồng tự giải phóng khi ứng dụng JavaFX tắt
         readerThread.start();
+    }
+
+    private void startHeartbeat() {
+        if (heartbeatScheduler != null && !heartbeatScheduler.isShutdown()) {
+            heartbeatScheduler.shutdownNow();
+        }
+        heartbeatScheduler = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "socket-client-heartbeat");
+            t.setDaemon(true);
+            return t;
+        });
+        
+        heartbeatScheduler.scheduleAtFixedRate(() -> {
+            if (isRunning && socket != null && !socket.isClosed()) {
+                try {
+                    Request pingReq = new Request(Action.PING, null);
+                    send(pingReq);
+                } catch (Exception e) {
+                    System.err.println("Failed to send heartbeat ping: " + e.getMessage());
+                }
+            }
+        }, 30, 30, java.util.concurrent.TimeUnit.SECONDS);
     }
 
     // Xử lý sự kiện thêm đấu giá mới theo thời gian thực
@@ -160,7 +205,7 @@ public class SocketClient {
         out.flush();
     }
 
-    public void send(Request request) {
+    public synchronized void send(Request request) {
         try {
             String json = GsonUtil.toJson(request);
             // Gửi qua output stream chính đã được flush
@@ -186,6 +231,9 @@ public class SocketClient {
     // Đóng socket an toàn
     public void disconnect() {
         isRunning = false;
+        if (heartbeatScheduler != null) {
+            heartbeatScheduler.shutdownNow();
+        }
         try {
             if (in != null) in.close();
             if (out != null) out.close();

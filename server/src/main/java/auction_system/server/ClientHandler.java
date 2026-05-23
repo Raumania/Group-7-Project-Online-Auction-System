@@ -24,6 +24,12 @@ public class ClientHandler implements Runnable {
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
+        try {
+            this.socket.setKeepAlive(true);
+            this.socket.setTcpNoDelay(true);
+        } catch (java.net.SocketException e) {
+            System.err.println("Failed to set socket options on accepted client: " + e.getMessage());
+        }
         initHandlers();
     }
     private String readMessage(DataInputStream in) throws IOException {
@@ -87,28 +93,33 @@ public class ClientHandler implements Runnable {
                 System.out.println("Request: " + maskImageBase64(line));
                 Request req = GsonUtil.fromJson(line, Request.class);
 
-                RequestHandler handler = handlers.get(req.getAction());
+                if (req != null && req.getAction() == Action.PING) {
+                    Response pongRes = new Response(Status.SUCCESS, Action.PING, null, "PONG");
+                    send(GsonUtil.toJson(pongRes));
+                    continue;
+                }
 
+                RequestHandler handler = handlers.get(req != null ? req.getAction() : null);
 
                 try {
                     Response res;
                     if (handler != null) {
                         res = handler.handle(req);
                     } else {
-                        res = new Response(Status.ERROR, "Unknown action: " + req.getAction(), null);
+                        res = new Response(Status.ERROR, "Unknown action: " + (req != null ? req.getAction() : "null"), null);
                     }
                     String jsonResponse = GsonUtil.toJson(res);
                     System.out.println("Respond: " + maskImageBase64(jsonResponse));
-                    writeMessage(this.out, jsonResponse);
+                    send(jsonResponse);
                 } catch (Throwable t) {
-                    System.err.println("Error handling or serializing request: " + req.getAction());
+                    System.err.println("Error handling or serializing request: " + (req != null ? req.getAction() : "null"));
                     t.printStackTrace();
                     try {
-                        Response errRes = new Response(Status.ERROR, req.getAction(), null, "Internal server error: " + t.getMessage());
+                        Response errRes = new Response(Status.ERROR, req != null ? req.getAction() : null, null, "Internal server error: " + t.getMessage());
                         String errJson = new com.google.gson.Gson().toJson(errRes);
                         System.out.println("Respond (error): " + errJson);
-                        writeMessage(this.out, errJson);
-                    } catch (IOException ioe) {
+                        send(errJson);
+                    } catch (Exception ioe) {
                         System.err.println("Failed to send error response: " + ioe.getMessage());
                     }
                 }
