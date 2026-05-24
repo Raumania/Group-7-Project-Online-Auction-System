@@ -4,8 +4,6 @@ import auction_system.common.dto.AuctionDTO;
 import auction_system.common.enums.ItemType;
 import auction_system.common.enums.UserRole;
 import auction_system.server.dao.DatabaseConnection;
-import auction_system.server.exception.ControllerException.InvalidInputException;
-import auction_system.server.exception.serviceException.InValidAuctionData;
 import auction_system.server.model.Auction;
 import auction_system.server.model.User;
 import org.junit.jupiter.api.*;

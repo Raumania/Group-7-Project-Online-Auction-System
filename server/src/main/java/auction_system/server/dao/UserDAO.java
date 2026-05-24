@@ -71,7 +71,7 @@ public class UserDAO {
         StringBuilder result = new StringBuilder();
 
         for (UserRole role : roles) {
-            if (result.length() > 0) {
+            if (!result.isEmpty()) {
                 result.append(",");
             }
 
@@ -246,7 +246,7 @@ public class UserDAO {
 
         Set<UserRole> roles = stringToRoles(rolesText);
 
-        if (roles == null || roles.isEmpty()) {
+        if (roles.isEmpty()) {
             throw new RuntimeException("User has no role");
         }
 
