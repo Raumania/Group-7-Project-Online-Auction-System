@@ -2,6 +2,7 @@ package auction_system.server.service;
 
 import auction_system.common.enums.UserRole;
 import auction_system.server.dao.UserDAO;
+import auction_system.server.exception.AuthorizationException;
 import auction_system.server.exception.ControllerException.*;
 import auction_system.server.model.User;
 import auction_system.server.util.HashUtil;

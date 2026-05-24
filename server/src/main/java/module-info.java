@@ -11,6 +11,7 @@ module com.auction_system.server {
 
     opens auction_system.server.model to com.google.gson;
     opens auction_system.server to com.google.gson;
+    opens auction_system.server.service;
 
     exports auction_system.server;
     exports auction_system.server.model;

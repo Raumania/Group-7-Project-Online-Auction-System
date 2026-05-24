@@ -50,6 +50,12 @@ public class UserDAO {
             statement.setBigDecimal(5, user.getBalance());
 
             statement.executeUpdate();
+
+            // Lấy ID vừa được DB sinh ra
+            ResultSet keys = statement.getGeneratedKeys();
+            if (keys.next()) {
+                user.setId(keys.getInt(1)); // ← gán ngược lại vào object
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Cannot save user", e);
         }
