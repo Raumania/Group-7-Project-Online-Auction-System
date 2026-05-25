@@ -1,6 +1,7 @@
 package auction_system.server.model;
 
 import auction_system.common.enums.UserRole;
+import auction_system.common.dto.UserDTO;
 import auction_system.server.exception.UserInformationException;
 
 import java.math.BigDecimal;
@@ -153,6 +154,10 @@ public class User extends Entity {
     }
 
 
+
+    public UserDTO toDTO() {
+        return new UserDTO(this.id, this.fullname, this.username, this.getRoles(), this.balance);
+    }
 
     @Override
     public String toString() {

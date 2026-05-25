@@ -1,7 +1,6 @@
 package auction_system.server.controller;
 
 import auction_system.common.enums.Status;
-import auction_system.server.model.RequestHandler;
 import auction_system.server.model.User;
 import auction_system.common.dto.UserDTO;
 import auction_system.common.protocol.Request;

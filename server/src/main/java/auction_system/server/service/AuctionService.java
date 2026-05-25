@@ -9,6 +9,8 @@ import auction_system.server.dao.UserDAO;
 import auction_system.server.exception.daoException.DataBaseException;
 import auction_system.server.exception.serviceException.InValidAuctionData;
 import auction_system.server.model.*;
+import auction_system.server.observer.EventBus;
+import org.w3c.dom.events.Event;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -26,7 +28,8 @@ public class AuctionService {
     private final AuctionDAO auctionDAO = AuctionDAO.getInstance();
     private final ItemDAO itemDAO = ItemDAO.getInstance();
     private final UserDAO userDAO = UserDAO.getInstance();
-    private final ImageService imageService=ImageService.getInstance();
+    private final ImageService imageService = ImageService.getInstance();
+    private final EventBus eventBus = EventBus.getInstance();
     private AuctionService() {
     }
 

@@ -7,10 +7,13 @@ import java.util.concurrent.ConcurrentHashMap;
 //(aucID, userID)
 public class NotificationService {
     private static NotificationService instance;
-    public static final Map<Integer, Set<Integer>> auctions =
-            new ConcurrentHashMap<>();
+    private final Map<Integer, Set<Integer>> auctions = new ConcurrentHashMap<>();
 
     private NotificationService() {
+    }
+
+    public Map<Integer, Set<Integer>> getAuctions() {
+        return auctions;
     }
 
     public static NotificationService getInstance() {

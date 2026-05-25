@@ -270,7 +270,7 @@ public class BidService {
         }
     }
 
-    public static BigDecimal getBidIncrement(BigDecimal price) {
+    public BigDecimal getBidIncrement(BigDecimal price) {
         if (price.compareTo(new BigDecimal("1")) < 0) return new BigDecimal("0.05");
         else if (price.compareTo(new BigDecimal("5")) < 0) return new BigDecimal("0.25");
         else if (price.compareTo(new BigDecimal("25")) < 0) return new BigDecimal("0.5");

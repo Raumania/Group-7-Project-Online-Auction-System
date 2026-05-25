@@ -5,12 +5,15 @@ import auction_system.client.Util.ViewSingleton;
 import auction_system.client.session.UserSession;
 import auction_system.client.service.BidService;
 import auction_system.client.service.ImageService;
+import auction_system.client.store.AuctionStore;
 import auction_system.common.dto.AuctionDTO;
 import auction_system.common.dto.BidTransactionDTO;
 import auction_system.common.dto.UserDTO;
 import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.Status;
 import auction_system.common.protocol.Response;
+import javafx.collections.ListChangeListener;
+import javafx.application.Platform;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -87,6 +90,7 @@ public class BidViewportController implements Initializable {
     private Timeline timeline;
     private final NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("en", "US"));
     private AuctionDTO auctionDTO;
+    private ListChangeListener<AuctionDTO> storeListener;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -123,6 +127,9 @@ public class BidViewportController implements Initializable {
 
     @FXML
     void handleBackToDetail(ActionEvent event) {
+        if (storeListener != null) {
+            AuctionStore.getInstance().getAuctions().removeListener(storeListener);
+        }
         try {
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(getClass().getResource("/fxml/detailViewport.fxml"));
@@ -139,6 +146,23 @@ public class BidViewportController implements Initializable {
 
     public void setData(AuctionDTO auctionDTO) {
         this.auctionDTO = auctionDTO;
+
+        // Listen for real-time updates to this specific auction in the store (Server Broadcasts)
+        if (storeListener != null) {
+            AuctionStore.getInstance().getAuctions().removeListener(storeListener);
+        }
+        
+        storeListener = c -> {
+            for (AuctionDTO updated : AuctionStore.getInstance().getAuctions()) {
+                if (updated.getId() == this.auctionDTO.getId()) {
+                    Platform.runLater(() -> {
+                        refreshAuctionData(updated);
+                    });
+                    break;
+                }
+            }
+        };
+        AuctionStore.getInstance().getAuctions().addListener(storeListener);
 
         itemNameLabel.setText(auctionDTO.getName());
         sellerLabel.setText(String.valueOf(auctionDTO.getSellerId()));
@@ -187,15 +211,27 @@ public class BidViewportController implements Initializable {
             setupCountdown(auctionDTO.getStartTime(), () -> {
                 statusLabel.setText(AuctionStatus.RUNNING.toString());
                 auctionDTO.setStatus(AuctionStatus.RUNNING); // Update DTO
+                
+                // Re-evaluate inputs and enable/disable them
+                Platform.runLater(this::updateBiddingUIState);
+                
                 setupCountdown(auctionDTO.getEndTime(), () -> {
                     timerLabel.setText("00 : 00 : 00");
                     statusLabel.setText(AuctionStatus.FINISHED.toString());
+                    auctionDTO.setStatus(AuctionStatus.FINISHED); // Update DTO
+                    
+                    // Re-evaluate inputs and enable/disable them
+                    Platform.runLater(this::updateBiddingUIState);
                 });
             });
         } else if (auctionDTO.getStatus() == AuctionStatus.RUNNING) {
             setupCountdown(auctionDTO.getEndTime(), () -> {
                 timerLabel.setText("00 : 00 : 00");
                 statusLabel.setText(AuctionStatus.FINISHED.toString());
+                auctionDTO.setStatus(AuctionStatus.FINISHED); // Update DTO
+                
+                // Re-evaluate inputs and enable/disable them
+                Platform.runLater(this::updateBiddingUIState);
             });
         } else {
             timerLabel.setText("00 : 00 : 00");
@@ -204,7 +240,39 @@ public class BidViewportController implements Initializable {
         // Load history records
         loadBidHistory();
         
-        // Disable bidding if auction is not running OR current user is the seller
+        // Dynamically configure inputs/buttons state
+        updateBiddingUIState();
+    }
+
+    private void refreshAuctionData(AuctionDTO updated) {
+        this.auctionDTO = updated;
+        
+        statusLabel.setText(updated.getStatus().toString());
+        
+        // Update current price
+        BigDecimal currentPrice = updated.getCurrentPrice();
+        if (currentPrice != null && currentPrice.compareTo(BigDecimal.ZERO) > 0) {
+            highestBidLabel.setText(currencyFormatter.format(currentPrice));
+            highestBidderLabel.setText(updated.getHighestBidderUsername() != null ? updated.getHighestBidderUsername() : "Anonymous");
+        } else {
+            highestBidLabel.setText(currencyFormatter.format(updated.getStartingPrice()));
+            highestBidderLabel.setText("No bids yet");
+        }
+        
+        // Recalculate increment
+        BigDecimal priceForIncrement = (currentPrice != null && currentPrice.compareTo(BigDecimal.ZERO) > 0) ? currentPrice : updated.getStartingPrice();
+        BigDecimal increment = getBidIncrement(priceForIncrement);
+        minIncrementLabel.setText(currencyFormatter.format(increment));
+        minIncrementHintLabel.setText("Min increment: " + currencyFormatter.format(increment));
+        
+        // Reload history and chart
+        loadBidHistory();
+        
+        // Update UI states
+        updateBiddingUIState();
+    }
+
+    private void updateBiddingUIState() {
         UserDTO currentUser = UserSession.getInstance().getUser();
         boolean isSeller = (currentUser != null && auctionDTO.getSellerId() == currentUser.getId());
         boolean isNotRunning = (auctionDTO.getStatus() != AuctionStatus.RUNNING);
@@ -224,6 +292,16 @@ public class BidViewportController implements Initializable {
                 bidStatusLabel.setText("Bidding is closed.");
             }
             setStatusStyle("status-error");
+        } else {
+            bidField.setDisable(false);
+            maxBidField.setDisable(false);
+            incrementField.setDisable(false);
+            autoBidToggle.setDisable(false);
+            if (placeBidButton != null) {
+                placeBidButton.setDisable(false);
+            }
+            bidStatusLabel.setText("Bidding is active!");
+            setStatusStyle("status-success");
         }
     }
 

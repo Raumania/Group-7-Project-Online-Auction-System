@@ -24,7 +24,7 @@ public class AIService {
         return instance;
     }
     //core in belowww :>
-    public static String chat(String prompt,String imageBase64){
+    public String chat(String prompt,String imageBase64){
         OpenAiChatModel model = OpenAiChatModel.builder()
                 .baseUrl("http://localhost:8080/v1")
                 .apiKey("no-key").timeout(Duration.ofMinutes(10))

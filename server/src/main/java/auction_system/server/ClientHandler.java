@@ -6,7 +6,7 @@ import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import auction_system.server.controller.*;
 //import auction_system.server.controller.BidController;
-import auction_system.server.model.RequestHandler;
+import auction_system.server.controller.RequestHandler;
 import auction_system.server.util.GsonUtil;
 
 import java.io.*;
@@ -17,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientHandler implements Runnable {
 
-    private static final java.util.Set<ClientHandler> activeClients = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Socket socket;
     private final Map<Action, RequestHandler> handlers = new ConcurrentHashMap<>();
     private DataOutputStream out;
@@ -63,14 +62,18 @@ public class ClientHandler implements Runnable {
         handlers.put(Action.GET_BID_HISTORY,new BidHistoryController());
         handlers.put(Action.GET_OPEN_AUCTIONS,new AuctionController());
         handlers.put(Action.CHAT_AI, new AIController());
-        //handlers.put(Action.SENDING_IMAGES,new ImageController());
-        //handlers.put(Action.FILTER_CATEGORY)
+
+        UserController userController = new UserController();
+        handlers.put(Action.GET_ALL_USERS, userController);
+        handlers.put(Action.CREATE_USER, userController);
+        handlers.put(Action.UPDATE_USER, userController);
+        handlers.put(Action.DELETE_USER, userController);
 
     }
 
     @Override
     public void run() {
-        activeClients.add(this);
+        AuctionServer.addActiveClient(this);
         // SỬA: Đồng bộ dùng DataInputStream và DataOutputStream như Client
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
              DataOutputStream output = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()))) {
@@ -128,7 +131,7 @@ public class ClientHandler implements Runnable {
         } catch (IOException e) {
             System.err.println("ClientHandler IO error: " + e.getMessage());
         } finally {
-            activeClients.remove(this);
+            AuctionServer.removeActiveClient(this);
             try {
                 if (socket != null && !socket.isClosed())
                     socket.close();
@@ -145,19 +148,13 @@ public class ClientHandler implements Runnable {
             } catch (IOException e) {
                 System.err.println("Failed to send message to client: " + e.getMessage());
                 // Loại bỏ client đã ngắt mạng khỏi danh sách hoạt động và đóng socket
-                activeClients.remove(this);
+                AuctionServer.removeActiveClient(this);
                 try {
                     socket.close();
                 } catch (IOException ex) {
                     // ignore
                 }
             }
-        }
-    }
-
-    public static void broadcast(String message) {
-        for (ClientHandler client : activeClients) {
-            client.send(message);
         }
     }
 

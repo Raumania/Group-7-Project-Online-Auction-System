@@ -22,4 +22,5 @@ module com.auction_system.server {
     exports auction_system.server.util;
     exports auction_system.server.exception;
     exports auction_system.server.factory;
+    opens auction_system.server.controller to com.google.gson;
 }

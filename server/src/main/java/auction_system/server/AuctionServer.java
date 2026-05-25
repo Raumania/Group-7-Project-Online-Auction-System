@@ -1,13 +1,37 @@
 package auction_system.server;
 
+import auction_system.server.observer.AuctionScheduler;
+import auction_system.server.observer.ClientNotificationObserver;
+import auction_system.server.observer.EventBus;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.Set;
 
 public class AuctionServer {
+    //Observer Pattern
+    // Danh sách toàn bộ các client đang kết nối hoạt động
+    private static final Set<ClientHandler> activeClients = ConcurrentHashMap.newKeySet();
+
+    public static void addActiveClient(ClientHandler client) {
+        activeClients.add(client);
+    }
+
+    public static void removeActiveClient(ClientHandler client) {
+        activeClients.remove(client);
+    }
+
+    public static void broadcast(String message) {
+        for (ClientHandler client : activeClients) {
+            client.send(message);
+        }
+    }
+    //end of Observer Pattern
 
     // Socket server dùng để lắng nghe kết nối từ client
     private ServerSocket serverSocket;
@@ -27,11 +51,11 @@ public class AuctionServer {
     public void start() throws IOException {
 
         // Khởi chạy EventBus và đăng ký ClientNotificationObserver
-        auction_system.server.observer.EventBus.getInstance();
-        auction_system.server.observer.EventBus.registerObserver(new auction_system.server.observer.ClientNotificationObserver());
+        EventBus.getInstance();
+        EventBus.registerObserver(new ClientNotificationObserver());
 
         // Khởi chạy AuctionScheduler
-        auction_system.server.observer.AuctionScheduler.getInstance().start();
+        AuctionScheduler.getInstance().start();
 
         // Mở server socket tại port
         serverSocket = new ServerSocket(PORT);
@@ -105,7 +129,7 @@ public class AuctionServer {
         System.out.println("Auction Server stopped.");
     }
 
-    static void main(String[] args) {
+    public static void main(String[] args) {
         AuctionServer server = new AuctionServer();
 
         try {

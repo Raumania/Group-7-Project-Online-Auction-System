@@ -5,13 +5,14 @@ import auction_system.common.enums.Action;
 import auction_system.common.enums.Status;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
-import auction_system.server.model.RequestHandler;
 import auction_system.server.model.User;
 import auction_system.server.service.UserService;
 import auction_system.server.util.GsonUtil;
 import com.google.gson.JsonElement;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class UserController implements RequestHandler {
 
@@ -41,11 +42,11 @@ public class UserController implements RequestHandler {
 
     private Response getAllUsers(Action action) {
         List<User> users = userService.getAllUsers();
-        // Clear passwords before sending to client for security
+        List<UserDTO> userDTOs = new ArrayList<>();
         for (User u : users) {
-            u.setPassword(null);
+            userDTOs.add(u.toDTO());
         }
-        return new Response(Status.SUCCESS, action, users, "List of all users returned");
+        return new Response(Status.SUCCESS, action, userDTOs, "List of all users returned");
     }
 
     private Response createUser(Action action, JsonElement data) {
@@ -63,8 +64,8 @@ public class UserController implements RequestHandler {
                 // Save balance update
                 userService.deposit(user.getId(), userDTO.getBalance());
             }
-            user.setPassword(null);
-            return new Response(Status.SUCCESS, action, user, "User created successfully");
+            UserDTO responseDTO = user.toDTO();
+            return new Response(Status.SUCCESS, action, responseDTO, "User created successfully");
         } catch (Exception e) {
             e.printStackTrace();
             return new Response(Status.ERROR, action, null, "Create user failed: " + e.getMessage());
@@ -83,8 +84,8 @@ public class UserController implements RequestHandler {
             // Save to DB
             auction_system.server.dao.UserDAO.getInstance().update(user);
             
-            user.setPassword(null);
-            return new Response(Status.SUCCESS, action, user, "User updated successfully");
+            UserDTO responseDTO = user.toDTO();
+            return new Response(Status.SUCCESS, action, responseDTO, "User updated successfully");
         } catch (Exception e) {
             e.printStackTrace();
             return new Response(Status.ERROR, action, null, "Update user failed: " + e.getMessage());
