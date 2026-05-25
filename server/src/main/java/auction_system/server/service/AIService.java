@@ -26,7 +26,7 @@ public class AIService {
     //core in belowww :>
     public String chat(String prompt,String imageBase64){
         OpenAiChatModel model = OpenAiChatModel.builder()
-                .baseUrl("http://localhost:8080/v1")
+                .baseUrl("https://resurface-exert-reaffirm.ngrok-free.dev")
                 .apiKey("no-key").timeout(Duration.ofMinutes(10))
                 .build();
         AiMessage aiMessage;
