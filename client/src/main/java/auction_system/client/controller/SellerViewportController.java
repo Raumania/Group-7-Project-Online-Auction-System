@@ -10,6 +10,8 @@ import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.ItemType;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -65,7 +67,7 @@ public class SellerViewportController implements Initializable {
     private File selectedImageFile;
     private final ObservableList<AuctionDTO> sellerAuctions = SellerAuctionStore.getInstance().getAuctions();
     private final NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("en", "US"));
-
+    private FilteredList<AuctionDTO> filteredData;
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -95,7 +97,6 @@ public class SellerViewportController implements Initializable {
         };
         txtStartPrice.setTextFormatter(new TextFormatter<>(filter));
     }
-
 
     private void setupTable() {
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
@@ -162,6 +163,16 @@ public class SellerViewportController implements Initializable {
         });
 
         productTable.setItems(sellerAuctions);
+        FilteredList  filteredData= new FilteredList<>(sellerAuctions, b -> true);
+
+        // 2. Bọc FilteredList vào SortedList để giữ tính năng sắp xếp cột
+        SortedList<AuctionDTO> sortedData = new SortedList<>(filteredData);
+
+        // 3. Liên kết SortedList với TableView của bạn
+        sortedData.comparatorProperty().bind(productTable.comparatorProperty());
+
+        // 4. Set data vào bảng (thay vì productTable.setItems(sellerAuctions);)
+        productTable.setItems(sortedData);
     }
 
     private void setupComboBoxes() {
@@ -260,7 +271,23 @@ public class SellerViewportController implements Initializable {
             showError("Có lỗi trong quá trình khởi tạo đấu giá");
         }
     }
+    @FXML
+    void searchBar(String text){
+        String keyword = (text == null) ? "" : text.trim().toLowerCase();
 
+        filteredData.setPredicate(auction -> {
+            // Nếu ô tìm kiếm trống, hiển thị lại toàn bộ dữ liệu
+            if (keyword.isEmpty()) {
+                return true;
+            }
+            String name = auction.getName();
+            if (name != null && name.toLowerCase().contains(keyword)) {
+                return true;
+            }
+            return false;
+        });
+
+    }
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Lỗi nhập liệu");

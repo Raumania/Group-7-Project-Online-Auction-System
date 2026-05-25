@@ -21,10 +21,14 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 public class ListViewportController implements Initializable {
-    @FXML private ComboBox<String> categoryComboBox;
-    @FXML private FlowPane itemContainer;
-    @FXML private ComboBox<String> sortByComboBox;
-    @FXML private ComboBox<String> statusComboBox;
+    @FXML
+    private ComboBox<String> categoryComboBox;
+    @FXML
+    private FlowPane itemContainer;
+    @FXML
+    private ComboBox<String> sortByComboBox;
+    @FXML
+    private ComboBox<String> statusComboBox;
 
     private final ObservableList<AuctionDTO> allAuctions = AuctionStore.getInstance().getAuctions();
 
@@ -36,19 +40,19 @@ public class ListViewportController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         //Categories
         ObservableList<String> categoryOptions = javafx.collections.FXCollections.observableArrayList(
-                "All Category", "Electronics", "Art","Vehicle"
+                "All Category", "Electronics", "Art", "Vehicle"
         );
         categoryComboBox.setItems(categoryOptions);
         categoryComboBox.getSelectionModel().selectFirst();
         //Status
         ObservableList<String> statusOptions = javafx.collections.FXCollections.observableArrayList(
-                "All Status", "OPEN", "RUNNING","FINISHED","PAID","CANCELLED"
+                "All Status", "OPEN", "RUNNING", "FINISHED", "PAID", "CANCELLED"
         );
         statusComboBox.setItems(statusOptions);
         statusComboBox.getSelectionModel().selectFirst();
         //Sortby
         ObservableList<String> sortByOptions = javafx.collections.FXCollections.observableArrayList(
-                "Newest","Oldest"
+                "Newest", "Oldest"
         );
         sortByComboBox.setItems(sortByOptions);
         sortByComboBox.getSelectionModel().selectFirst();
@@ -107,7 +111,6 @@ public class ListViewportController implements Initializable {
                 });
             }
         }
-
         // 3. Render
         for (AuctionDTO auction : filteredList) {
             try {
@@ -119,6 +122,30 @@ public class ListViewportController implements Initializable {
                 itemContainer.getChildren().add(pane);
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+        }
+    }
+
+    public void searchBar(String text) {
+        itemContainer.getChildren().clear();
+        String keyword = (text == null) ? "" : text.trim().toLowerCase();
+        List<AuctionDTO> findauctions=new ArrayList<>(allAuctions);
+        findauctions.removeIf(auction -> auction.getStatus() == AuctionStatus.CANCELLED);
+        for (AuctionDTO auction : findauctions) {
+            String auctionName = auction.getName();
+            if (auctionName == null) continue;
+            if (keyword.isEmpty() || auctionName.toLowerCase().contains(keyword)) {
+                try {
+                    FXMLLoader loader = new FXMLLoader();
+                    loader.setLocation(getClass().getResource("/fxml/itemCard.fxml"));
+                    VBox pane = loader.load();
+
+                    ItemCardController itemCardController = loader.getController();
+                    itemCardController.setData(auction);
+                    itemContainer.getChildren().add(pane);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

@@ -11,6 +11,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
@@ -35,6 +36,9 @@ public class MainAuctionController implements Initializable{
 
     @FXML
     private StackPane viewport;
+    @FXML
+    private TextField searchBarTextfFeld;
+
 
     private VBox listViewport;
     private VBox sellerViewport;
@@ -76,6 +80,12 @@ public class MainAuctionController implements Initializable{
         catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @FXML
+    void searchBtn(ActionEvent event) {
+        listViewController.searchBar(searchBarTextfFeld.getText());
+        sellerViewController.searchBar(searchBarTextfFeld.getText());
     }
 
     @FXML
