@@ -198,7 +198,7 @@ class BidServiceTest {
         void exactBoundary_shouldReturnCorrectIncrement(
                 String price, String expectedIncrement) {
 
-            BigDecimal result = BidService.getBidIncrement(new BigDecimal(price));
+            BigDecimal result = bidService.getBidIncrement(new BigDecimal(price));
 
             assertBigDecimalValueEquals(expectedIncrement, result);
         }
@@ -218,7 +218,7 @@ class BidServiceTest {
         void justBelowBoundary_shouldReturnLowerIncrement(
                 String price, String expectedIncrement) {
 
-            BigDecimal result = BidService.getBidIncrement(new BigDecimal(price));
+            BigDecimal result = bidService.getBidIncrement(new BigDecimal(price));
 
             assertBigDecimalValueEquals(expectedIncrement, result);
         }
@@ -226,7 +226,7 @@ class BidServiceTest {
         @Test
         @DisplayName("EP: Giá rất lớn → increment = 25")
         void veryHighPrice_shouldReturn25() {
-            BigDecimal result = BidService.getBidIncrement(new BigDecimal("999999"));
+            BigDecimal result = bidService.getBidIncrement(new BigDecimal("999999"));
 
             assertBigDecimalValueEquals("25", result);
         }
