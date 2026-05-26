@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -158,6 +159,24 @@ public class BidService {
 
             if (bidder.getBalance().compareTo(amount) < 0) {
                 throw new RuntimeException("Not enough balance");
+            }
+            LocalDateTime endTime = auctionDAO.getAuctionEndTime(auctionId);
+            LocalDateTime now = LocalDateTime.now();
+            if(endTime==null){
+                throw new RuntimeException("the endtime is null");
+            }
+            if (now.isAfter(endTime)) {
+                throw new RuntimeException("the auction already end");
+            }
+            long X = 30;
+
+            long remainingSeconds = Duration.between(now, endTime).getSeconds();
+
+            // Nếu thời gian còn lại <= X giây
+            if (remainingSeconds <= X && remainingSeconds >= 0) {
+                // Gọi hàm cộng thêm thời gian (hàm bạn đã viết ở câu trước)
+                // Theo ví dụ trong ảnh, Y = 60 giây (1 phút), hàm cũ của bạn dùng plusMinutes(1) là chuẩn xác.
+                auctionDAO.antisnippingtime(auctionId);
             }
 
             logger.info("đặt giá thành công");

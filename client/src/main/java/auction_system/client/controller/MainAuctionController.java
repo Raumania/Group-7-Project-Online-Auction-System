@@ -85,7 +85,7 @@ public class MainAuctionController implements Initializable{
     @FXML
     void searchBtn(ActionEvent event) {
         listViewController.searchBar(searchBarTextfFeld.getText());
-        sellerViewController.searchBar(searchBarTextfFeld.getText());
+       // sellerViewController.searchBar(searchBarTextfFeld.getText());
     }
 
     @FXML

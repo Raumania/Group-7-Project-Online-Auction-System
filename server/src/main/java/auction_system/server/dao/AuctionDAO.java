@@ -10,6 +10,7 @@ import auction_system.server.model.Auction;
 import auction_system.server.service.ImageService;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,7 +74,73 @@ public class AuctionDAO {
     public int save(Connection connection, Auction auction, int itemId) throws SQLException {
         return save(connection, auction, itemId, null);
     }
+    public void antisnippingtime(int auctionid) {
+        // Thêm WHERE auctionid=? để chỉ thao tác trên đúng phiên đấu giá đó
+        String selectQuery = "SELECT ending_time FROM auctions WHERE id=?";
+        String updateQuery = "UPDATE auctions SET endingtime=? WHERE id=?";
 
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
+
+            // 1. Gán giá trị auctionid vào câu lệnh SELECT
+            selectStmt.setInt(1, auctionid);
+
+            try (ResultSet rs = selectStmt.executeQuery()) {
+                if (rs.next()) {
+                    // Lấy thời gian kết thúc hiện tại từ Database
+                    Timestamp dbEndTime = rs.getTimestamp("ending_time");
+
+                    if (dbEndTime != null) {
+                        // 2. Chuyển sang LocalDateTime và CỘNG THÊM 1 PHÚT
+                        LocalDateTime currentEnd = dbEndTime.toLocalDateTime();
+                        LocalDateTime newEnd = currentEnd.plusMinutes(1);
+
+                        // 3. Cập nhật lại vào Database
+                        try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
+                            // Chuyển ngược lại từ LocalDateTime sang Timestamp
+                            updateStmt.setTimestamp(1, Timestamp.valueOf(newEnd));
+                            updateStmt.setInt(2, auctionid);
+
+                            int rowsUpdated = updateStmt.executeUpdate();
+                            if (rowsUpdated > 0) {
+                                System.out.println("Đã tự động cộng thêm 1 phút cho auction ID: " + auctionid);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi cơ sở dữ liệu khi gia hạn thời gian đấu giá: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public LocalDateTime getAuctionEndTime(int auctionid) {
+        String selectQuery = "SELECT ending_time FROM auctions WHERE id = ?";
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
+
+            // Gán auctionid vào dấu hỏi chấm (?)
+            selectStmt.setInt(1, auctionid);
+
+            try (ResultSet rs = selectStmt.executeQuery()) {
+                if (rs.next()) {
+                    // Lấy thời gian dưới dạng Timestamp từ SQL
+                    Timestamp dbEndTime = rs.getTimestamp("ending_time");
+                    System.out.println("fuck");
+                    if (dbEndTime != null) {
+                        // Chuyển đổi Timestamp thành LocalDateTime và trả về
+                        return dbEndTime.toLocalDateTime();
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi lấy thời gian kết thúc của đấu giá: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
     public Auction findById(int id) {
         String sql = "SELECT a.*, i.name, i.description, i.type, u.username as highest_bidder_username FROM auctions a JOIN items i ON a.item_id = i.id LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE a.id = ?";
 

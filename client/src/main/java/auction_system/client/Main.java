@@ -11,7 +11,7 @@ import java.io.IOException;
 
 public class Main extends Application {
     public void start(Stage stage) throws IOException {
-        SocketClient.getInstance().connect("18.143.65.69",3636);
+        SocketClient.getInstance().connect("localhost",3636);
 
         Parent root = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
         Scene scene = new Scene(root);
