@@ -128,7 +128,6 @@ public class AuctionDAO {
                 if (rs.next()) {
                     // Lấy thời gian dưới dạng Timestamp từ SQL
                     Timestamp dbEndTime = rs.getTimestamp("ending_time");
-                    System.out.println("fuck");
                     if (dbEndTime != null) {
                         // Chuyển đổi Timestamp thành LocalDateTime và trả về
                         return dbEndTime.toLocalDateTime();

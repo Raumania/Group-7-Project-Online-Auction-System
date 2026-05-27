@@ -1,7 +1,7 @@
 package auction_system.client.controller;
 
-import auction_system.client.Util.TimeUtil;
-import auction_system.client.Util.ViewSingleton;
+import auction_system.client.util.TimeUtil;
+import auction_system.client.util.ViewSingleton;
 import auction_system.client.service.ImageService;
 import auction_system.common.dto.AuctionDTO;
 import auction_system.common.enums.AuctionStatus;

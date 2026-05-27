@@ -18,7 +18,6 @@ import javafx.util.Duration;
 
 import java.io.IOException;
 
-
 public class LoginController  {
     @FXML private PasswordField LoginPasswordTextField;
     @FXML private Label LoginStatusLabel;

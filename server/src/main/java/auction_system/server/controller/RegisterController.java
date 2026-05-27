@@ -33,7 +33,15 @@ public class RegisterController implements RequestHandler {
 
             User userRespond = userService.registerUser(user.getFullname(), user.getUsername(), user.getPassword());
 
-            return new Response(Status.SUCCESS, "Register successfully", userRespond);
+            UserDTO responseUser = new UserDTO();
+            responseUser.setId(userRespond.getId());
+            responseUser.setFullname(userRespond.getFullname());
+            responseUser.setUsername(userRespond.getUsername());
+            responseUser.setBalance(userRespond.getBalance());
+            responseUser.setRoles(userRespond.getRoles());
+            // password left as null for security
+
+            return new Response(Status.SUCCESS, "Register successfully", responseUser);
 
         } catch (Exception e) {
             return new Response(Status.ERROR, "Register failed: " + e.getMessage(), null);

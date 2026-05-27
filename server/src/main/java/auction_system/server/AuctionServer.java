@@ -54,6 +54,13 @@ public class AuctionServer {
         EventBus.getInstance();
         EventBus.registerObserver(new ClientNotificationObserver());
 
+        // Initialize Server Stores
+        auction_system.server.store.UserStore.getInstance().init();
+        auction_system.server.store.AuctionStore.getInstance().init();
+        auction_system.server.store.AutoBidStore.getInstance().init();
+        auction_system.server.store.BidTransactionStore.getInstance().init();
+        auction_system.server.store.ImageCounterStore.getInstance().init();
+
         // Khởi chạy AuctionScheduler
         AuctionScheduler.getInstance().start();
 

@@ -1,4 +1,4 @@
-package auction_system.client.Util;
+package auction_system.client.util;
 
 import javafx.scene.layout.StackPane;
 

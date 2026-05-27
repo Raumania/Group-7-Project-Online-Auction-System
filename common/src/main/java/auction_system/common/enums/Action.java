@@ -76,5 +76,10 @@ public enum Action {
     EVENT_AUCTION_EDITED,
     EVENT_AUCTION_DELETED,
     //AI Chat
-    CHAT_AI
+    CHAT_AI,
+    //Auto Bid
+    SET_AUTO_BID,
+    CANCEL_AUTO_BID,
+    // Real-time event: Server broadcasts when a new bid is placed successfully
+    EVENT_BID_PLACED
 }

@@ -47,15 +47,17 @@ public class AdminAuctionManageController implements Initializable {
     @FXML private TableColumn<AuctionDTO, LocalDateTime> colStartTime;
     @FXML private TableColumn<AuctionDTO, LocalDateTime> colEndTime;
     @FXML private TableColumn<AuctionDTO, String> colStatus;
-
-    @FXML private DatePicker dpStartTime, dpEndTime;
-    @FXML private Spinner<Integer> spinStartHour, spinStartMinute, spinEndHour, spinEndMinute;
-
+    @FXML private DatePicker dpStartTime;
+    @FXML private DatePicker dpEndTime;
+    @FXML private Spinner<Integer> spinStartHour;
+    @FXML private Spinner<Integer> spinStartMinute;
+    @FXML private Spinner<Integer> spinEndHour;
+    @FXML private Spinner<Integer> spinEndMinute;
     @FXML private VBox imageVbox;
     @FXML private ImageView productImageView;
     @FXML private TextArea txtDescription;
-    @FXML private TextField txtProductName, txtStartPrice;
-
+    @FXML private TextField txtProductName;
+    @FXML private TextField txtStartPrice;
     @FXML private Button btnAdd;
     @FXML private Button btnEdit;
     @FXML private Button btnCancel;

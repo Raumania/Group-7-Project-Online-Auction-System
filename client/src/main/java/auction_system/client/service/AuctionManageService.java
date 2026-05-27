@@ -1,6 +1,6 @@
 package auction_system.client.service;
 
-import auction_system.client.Util.GsonUtil;
+import auction_system.client.util.GsonUtil;
 import auction_system.client.socket.SocketClient;
 import auction_system.common.dto.AuctionDTO;
 import auction_system.common.enums.Action;
@@ -8,7 +8,6 @@ import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.Status;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
-import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;

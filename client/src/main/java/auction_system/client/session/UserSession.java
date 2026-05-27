@@ -19,4 +19,8 @@ public class UserSession {
     public UserDTO getUser() {
         return this.user;
     }
+
+    public void logout() {
+        this.user = null;
+    }
 }

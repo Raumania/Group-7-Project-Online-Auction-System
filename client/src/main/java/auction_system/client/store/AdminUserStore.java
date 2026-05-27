@@ -47,4 +47,7 @@ public class AdminUserStore {
     public void removeUser(int userId) {
         users.removeIf(user -> user.getId() == userId);
     }
+    public void logout() {
+        users.clear();
+    }
 }

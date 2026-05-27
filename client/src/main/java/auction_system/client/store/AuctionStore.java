@@ -48,4 +48,7 @@ public class AuctionStore {
     public void removeAuction(int auctionId) {
         auctions.removeIf(auction -> auction.getId() == auctionId);
     }
+    public void logout() {
+        auctions.clear();
+    }
 }

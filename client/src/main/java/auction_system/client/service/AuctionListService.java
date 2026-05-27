@@ -1,6 +1,6 @@
 package auction_system.client.service;
 
-import auction_system.client.Util.GsonUtil;
+import auction_system.client.util.GsonUtil;
 import auction_system.client.socket.SocketClient;
 import auction_system.client.store.AuctionStore;
 import auction_system.common.dto.AuctionDTO;

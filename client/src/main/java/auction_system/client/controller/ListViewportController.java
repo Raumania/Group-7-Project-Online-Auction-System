@@ -21,14 +21,10 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 public class ListViewportController implements Initializable {
-    @FXML
-    private ComboBox<String> categoryComboBox;
-    @FXML
-    private FlowPane itemContainer;
-    @FXML
-    private ComboBox<String> sortByComboBox;
-    @FXML
-    private ComboBox<String> statusComboBox;
+    @FXML private ComboBox<String> categoryComboBox;
+    @FXML private FlowPane itemContainer;
+    @FXML private ComboBox<String> sortByComboBox;
+    @FXML private ComboBox<String> statusComboBox;
 
     private final ObservableList<AuctionDTO> allAuctions = AuctionStore.getInstance().getAuctions();
 

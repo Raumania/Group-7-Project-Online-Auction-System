@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 public class BidTransactionDTO {
     private int id;
+    private int auctionId;
     private UserDTO bidder;
     private BigDecimal amount;
     private LocalDateTime biddingtime;
@@ -19,12 +20,28 @@ public class BidTransactionDTO {
         this.biddingtime = biddingtime;
     }
 
+    public BidTransactionDTO(int id, int auctionId, UserDTO bidder, BigDecimal amount, LocalDateTime biddingtime) {
+        this.id = id;
+        this.auctionId = auctionId;
+        this.bidder = bidder;
+        this.amount = amount;
+        this.biddingtime = biddingtime;
+    }
+
     public int getId() {
         return id;
     }
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public int getAuctionId() {
+        return auctionId;
+    }
+
+    public void setAuctionId(int auctionId) {
+        this.auctionId = auctionId;
     }
 
     public UserDTO getBidder() {

@@ -1,6 +1,7 @@
 package auction_system.server.service;
 
 import auction_system.server.dao.CountImagesDAO;
+import auction_system.server.store.ImageCounterStore;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -96,11 +97,10 @@ public class ImageService {
 
     private String createSafeFileName(Connection connection) {
         try {
-            CountImagesDAO countImagesDAO = new CountImagesDAO();
-            int newId = countImagesDAO.generateNextImageId(connection);
+            int newId = ImageCounterStore.getInstance().getNextId();
             return "auction_" + newId + ".png";
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi sinh ID ảnh từ Database", e);
+            throw new RuntimeException("Lỗi khi sinh ID ảnh từ Store", e);
         }
     }
 

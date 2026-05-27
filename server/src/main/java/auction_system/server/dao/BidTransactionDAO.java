@@ -34,17 +34,17 @@ public class BidTransactionDAO {
     }
 
     /*
-        Lưu một bid transaction vào database.
+        Save a bid transaction into the database.
 
-        Lưu ý:
-        - id của bid_transactions là INT AUTO_INCREMENT
-        - không insert id từ Java nữa
-        - sau khi insert xong, lấy id tự tăng từ database set lại vào object
-        - auction_id là INT
-        - bidder_id là INT
-        - bidtime là DATETIME
+        Note:
+        - id of bid_transactions is INT AUTO_INCREMENT
+        - do not insert id from Java anymore
+        - after inserting, retrieve the auto-generated id from database and set it to the object
+        - auction_id is INT
+        - bidder_id is INT
+        - bidtime is DATETIME
     */
-    public void save(Connection connection,int auctionId, BidTransaction transaction) {
+    public void save(Connection connection, int auctionId, BidTransaction transaction) {
         String sql = "INSERT INTO bid_transactions(auction_id, bidder_id, amount, biddingtime) " +
                 "VALUES (?, ?, ?, ?)";
 
@@ -59,26 +59,26 @@ public class BidTransactionDAO {
             }
 
             /*
-                auction_id là INT trong database
+                auction_id is INT in the database
             */
             statement.setInt(1, auctionId);
 
             /*
-                bidder_id là INT trong database.
+                bidder_id is INT in the database.
             */
             statement.setInt(2, transaction.getBidder().getId());
 
             statement.setBigDecimal(3, transaction.getAmount());
 
             /*
-                LocalDateTime trong Java -> DATETIME trong MySQL
+                LocalDateTime in Java -> DATETIME in MySQL
             */
             statement.setObject(4, transaction.getBidTime());
 
             statement.executeUpdate();
 
             /*
-                Lấy id tự tăng do MySQL sinh ra.
+                Retrieve the auto-generated id created by MySQL.
             */
             ResultSet generatedKeys = statement.getGeneratedKeys();
 
@@ -93,10 +93,14 @@ public class BidTransactionDAO {
     }
 
     /*
-        Lấy lịch sử bid của một auction.
+        Retrieve the bid history of an auction.
     */
     public List<BidTransaction> findByAuctionId(int auctionId) {
-        String sql = "SELECT * FROM bid_transactions WHERE auction_id = ? ORDER BY biddingtime ASC";
+        String sql = "SELECT bt.*, u.fullname, u.username, u.password, u.roles, u.balance " +
+                     "FROM bid_transactions bt " +
+                     "INNER JOIN users u ON bt.bidder_id = u.id " +
+                     "WHERE bt.auction_id = ? " +
+                     "ORDER BY bt.biddingtime ASC";
 
         List<BidTransaction> transactions = new ArrayList<>();
 
@@ -108,7 +112,7 @@ public class BidTransactionDAO {
             ResultSet resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
-                BidTransaction transaction = mapResultSetToBidTransaction(resultSet);
+                BidTransaction transaction = mapResultSetToBidTransactionWithUser(resultSet);
                 transactions.add(transaction);
             }
 
@@ -117,13 +121,17 @@ public class BidTransactionDAO {
         } catch (SQLException e) {
             throw new RuntimeException("Cannot find bid history", e);
         }
-    }
+     }
 
     /*
-        Lấy bid mới nhất của auction.
+        Retrieve the latest bid of the auction.
     */
     public BidTransaction findLatestByAuctionId(int auctionId) {
-        String sql = "SELECT * FROM bid_transactions WHERE auction_id = ? ORDER BY biddingtime DESC LIMIT 1";
+        String sql = "SELECT bt.*, u.fullname, u.username, u.password, u.roles, u.balance " +
+                     "FROM bid_transactions bt " +
+                     "INNER JOIN users u ON bt.bidder_id = u.id " +
+                     "WHERE bt.auction_id = ? " +
+                     "ORDER BY bt.biddingtime DESC LIMIT 1";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -133,7 +141,7 @@ public class BidTransactionDAO {
             ResultSet resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
-                return mapResultSetToBidTransaction(resultSet);
+                return mapResultSetToBidTransactionWithUser(resultSet);
             }
 
             return null;
@@ -144,7 +152,7 @@ public class BidTransactionDAO {
     }
 
     /*
-        Đếm tổng số bid của một auction.
+        Count total bids of an auction.
     */
     public int countByAuctionId(int auctionId) {
         String sql = "SELECT COUNT(*) FROM bid_transactions WHERE auction_id = ?";
@@ -168,10 +176,47 @@ public class BidTransactionDAO {
     }
 
     /*
-        Chuyển một dòng trong bảng bid_transactions thành object BidTransaction.
+        Map a row in the bid_transactions table (with joined user columns) to a BidTransaction object.
     */
-    
+    private BidTransaction mapResultSetToBidTransactionWithUser(ResultSet resultSet) throws SQLException {
+        int id = resultSet.getInt("id");
+        int bidderId = resultSet.getInt("bidder_id");
+        BigDecimal amount = resultSet.getBigDecimal("amount");
+        LocalDateTime bidTime = resultSet.getObject("biddingtime", LocalDateTime.class);
 
+        // Fetch User fields directly from JOINed columns to prevent N+1 query problem!
+        String fullname = resultSet.getString("fullname");
+        String username = resultSet.getString("username");
+        String password = resultSet.getString("password");
+        String rolesText = resultSet.getString("roles");
+        BigDecimal balance = resultSet.getBigDecimal("balance");
+
+        java.util.Set<UserRole> roles = new java.util.HashSet<>();
+        if (rolesText != null && !rolesText.trim().isEmpty()) {
+            for (String part : rolesText.split(",")) {
+                roles.add(UserRole.valueOf(part.trim()));
+            }
+        }
+
+        if (roles.isEmpty()) {
+            throw new RuntimeException("User has no role");
+        }
+
+        User bidder = new User(fullname, username, password, roles);
+        bidder.setId(bidderId);
+        bidder.setBalance(balance);
+
+        BidTransaction transaction = new BidTransaction(bidder, amount);
+        transaction.setId(id);
+        transaction.setBidTime(bidTime);
+
+        return transaction;
+    }
+
+    /*
+        Map a raw row in the bid_transactions table to a BidTransaction object.
+        Forces sequential connection through UserDAO if used without JOIN.
+    */
     private BidTransaction mapResultSetToBidTransaction(ResultSet resultSet) throws SQLException {
         int id = resultSet.getInt("id");
 
@@ -180,8 +225,8 @@ public class BidTransactionDAO {
         BigDecimal amount = resultSet.getBigDecimal("amount");
 
         /*
-            bidtime trong database là DATETIME.
-            Trong Java lấy ra thành LocalDateTime.
+            bidtime in the database is DATETIME.
+            In Java, retrieved as LocalDateTime.
         */
         LocalDateTime bidTime = resultSet.getObject("biddingtime", LocalDateTime.class);
 
@@ -198,8 +243,8 @@ public class BidTransactionDAO {
         BidTransaction transaction = new BidTransaction(bidder, amount);
 
         /*
-            Constructor tạo id và bidTime mới.
-            Khi đọc từ database ra phải set lại id và bidTime cũ.
+            Constructor creates a new id and bidTime.
+            When reading from database, must set back the old id and bidTime.
         */
         transaction.setId(id);
         transaction.setBidTime(bidTime);

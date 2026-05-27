@@ -1,6 +1,6 @@
 package auction_system.client.service;
 
-import auction_system.client.Util.GsonUtil;
+import auction_system.client.util.GsonUtil;
 import auction_system.client.socket.SocketClient;
 import auction_system.common.dto.BidDTO;
 import auction_system.common.dto.BidTransactionDTO;
@@ -10,6 +10,7 @@ import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import com.google.gson.reflect.TypeToken;
 
+import auction_system.common.dto.AutoBidDTO;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -18,6 +19,8 @@ import java.util.List;
 public class BidService {
     //singleton for bid service
     private static BidService instance;
+    private final SocketClient socketClient = SocketClient.getInstance();
+
     private BidService() {}
 
     public static BidService getInstance() {
@@ -31,15 +34,15 @@ public class BidService {
     public Response placeBid(int auctionId, BigDecimal amount, int bidderId) {
         BidDTO bidDTO = new BidDTO(auctionId, amount, bidderId);
         Request request = new Request(Action.PLACE_BID, GsonUtil.getGson().toJsonTree(bidDTO));
-        SocketClient.getInstance().send(request);
-        return SocketClient.getInstance().receive();
+        socketClient.send(request);
+        return socketClient.receive();
     }
 
     public List<BidTransactionDTO> getBidHistory(int auctionId) {
         BidDTO bidDTO = new BidDTO(auctionId, BigDecimal.ZERO, 0);
         Request request = new Request(Action.GET_BID_HISTORY, GsonUtil.getGson().toJsonTree(bidDTO));
-        SocketClient.getInstance().send(request);
-        Response response = SocketClient.getInstance().receive();
+        socketClient.send(request);
+        Response response = socketClient.receive();
 
         if (response != null && response.getStatus() == Status.SUCCESS) {
             String jsonData = GsonUtil.toJson(response.getData());
@@ -48,5 +51,19 @@ public class BidService {
         } else {
             return new ArrayList<>();
         }
+    }
+
+    public Response setAutoBid(int userId, int auctionId, BigDecimal maxBid, BigDecimal bidIncrement) {
+        AutoBidDTO autoBidDTO = new AutoBidDTO(userId, auctionId, maxBid, bidIncrement);
+        Request request = new Request(Action.SET_AUTO_BID, GsonUtil.getGson().toJsonTree(autoBidDTO));
+        socketClient.send(request);
+        return socketClient.receive();
+    }
+
+    public Response cancelAutoBid(int userId, int auctionId) {
+        AutoBidDTO autoBidDTO = new AutoBidDTO(userId, auctionId, BigDecimal.ZERO, BigDecimal.ZERO);
+        Request request = new Request(Action.CANCEL_AUTO_BID, GsonUtil.getGson().toJsonTree(autoBidDTO));
+        socketClient.send(request);
+        return socketClient.receive();
     }
 }

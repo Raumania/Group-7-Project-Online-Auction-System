@@ -5,17 +5,16 @@ import auction_system.common.enums.ItemType;
 import auction_system.server.dao.AuctionDAO;
 import auction_system.server.dao.DatabaseConnection;
 import auction_system.server.dao.ItemDAO;
-import auction_system.server.dao.UserDAO;
 import auction_system.server.exception.daoException.DataBaseException;
 import auction_system.server.exception.serviceException.InValidAuctionData;
 import auction_system.server.model.*;
 import auction_system.server.observer.EventBus;
-import org.w3c.dom.events.Event;
+import auction_system.server.store.AuctionStore;
+import auction_system.server.store.UserStore;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.ParsePosition;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,9 +26,11 @@ public class AuctionService {
 
     private final AuctionDAO auctionDAO = AuctionDAO.getInstance();
     private final ItemDAO itemDAO = ItemDAO.getInstance();
-    private final UserDAO userDAO = UserDAO.getInstance();
     private final ImageService imageService = ImageService.getInstance();
     private final EventBus eventBus = EventBus.getInstance();
+    private final AuctionStore auctionStore = AuctionStore.getInstance();
+    private final UserStore userStore = UserStore.getInstance();
+
     private AuctionService() {
     }
 
@@ -41,6 +42,8 @@ public class AuctionService {
     }
 
     public void createAuction(Auction auction) {
+        //Sync with Database
+
         Connection connection = null;
 
         try {
@@ -74,8 +77,11 @@ public class AuctionService {
             int auctionId = auctionDAO.save(connection, auction, itemId, imagePath);
             auction.setId(auctionId);
 
-            connection.commit(); // Hoàn tất transaction
-            auction_system.server.observer.EventBus.publishAuctionCreated(auction);
+            connection.commit();
+            
+            // Sync with Server Store RAM Cache
+            auctionStore.addAuction(auction);
+            eventBus.publishAuctionCreated(auction);
 
         } catch (Exception e) {
             rollback(connection);
@@ -87,6 +93,7 @@ public class AuctionService {
     }
 
     public void deleteAuction(int auctionId) {
+        //Sync with Database
         Connection connection = null;
         try {
             connection = DatabaseConnection.getConnection();
@@ -113,7 +120,10 @@ public class AuctionService {
             itemDAO.delete(connection, itemId); 
 
             connection.commit();
-            auction_system.server.observer.EventBus.publishAuctionDeleted(auctionId);
+            
+            // Sync with Server Store RAM Cache
+            auctionStore.removeAuction(auctionId);
+            eventBus.publishAuctionDeleted(auctionId);
 
             // Xóa ảnh vật lý khỏi ổ đĩa sau khi xóa thành công trong Database
             if (auction.getImagePath() != null) {
@@ -129,6 +139,7 @@ public class AuctionService {
     }
     
     public void editAuction(Auction auction) {
+        //Sync with Database
         Connection connection = null;
 
         try {
@@ -176,7 +187,10 @@ public class AuctionService {
                 auction.setImageBase64(oldAuction.getImageBase64());
             }
 
-            auction_system.server.observer.EventBus.publishAuctionEdited(auction);
+            // Sync with Server Store RAM Cache
+            auctionStore.updateAuction(auction);
+
+            eventBus.publishAuctionEdited(auction);
 
             // Xóa ảnh cũ khỏi ổ đĩa sau khi cập nhật thành công trong Database
             if (imagePathToDelete != null) {
@@ -192,23 +206,6 @@ public class AuctionService {
         }
     }
 
-    public void UpdateAll(List<Auction> auctions){
-        Connection connection=null;
-        try {
-            connection = DatabaseConnection.getConnection();
-            connection.setAutoCommit(false); // Bắt đầu transaction
-            for (Auction auction : auctions) {
-                auctionDAO.update(connection, auction);
-            }
-            connection.commit(); // Hoàn tất transaction
-        }catch(Exception e) {
-            rollback(connection);
-            throw new RuntimeException("cannot update auctions", e);
-        }finally {
-            closeConnection(connection);
-        }
-    }
-    
     public void updateAuctionStatus(Auction auction) {
         LocalDateTime now = LocalDateTime.now();
         AuctionStatus currentStatus = auction.getStatus();
@@ -222,14 +219,14 @@ public class AuctionService {
 
         if (newStatus != currentStatus) {
             auction.setStatus(newStatus);
-            // Gọi hàm update không có connection, vì đây là thao tác đơn lẻ
+            //Sync with Database
             auctionDAO.update(auction);
-            // Thông báo cho các bên observer (như client) qua EventBus
-            auction_system.server.observer.EventBus.publishAuctionEdited(auction);
+            // Sync with RAM Cache
+            auctionStore.updateAuction(auction);
+            // Notify observers (e.g. clients) via EventBus
+            eventBus.publishAuctionEdited(auction);
         }
     }
-
-    // ... các hàm find và các hàm khác không thay đổi ...
 
     private void rollback(Connection connection) {
         try {
@@ -259,18 +256,18 @@ public class AuctionService {
             throw new RuntimeException("Item type cannot be null");
         }
 
-        List<Auction> auctions = new ArrayList<>();
+        List<Auction> auctionsList = new ArrayList<>();
         List<Item> items = itemDAO.findByType(type);
 
         for (Item item : items) {
-            Auction auction = auctionDAO.findById(item.getId());
+            Auction auction = auctionStore.getAuctionById(item.getId());
 
             if (auction != null) {
-                auctions.add(auction);
+                auctionsList.add(auction);
             }
         }
 
-        return auctions;
+        return auctionsList;
     }
 
     public List<Auction> findbyItemName(String name) {
@@ -278,37 +275,45 @@ public class AuctionService {
             throw new RuntimeException("Item name cannot be empty");
         }
 
-        List<Auction> auctions = new ArrayList<>();
+        List<Auction> auctionsList = new ArrayList<>();
         List<Item> items = itemDAO.findByItemName(name.trim());
 
         for (Item item : items) {
-            Auction auction = auctionDAO.findById(item.getId());
+            Auction auction = auctionStore.getAuctionById(item.getId());
 
             if (auction != null) {
-                auctions.add(auction);
+                auctionsList.add(auction);
             }
         }
 
-        return auctions;
+        return auctionsList;
     }
 
     public Auction getAuctionById(int id) {
-        return auctionDAO.findById(id);
+        return auctionStore.getAuctionById(id);
     }
 
     public List<Auction> getAllAuctions() {
-        return auctionDAO.findAll();
+        return auctionStore.getAllAuctions();
     }
 
     public List<Auction> getMyAuctions(int sellerId) {
-        User user = userDAO.findById(sellerId);
+        User user = userStore.getUserById(sellerId);
         if (user != null && user.hasRole(auction_system.common.enums.UserRole.ADMIN)) {
-            return auctionDAO.findAll();
+            return auctionStore.getAllAuctions();
         }
-        return auctionDAO.findAllBySellerId(sellerId);
+        
+        List<Auction> results = new ArrayList<>();
+        for (Auction a : auctionStore.getAllAuctions()) {
+            if (a.getSellerId() == sellerId) {
+                results.add(a);
+            }
+        }
+        return results;
     }
 
     public void closeAuction(int auctionId) {
+        //Sync with Database
         Connection connection = null;
 
         try {
@@ -331,7 +336,10 @@ public class AuctionService {
             auctionDAO.update(connection, auction);
 
             connection.commit();
-            auction_system.server.observer.EventBus.publishAuctionEdited(auction);
+            
+            // Sync with RAM Cache
+            auctionStore.updateAuction(auction);
+            eventBus.publishAuctionEdited(auction);
 
         } catch (Exception e) {
             rollback(connection);
@@ -343,6 +351,7 @@ public class AuctionService {
     }
 
     public void cancelAuction(int auctionId) {
+        //Sync with Database
         Connection connection = null;
 
         try {
@@ -365,7 +374,10 @@ public class AuctionService {
             auctionDAO.update(connection, auction);
 
             connection.commit();
-            auction_system.server.observer.EventBus.publishAuctionEdited(auction);
+            
+            // Sync with RAM Cache
+            auctionStore.updateAuction(auction);
+            eventBus.publishAuctionEdited(auction);
 
         } catch (Exception e) {
             rollback(connection);
@@ -374,31 +386,6 @@ public class AuctionService {
         } finally {
             closeConnection(connection);
         }
-    }
-
-    public Electronics createElectronics(String name, String description,
-                                         LocalDateTime startTime, LocalDateTime endTime) {
-        return new Electronics(name, description, startTime, endTime);
-    }
-
-    public Art createArt(String name, String description,
-                         LocalDateTime startTime, LocalDateTime endTime) {
-        return new Art(name, description, startTime, endTime);
-    }
-
-    public Vehicle createVehicle(String name, String description,
-                                 LocalDateTime startTime, LocalDateTime endTime) {
-        return new Vehicle(name, description, startTime, endTime);
-    }
-
-    public Item getItemById(int id) {
-        Item item = itemDAO.findById(id);
-
-        if (item == null) {
-            throw new RuntimeException("Item not found");
-        }
-
-        return item;
     }
     
     public void validateItemData(Auction auction) {
@@ -418,7 +405,7 @@ public class AuctionService {
                 throw new RuntimeException("Ending time must be after starting time");
             }
 
-            if (userDAO.findById(auction.getSellerId()) == null) {
+            if (userStore.getUserById(auction.getSellerId()) == null) {
                 throw new RuntimeException("Owner cannot be null");
             }
 

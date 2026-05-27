@@ -63,6 +63,10 @@ public class ClientHandler implements Runnable {
         handlers.put(Action.GET_OPEN_AUCTIONS,new AuctionController());
         handlers.put(Action.CHAT_AI, new AIController());
 
+        AutoBidController autoBidController = new AutoBidController();
+        handlers.put(Action.SET_AUTO_BID, autoBidController);
+        handlers.put(Action.CANCEL_AUTO_BID, autoBidController);
+
         UserController userController = new UserController();
         handlers.put(Action.GET_ALL_USERS, userController);
         handlers.put(Action.CREATE_USER, userController);
@@ -161,6 +165,9 @@ public class ClientHandler implements Runnable {
     // Helper ẩn chuỗi Base64 dài khi in log để dễ debug ở phía Server
     public static String maskImageBase64(String json) {
         if (json == null) return null;
-        return json.replaceAll("\"(imageBase64|image|imageBytes)\"\\s*:\\s*\"[^\"]{100,}\"", "\"$1\":\"[BASE64 IMAGE DATA TRUNCATED]\"");
+        if (json.length() > 2000) {
+            return json.substring(0, 2000) + "... [PAYLOAD TRUNCATED FOR LOGGING TO PREVENT MEMORY LEAK]";
+        }
+        return json;
     }
 }

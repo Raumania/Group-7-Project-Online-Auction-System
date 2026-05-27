@@ -33,12 +33,10 @@ public class AdminUserManageController implements Initializable {
     @FXML private TableColumn<UserDTO, String> colPassword;
     @FXML private TableColumn<UserDTO, String> colRoles;
     @FXML private TableColumn<UserDTO, BigDecimal> colBalance;
-
     @FXML private TextField txtFullname;
     @FXML private TextField txtUsername;
     @FXML private TextField txtRoles;
     @FXML private TextField txtBalance;
-
     @FXML private Button btnAdd;
     @FXML private Button btnEdit;
     @FXML private Button btnDelete;

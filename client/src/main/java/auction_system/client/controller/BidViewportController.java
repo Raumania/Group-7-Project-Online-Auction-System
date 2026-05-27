@@ -1,11 +1,12 @@
 package auction_system.client.controller;
 
-import auction_system.client.Util.TimeUtil;
-import auction_system.client.Util.ViewSingleton;
+import auction_system.client.util.TimeUtil;
+import auction_system.client.util.ViewSingleton;
 import auction_system.client.session.UserSession;
 import auction_system.client.service.BidService;
 import auction_system.client.service.ImageService;
 import auction_system.client.store.AuctionStore;
+import auction_system.client.store.BidTransactionStore;
 import auction_system.common.dto.AuctionDTO;
 import auction_system.common.dto.BidTransactionDTO;
 import auction_system.common.dto.UserDTO;
@@ -91,6 +92,8 @@ public class BidViewportController implements Initializable {
     private final NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("en", "US"));
     private AuctionDTO auctionDTO;
     private ListChangeListener<AuctionDTO> storeListener;
+    private ListChangeListener<BidTransactionDTO> historyListener;
+    private final BidService bidService = BidService.getInstance();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -130,6 +133,9 @@ public class BidViewportController implements Initializable {
         if (storeListener != null) {
             AuctionStore.getInstance().getAuctions().removeListener(storeListener);
         }
+        if (historyListener != null && auctionDTO != null) {
+            BidTransactionStore.getInstance().getHistory(auctionDTO.getId()).removeListener(historyListener);
+        }
         try {
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(getClass().getResource("/fxml/detailViewport.fxml"));
@@ -145,6 +151,11 @@ public class BidViewportController implements Initializable {
     }
 
     public void setData(AuctionDTO auctionDTO) {
+        // Remove previous history listener if switching auctions
+        if (historyListener != null && this.auctionDTO != null) {
+            BidTransactionStore.getInstance().getHistory(this.auctionDTO.getId()).removeListener(historyListener);
+        }
+
         this.auctionDTO = auctionDTO;
 
         // Listen for real-time updates to this specific auction in the store (Server Broadcasts)
@@ -202,49 +213,43 @@ public class BidViewportController implements Initializable {
             }
         }
 
-        // Handle countdown timer
-        if (timeline != null) {
-            timeline.stop();
+        // Handle countdown timer reactively based on Server authoritative status
+        // Reset the guard so the first server broadcast always re-triggers the timer
+        lastCountdownStatus = auctionDTO.getStatus();
+        setupCountdownForStatus();
+
+        // Bind TableView directly to BidTransactionStore — auto-updates whenever a new bid event arrives
+        historyTable.setItems(BidTransactionStore.getInstance().getHistory(auctionDTO.getId()));
+
+        // Set up the listener to update the chart reactively on any store history changes
+        historyListener = change -> {
+            Platform.runLater(() -> {
+                // The store stores history newest-first (descending).
+                // Chart needs chronological order (ascending), so we copy and reverse it.
+                List<BidTransactionDTO> currentHistory = new java.util.ArrayList<>(BidTransactionStore.getInstance().getHistory(auctionDTO.getId()));
+                java.util.Collections.reverse(currentHistory);
+                updateChart(currentHistory);
+            });
+        };
+        BidTransactionStore.getInstance().getHistory(auctionDTO.getId()).addListener(historyListener);
+
+        // Draw the initial chart from whatever is already in the store (or empty)
+        List<BidTransactionDTO> initialHistory = new java.util.ArrayList<>(BidTransactionStore.getInstance().getHistory(auctionDTO.getId()));
+        java.util.Collections.reverse(initialHistory);
+        updateChart(initialHistory);
+
+        // Load history from server only if the store cache is empty for this auction
+        if (BidTransactionStore.getInstance().getHistory(auctionDTO.getId()).isEmpty()) {
+            loadBidHistory();
         }
 
-        if (auctionDTO.getStatus() == AuctionStatus.OPEN) {
-            setupCountdown(auctionDTO.getStartTime(), () -> {
-                statusLabel.setText(AuctionStatus.RUNNING.toString());
-                auctionDTO.setStatus(AuctionStatus.RUNNING); // Update DTO
-                
-                // Re-evaluate inputs and enable/disable them
-                Platform.runLater(this::updateBiddingUIState);
-                
-                setupCountdown(auctionDTO.getEndTime(), () -> {
-                    timerLabel.setText("00 : 00 : 00");
-                    statusLabel.setText(AuctionStatus.FINISHED.toString());
-                    auctionDTO.setStatus(AuctionStatus.FINISHED); // Update DTO
-                    
-                    // Re-evaluate inputs and enable/disable them
-                    Platform.runLater(this::updateBiddingUIState);
-                });
-            });
-        } else if (auctionDTO.getStatus() == AuctionStatus.RUNNING) {
-            setupCountdown(auctionDTO.getEndTime(), () -> {
-                timerLabel.setText("00 : 00 : 00");
-                statusLabel.setText(AuctionStatus.FINISHED.toString());
-                auctionDTO.setStatus(AuctionStatus.FINISHED); // Update DTO
-                
-                // Re-evaluate inputs and enable/disable them
-                Platform.runLater(this::updateBiddingUIState);
-            });
-        } else {
-            timerLabel.setText("00 : 00 : 00");
-        }
-
-        // Load history records
-        loadBidHistory();
-        
         // Dynamically configure inputs/buttons state
         updateBiddingUIState();
     }
+    private AuctionStatus lastCountdownStatus = null;
 
     private void refreshAuctionData(AuctionDTO updated) {
+        boolean statusChanged = (this.auctionDTO == null || this.auctionDTO.getStatus() != updated.getStatus());
         this.auctionDTO = updated;
         
         statusLabel.setText(updated.getStatus().toString());
@@ -265,11 +270,40 @@ public class BidViewportController implements Initializable {
         minIncrementLabel.setText(currencyFormatter.format(increment));
         minIncrementHintLabel.setText("Min increment: " + currencyFormatter.format(increment));
         
-        // Reload history and chart
-        loadBidHistory();
-        
+        // Reset timer whenever the status actually changes OR the timer is stuck showing
+        // the wrong label (e.g. "Starting soon..." while the auction is already RUNNING).
+        // This guards against the edge case where statusChanged==false because the
+        // previous Server broadcast already updated this.auctionDTO to RUNNING, but
+        // setupCountdownForStatus() was never called for that transition.
+        boolean timerMismatch = (updated.getStatus() == AuctionStatus.RUNNING
+                && lastCountdownStatus != AuctionStatus.RUNNING);
+
+        if (statusChanged || timerMismatch) {
+            lastCountdownStatus = updated.getStatus();
+            setupCountdownForStatus();
+        }
+
         // Update UI states
         updateBiddingUIState();
+    }
+
+    private void setupCountdownForStatus() {
+        if (timeline != null) {
+            timeline.stop();
+        }
+
+        if (auctionDTO == null) {
+            timerLabel.setText("00 : 00 : 00");
+            return;
+        }
+
+        if (auctionDTO.getStatus() == AuctionStatus.OPEN) {
+            setupCountdown(auctionDTO.getStartTime(), "Starting soon...");
+        } else if (auctionDTO.getStatus() == AuctionStatus.RUNNING) {
+            setupCountdown(auctionDTO.getEndTime(), "Ending soon...");
+        } else {
+            timerLabel.setText("00 : 00 : 00");
+        }
     }
 
     private void updateBiddingUIState() {
@@ -305,40 +339,59 @@ public class BidViewportController implements Initializable {
         }
     }
 
-    private void setupCountdown(LocalDateTime targetTime, Runnable onFinished) {
-        timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+    private void setupCountdown(LocalDateTime targetTime, String finishedText) {
+        if (targetTime == null) {
+            timerLabel.setText("00 : 00 : 00");
+            return;
+        }
+
+        // Cập nhật giao diện lập tức để tránh delay 1 giây hiển thị chữ cũ
+        Map<String, Long> initialRemaining = TimeUtil.getTimeRemaining(targetTime);
+        long initialHours = initialRemaining.get("hours");
+        long initialMinutes = initialRemaining.get("minutes");
+        long initialSeconds = initialRemaining.get("seconds");
+
+        if (initialHours <= 0 && initialMinutes <= 0 && initialSeconds <= 0) {
+            timerLabel.setText(finishedText);
+            return;
+        }
+
+        timerLabel.setText(String.format("%02d : %02d : %02d", initialHours, initialMinutes, initialSeconds));
+
+        // Capture the reference BEFORE the lambda so each timeline only ever stops itself.
+        // If we used `this.timeline` inside the lambda, a new RUNNING timeline created by
+        // refreshAuctionData() could be stopped by the old OPEN timeline's final KeyFrame.
+        Timeline[] selfRef = new Timeline[1];
+        selfRef[0] = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
             Map<String, Long> remainingTime = TimeUtil.getTimeRemaining(targetTime);
             long hours = remainingTime.get("hours");
             long minutes = remainingTime.get("minutes");
             long seconds = remainingTime.get("seconds");
 
             if (hours <= 0 && minutes <= 0 && seconds <= 0) {
-                if (timeline != null) {
-                    timeline.stop();
-                }
-                if (onFinished != null) {
-                    onFinished.run();
-                }
+                selfRef[0].stop();
+                timerLabel.setText(finishedText);
             } else {
                 timerLabel.setText(String.format("%02d : %02d : %02d", hours, minutes, seconds));
             }
         }));
+        timeline = selfRef[0];
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
     }
 
     private void loadBidHistory() {
         if (auctionDTO == null) return;
-        List<BidTransactionDTO> history = BidService.getInstance().getBidHistory(auctionDTO.getId());
-        
-        // Cập nhật biểu đồ theo thứ tự thời gian tăng dần để đường line vẽ đúng chiều
-        updateChart(history);
-
-        // Đảo ngược list để hiển thị trên bảng: bid mới nhất (cao nhất) ở trên cùng
-        java.util.List<BidTransactionDTO> reversedHistory = new java.util.ArrayList<>(history);
-        java.util.Collections.reverse(reversedHistory);
-        
-        historyTable.getItems().setAll(reversedHistory);
+        int currentAuctionId = auctionDTO.getId();
+        new Thread(() -> {
+            try {
+                List<BidTransactionDTO> history = bidService.getBidHistory(currentAuctionId);
+                // Push full list into Store (triggers historyListener to update chart + table)
+                BidTransactionStore.getInstance().setHistory(currentAuctionId, history);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, "load-history-worker").start();
     }
 
     private void updateChart(List<BidTransactionDTO> history) {
@@ -428,55 +481,181 @@ public class BidViewportController implements Initializable {
             return;
         }
 
-        // Send request to server
-        Response response = BidService.getInstance().placeBid(auctionDTO.getId(), bidAmount, currentUser.getId());
+        // Disable button during placement to prevent double-submitting
+        placeBidButton.setDisable(true);
+        bidStatusLabel.setText("Placing bid...");
+        setStatusStyle("status-default");
 
-        if (response != null && response.getStatus() == Status.SUCCESS) {
-            bidStatusLabel.setText("Bid placed successfully!");
-            setStatusStyle("status-success");
+        BigDecimal finalBidAmount = bidAmount;
+        new Thread(() -> {
+            try {
+                // 1. Send bid request asynchronously (blocks background thread, not UI thread)
+                Response response = bidService.placeBid(auctionDTO.getId(), finalBidAmount, currentUser.getId());
 
-            // Update local view model
-            auctionDTO.setCurrentPrice(bidAmount);
-            auctionDTO.setHighestBidderUsername(currentUser.getUsername());
+                Platform.runLater(() -> {
+                    placeBidButton.setDisable(false); // re-enable button on UI thread
+                    
+                    if (response != null && response.getStatus() == Status.SUCCESS) {
+                        bidStatusLabel.setText("Bid placed successfully!");
+                        setStatusStyle("status-success");
 
-            highestBidLabel.setText(currencyFormatter.format(bidAmount));
-            highestBidderLabel.setText(currentUser.getUsername());
+                        // Update local view model
+                        auctionDTO.setCurrentPrice(finalBidAmount);
+                        auctionDTO.setHighestBidderUsername(currentUser.getUsername());
 
-            // Recalculate minimum increment
-            BigDecimal nextIncrement = getBidIncrement(bidAmount);
-            minIncrementLabel.setText(currencyFormatter.format(nextIncrement));
-            minIncrementHintLabel.setText("Min increment: " + currencyFormatter.format(nextIncrement));
+                        highestBidLabel.setText(currencyFormatter.format(finalBidAmount));
+                        highestBidderLabel.setText(currentUser.getUsername());
 
-            // Reload bid history table
-            loadBidHistory();
+                        // Recalculate minimum increment
+                        BigDecimal nextIncrement = getBidIncrement(finalBidAmount);
+                        minIncrementLabel.setText(currencyFormatter.format(nextIncrement));
+                        minIncrementHintLabel.setText("Min increment: " + currencyFormatter.format(nextIncrement));
 
-            bidField.clear();
-        } else {
-            String errMsg = (response != null && response.getMessage() != null) ? response.getMessage() : "Unknown error";
-            bidStatusLabel.setText("Failed: " + errMsg);
-            setStatusStyle("status-error");
-        }
+                        bidField.clear();
+                    } else {
+                        String errMsg = (response != null && response.getMessage() != null) ? response.getMessage() : "Unknown error";
+                        bidStatusLabel.setText("Failed: " + errMsg);
+                        setStatusStyle("status-error");
+                    }
+                });
+
+                // 2. BidTransactionStore handles real-time updates via EVENT_BID_PLACED from Server.
+                // No need to manually reload history here.
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    placeBidButton.setDisable(false);
+                    bidStatusLabel.setText("System error: " + e.getMessage());
+                    setStatusStyle("status-error");
+                });
+            }
+        }, "bid-placement-worker").start();
     }
 
     @FXML
     void switchAutoBid(ActionEvent event) {
-        if(autoBidToggle.isSelected()) {
-            autoBidToggle.setText("Disable Auto Bidding");
+        UserDTO currentUser = UserSession.getInstance().getUser();
+        if (currentUser == null) {
+            bidStatusLabel.setText("Failed: Please log in first!");
+            setStatusStyle("status-error");
+            autoBidToggle.setSelected(false);
+            return;
+        }
+
+        boolean isSelected = autoBidToggle.isSelected();
+
+        if (isSelected) {
+            String maxBidText = maxBidField.getText();
+            if (maxBidText == null || maxBidText.trim().isEmpty()) {
+                bidStatusLabel.setText("Failed: Please enter Max Bid!");
+                setStatusStyle("status-error");
+                autoBidToggle.setSelected(false);
+                return;
+            }
+
+            BigDecimal maxBid;
+            try {
+                maxBid = new BigDecimal(maxBidText.trim());
+            } catch (NumberFormatException e) {
+                bidStatusLabel.setText("Failed: Invalid Max Bid amount!");
+                setStatusStyle("status-error");
+                autoBidToggle.setSelected(false);
+                return;
+            }
+
+            BigDecimal increment = BigDecimal.ZERO;
+            String incrementText = incrementField.getText();
+            if (incrementText != null && !incrementText.trim().isEmpty()) {
+                try {
+                    increment = new BigDecimal(incrementText.trim());
+                } catch (NumberFormatException e) {
+                    bidStatusLabel.setText("Failed: Invalid Increment amount!");
+                    setStatusStyle("status-error");
+                    autoBidToggle.setSelected(false);
+                    return;
+                }
+            }
+
+            // Disable UI fields during request
+            autoBidToggle.setDisable(true);
             maxBidField.setDisable(true);
             incrementField.setDisable(true);
-            String maxBidText = maxBidField.getText();
-            if (!maxBidText.isEmpty()) {
-                BigDecimal maxBid = new BigDecimal(maxBidText);
-                System.out.println("Request: Bật Auto Bid với giá Max là " + maxBid.toPlainString());
-            } else {
-                System.out.println("Request: Bật Auto Bid nhưng chưa có giá Max.");
-            }
-        }
-        else {
-            autoBidToggle.setText("Enable Auto Bidding");
-            maxBidField.setDisable(false);
-            incrementField.setDisable(false);
-            System.out.println("Request: Hủy auto bid ");
+            bidStatusLabel.setText("Enabling auto bidding...");
+            setStatusStyle("status-default");
+
+            BigDecimal finalIncrement = increment;
+            new Thread(() -> {
+                try {
+                    Response response = bidService.setAutoBid(
+                            currentUser.getId(),
+                            auctionDTO.getId(),
+                            maxBid,
+                            finalIncrement
+                    );
+
+                    Platform.runLater(() -> {
+                        autoBidToggle.setDisable(false);
+                        if (response != null && response.getStatus() == Status.SUCCESS) {
+                            autoBidToggle.setText("Disable Auto Bidding");
+                            bidStatusLabel.setText("Auto bidding enabled successfully!");
+                            setStatusStyle("status-success");
+                        } else {
+                            String errMsg = (response != null && response.getMessage() != null) ? response.getMessage() : "Unknown error";
+                            bidStatusLabel.setText("Failed: " + errMsg);
+                            setStatusStyle("status-error");
+                            autoBidToggle.setSelected(false);
+                            maxBidField.setDisable(false);
+                            incrementField.setDisable(false);
+                        }
+                    });
+                } catch (Exception e) {
+                    Platform.runLater(() -> {
+                        autoBidToggle.setDisable(false);
+                        autoBidToggle.setSelected(false);
+                        maxBidField.setDisable(false);
+                        incrementField.setDisable(false);
+                        bidStatusLabel.setText("System error: " + e.getMessage());
+                        setStatusStyle("status-error");
+                    });
+                }
+            }, "auto-bid-enable-worker").start();
+
+        } else {
+            // Disable Toggle during request
+            autoBidToggle.setDisable(true);
+            bidStatusLabel.setText("Disabling auto bidding...");
+            setStatusStyle("status-default");
+
+            new Thread(() -> {
+                try {
+                    Response response = bidService.cancelAutoBid(
+                            currentUser.getId(),
+                            auctionDTO.getId()
+                    );
+
+                    Platform.runLater(() -> {
+                        autoBidToggle.setDisable(false);
+                        if (response != null && response.getStatus() == Status.SUCCESS) {
+                            autoBidToggle.setText("Enable Auto Bidding");
+                            maxBidField.setDisable(false);
+                            incrementField.setDisable(false);
+                            bidStatusLabel.setText("Auto bidding disabled successfully.");
+                            setStatusStyle("status-success");
+                        } else {
+                            String errMsg = (response != null && response.getMessage() != null) ? response.getMessage() : "Unknown error";
+                            bidStatusLabel.setText("Failed: " + errMsg);
+                            setStatusStyle("status-error");
+                            autoBidToggle.setSelected(true);
+                        }
+                    });
+                } catch (Exception e) {
+                    Platform.runLater(() -> {
+                        autoBidToggle.setDisable(false);
+                        autoBidToggle.setSelected(true);
+                        bidStatusLabel.setText("System error: " + e.getMessage());
+                        setStatusStyle("status-error");
+                    });
+                }
+            }, "auto-bid-disable-worker").start();
         }
     }
 

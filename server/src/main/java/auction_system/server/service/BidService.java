@@ -11,8 +11,9 @@ import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;
 import auction_system.server.observer.BidEvent;
 import auction_system.server.observer.EventBus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import auction_system.server.store.AuctionStore;
+import auction_system.server.store.UserStore;
+import auction_system.server.store.BidTransactionStore;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -21,20 +22,22 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
-
 public class BidService {
     private static BidService instance;
-    private final AuctionService auctionService;
     private final UserService userService;
     private final AuctionDAO auctionDAO;
     private final BidTransactionDAO bidTransactionDAO;
-    Logger logger = LoggerFactory.getLogger(BidService.class);
+    private final AuctionStore auctionStore;
+    private final BidTransactionStore bidTransactionStore;
+    private final UserStore userStore;
 
     private BidService() {
-        this.auctionService = AuctionService.getInstance();
         this.userService = UserService.getInstance();
         this.auctionDAO = AuctionDAO.getInstance();
         this.bidTransactionDAO = BidTransactionDAO.getInstance();
+        this.auctionStore = AuctionStore.getInstance();
+        this.bidTransactionStore = BidTransactionStore.getInstance();
+        this.userStore = UserStore.getInstance();
     }
 
     public static BidService getInstance() {
@@ -64,40 +67,7 @@ public class BidService {
             }
         }
     }
-
-    /*
-        Cho Scheduler gọi để cập nhật trạng thái auction.
-        Hàm này nên dùng transaction + SELECT FOR UPDATE
-        vì nó có đọc auction rồi update status.
-    */
-    public void updateStatus(int auctionId) {
-        Connection connection = null;
-
-        try {
-            connection = DatabaseConnection.getConnection();
-            connection.setAutoCommit(false);
-
-            Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
-
-            if (auction == null) {
-                throw new RuntimeException("Auction not found");
-            }
-
-            updateStatusInternal(auction);
-
-            auctionDAO.update(connection, auction);
-
-            connection.commit();
-
-        } catch (Exception e) {
-            rollback(connection);
-            throw new RuntimeException("Cannot update auction status", e);
-
-        } finally {
-            closeConnection(connection);
-        }
-    }
-
+    
     /*
         Đặt bid cho một auction.
 
@@ -119,12 +89,12 @@ public class BidService {
             connection.setAutoCommit(false);
 
             Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
-            Integer previousBidderId = auction.getHighestBidderId();
-            BigDecimal previousPrice = auction.getCurrentPrice();
-
             if (auction == null) {
                 throw new RuntimeException("Auction not found");
             }
+
+            Integer previousBidderId = auction.getHighestBidderId();
+            BigDecimal previousPrice = auction.getCurrentPrice();
 
             updateStatusInternal(auction);
 
@@ -160,33 +130,38 @@ public class BidService {
             if (bidder.getBalance().compareTo(amount) < 0) {
                 throw new RuntimeException("Not enough balance");
             }
-            LocalDateTime endTime = auctionDAO.getAuctionEndTime(auctionId);
+            
+            LocalDateTime endTime = auction.getEndTime();
             LocalDateTime now = LocalDateTime.now();
-            if(endTime==null){
+            if (endTime == null) {
                 throw new RuntimeException("the endtime is null");
             }
             if (now.isAfter(endTime)) {
                 throw new RuntimeException("the auction already end");
             }
+            
             long X = 30;
-
             long remainingSeconds = Duration.between(now, endTime).getSeconds();
 
             // Nếu thời gian còn lại <= X giây
             if (remainingSeconds <= X && remainingSeconds >= 0) {
-                // Gọi hàm cộng thêm thời gian (hàm bạn đã viết ở câu trước)
-                // Theo ví dụ trong ảnh, Y = 60 giây (1 phút), hàm cũ của bạn dùng plusMinutes(1) là chuẩn xác.
                 auctionDAO.antisnippingtime(auctionId);
+                // Also update in-memory object time!
+                auction.setEndTime(endTime.plusMinutes(1));
             }
 
-            logger.info("đặt giá thành công");
+            System.out.println("đặt giá thành công");
 
-                BidTransaction latestTransaction = new BidTransaction(bidder, amount);
-                bidTransactionDAO.save(connection,auctionId, latestTransaction);
-                auction.setCurrentPrice(amount);
-                auction.setHighestBidderId(bidder.getId());
-                auctionDAO.update(connection, auction);
-                connection.commit();
+            BidTransaction latestTransaction = new BidTransaction(bidder, amount);
+            bidTransactionDAO.save(connection, auctionId, latestTransaction);
+            auction.setCurrentPrice(amount);
+            auction.setHighestBidderId(bidder.getId());
+            auctionDAO.update(connection, auction);
+            connection.commit();
+
+            // Sync with Server Store RAM Cache
+            auctionStore.updateAuction(auction);
+            bidTransactionStore.addBid(auctionId, latestTransaction);
 
             eventToPublish = new BidEvent(
                     auctionId, bidder.getId(), previousBidderId,
@@ -200,29 +175,26 @@ public class BidService {
         } finally {
             closeConnection(connection);
             if (eventToPublish != null) {
-                EventBus.publish(eventToPublish);
+                EventBus.getInstance().publish(eventToPublish);
             }
         }
     }
 
     /*
         Lấy lịch sử bid của một auction.
-        Chỉ đọc nên không cần transaction/lock.
     */
     public List<BidTransaction> getHistoryBid(int auctionId) {
         findAuctionOrThrow(auctionId);
-
-        return bidTransactionDAO.findByAuctionId(auctionId);
+        return bidTransactionStore.getHistory(auctionId);
     }
 
     /*
         Lấy bid mới nhất của một auction.
-        Chỉ đọc nên không cần transaction/lock.
     */
     public BidTransaction getLatestBid(int auctionId) {
         findAuctionOrThrow(auctionId);
 
-        BidTransaction transaction = bidTransactionDAO.findLatestByAuctionId(auctionId);
+        BidTransaction transaction = bidTransactionStore.getLatestBid(auctionId);
 
         if (transaction == null) {
             throw new RuntimeException("This auction has no bids yet");
@@ -233,7 +205,6 @@ public class BidService {
 
     /*
         Lấy người đang giữ giá cao nhất.
-        Chỉ đọc nên không cần transaction/lock.
     */
     public User getHighestBidder(int auctionId) {
         Auction auction = findAuctionOrThrow(auctionId);
@@ -242,12 +213,11 @@ public class BidService {
             throw new RuntimeException("This auction has no highest bidder yet");
         }
 
-        return userService.getUserById(auction.getHighestBidderId());
+        return userStore.getUserById(auction.getHighestBidderId());
     }
 
     /*
         Lấy giá hiện tại của auction.
-        Chỉ đọc nên không cần transaction/lock.
     */
     public BigDecimal getCurrentPrice(int auctionId) {
         Auction auction = findAuctionOrThrow(auctionId);
@@ -259,7 +229,7 @@ public class BidService {
             throw new RuntimeException("Auction id must be greater than 0");
         }
 
-        Auction auction = auctionService.getAuctionById(auctionId);
+        Auction auction = auctionStore.getAuctionById(auctionId);
 
         if (auction == null) {
             throw new RuntimeException("Auction not found");

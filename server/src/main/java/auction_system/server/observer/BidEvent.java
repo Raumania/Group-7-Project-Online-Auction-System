@@ -1,6 +1,7 @@
 package auction_system.server.observer;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public record BidEvent(
     int auctionId,
@@ -8,5 +9,5 @@ public record BidEvent(
     Integer previousBidderId,   // null nếu là lần đầu
     BigDecimal newPrice,
     BigDecimal previousPrice,
-    java.time.LocalDateTime timestamp
+    LocalDateTime timestamp
 ) {}

@@ -40,9 +40,9 @@ public class User extends Entity {
         this.roles = new HashSet<>(roles);
 
         /*
-            Không tự sinh id cho User nữa.
-            id sẽ do database AUTO_INCREMENT tạo.
-            Sau khi save xong, UserDAO sẽ setId lại.
+            Do not generate id for User anymore.
+            id will be created by database AUTO_INCREMENT.
+            After saving, UserDAO will call setId back.
         */
         this.id = 0;
 

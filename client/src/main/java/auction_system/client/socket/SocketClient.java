@@ -1,8 +1,10 @@
 package auction_system.client.socket;
 
-import auction_system.client.Util.GsonUtil;
+import auction_system.client.util.GsonUtil;
 import auction_system.client.store.AuctionStore;
+import auction_system.client.store.BidTransactionStore;
 import auction_system.client.store.SellerAuctionStore;
+import auction_system.common.dto.BidTransactionDTO;
 import auction_system.client.session.UserSession;
 import auction_system.common.dto.AuctionDTO;
 import auction_system.common.enums.Action;
@@ -79,6 +81,8 @@ public class SocketClient {
                                 handleAuctionEditedEvent(response);
                             } else if (response.getType() == Action.EVENT_AUCTION_DELETED) {
                                 handleAuctionDeletedEvent(response);
+                            } else if (response.getType() == Action.EVENT_BID_PLACED) {
+                                handleBidPlacedEvent(response);
                             } else if (response.getType() == Action.PING) {
                                 // Phản hồi PING/PONG giữ kết nối (heartbeat), chỉ cần log và bỏ qua
                                 System.out.println("Heartbeat: received PONG from server");
@@ -171,6 +175,20 @@ public class SocketClient {
         }
     }
 
+    // Handle real-time bid placed event — pushes new transaction into BidTransactionStore
+    private void handleBidPlacedEvent(Response response) {
+        try {
+            String jsonData = GsonUtil.toJson(response.getData());
+            BidTransactionDTO newBid = GsonUtil.fromJson(jsonData, BidTransactionDTO.class);
+            if (newBid != null && newBid.getAuctionId() > 0) {
+                System.out.println("Real-time: New bid received for auction " + newBid.getAuctionId() + ", transaction ID: " + newBid.getId());
+                BidTransactionStore.getInstance().addBid(newBid.getAuctionId(), newBid);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse real-time bid placed event: " + e.getMessage());
+        }
+    }
+
     // Xử lý sự kiện xóa đấu giá theo thời gian thực
     private void handleAuctionDeletedEvent(Response response) {
         try {
@@ -247,6 +265,9 @@ public class SocketClient {
     // Helper ẩn chuỗi Base64 dài khi in log để dễ debug
     private String maskImageBase64(String json) {
         if (json == null) return null;
-        return json.replaceAll("\"(imageBase64|image|imageBytes)\"\\s*:\\s*\"[^\"]{100,}\"", "\"$1\":\"[BASE64 IMAGE DATA TRUNCATED]\"");
+        if (json.length() > 2000) {
+            return json.substring(0, 2000) + "... [PAYLOAD TRUNCATED FOR LOGGING TO PREVENT MEMORY LEAK]";
+        }
+        return json;
     }
 }
