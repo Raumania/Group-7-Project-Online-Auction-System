@@ -98,8 +98,8 @@ public class SocketClient {
                                 handleBidPlacedEvent(response);
                             } else if (response.getType() == Action.EVENT_USER_BANNED) {
                                 handleUserBannedEvent(response);
-                            } else if (response.getType() == Action.EVENT_AUCTION_CANCELLED) {
-                                handleAuctionCancelledEvent(response);
+                            } else if (response.getType() == Action.GET_CURRENT_USER) {
+                                handleGetCurrentUserEvent(response);
                             } else if (response.getType() == Action.PING) {
                                 // Phản hồi PING/PONG giữ kết nối (heartbeat), chỉ cần log và bỏ qua
                                 System.out.println("Heartbeat: received PONG from server");
@@ -224,43 +224,11 @@ public class SocketClient {
                             boolean wasHighest = myUsername.equals(oldBidder);
                             boolean isHighest = myUsername.equals(newBidder);
 
-                            BigDecimal avail = currentUser.getAvailableBalance() != null ? currentUser.getAvailableBalance() : BigDecimal.ZERO;
-                            BigDecimal froz = currentUser.getFrozenBalance() != null ? currentUser.getFrozenBalance() : BigDecimal.ZERO;
-
-                            boolean balanceChanged = false;
-
-                            if (wasHighest && !isHighest) {
-                                // Bị outbid hoặc người giữ giá trước bị ban: Trả lại tiền đóng băng cũ
-                                avail = avail.add(oldPrice);
-                                froz = froz.subtract(oldPrice);
-                                balanceChanged = true;
-                                System.out.println("Balance Outbid Reactive: +" + oldPrice + " to available.");
-                            } else if (!wasHighest && isHighest) {
-                                // Vừa đặt thầu thành công hoặc được đôn lên thay thế người bị ban: Đóng băng tiền mới
-                                avail = avail.subtract(newPrice);
-                                froz = froz.add(newPrice);
-                                balanceChanged = true;
-                                System.out.println("Balance Bid Reactive: -" + newPrice + " from available.");
-                            } else if (wasHighest && isHighest) {
-                                // Tự outbid chính mình (tăng giá thầu): Trả tiền cũ, đóng băng tiền mới
-                                avail = avail.add(oldPrice).subtract(newPrice);
-                                froz = froz.subtract(oldPrice).add(newPrice);
-                                balanceChanged = true;
-                                System.out.println("Balance Self-outbid Reactive: diff=" + (oldPrice.subtract(newPrice)));
-                            }
-
-                            if (balanceChanged) {
-                                // Bảo đảm không bị âm
-                                if (avail.compareTo(BigDecimal.ZERO) < 0) avail = BigDecimal.ZERO;
-                                if (froz.compareTo(BigDecimal.ZERO) < 0) froz = BigDecimal.ZERO;
-
-                                currentUser.setAvailableBalance(avail);
-                                currentUser.setFrozenBalance(froz);
-                                
-                                // Refresh Sidebar UI
-                                if (MainAuctionController.getInstance() != null) {
-                                    MainAuctionController.getInstance().refreshBalance();
-                                }
+                            // Nếu user liên quan đến sự thay đổi giá thầu, thay vì tự tính toán sai lệch (đặc biệt là với AutoBid),
+                            // ta yêu cầu server gửi lại balance mới nhất để chính xác 100%.
+                            if (wasHighest || isHighest) {
+                                Request syncReq = new Request(Action.GET_CURRENT_USER, null);
+                                send(syncReq);
                             }
                         }
                     }
@@ -369,22 +337,8 @@ public class SocketClient {
                     if (auction.getId() == cancelledAuctionId) {
                         // Nếu ta là người thầu cao nhất của đấu giá bị hủy
                         if (currentUser != null && currentUser.getUsername() != null && currentUser.getUsername().equals(auction.getHighestBidderUsername())) {
-                            BigDecimal refundAmount = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : BigDecimal.ZERO;
-                            BigDecimal avail = currentUser.getAvailableBalance() != null ? currentUser.getAvailableBalance() : BigDecimal.ZERO;
-                            BigDecimal froz = currentUser.getFrozenBalance() != null ? currentUser.getFrozenBalance() : BigDecimal.ZERO;
-
-                            avail = avail.add(refundAmount);
-                            froz = froz.subtract(refundAmount);
-
-                            if (froz.compareTo(BigDecimal.ZERO) < 0) froz = BigDecimal.ZERO;
-
-                            currentUser.setAvailableBalance(avail);
-                            currentUser.setFrozenBalance(froz);
-
-                            if (MainAuctionController.getInstance() != null) {
-                                MainAuctionController.getInstance().refreshBalance();
-                            }
-                            System.out.println("Balance Cancelled Reactive: +" + refundAmount + " to available.");
+                            Request syncReq = new Request(Action.GET_CURRENT_USER, null);
+                            send(syncReq);
                         }
 
                         auction.setStatus(auction_system.common.enums.AuctionStatus.CANCELLED);
@@ -402,6 +356,30 @@ public class SocketClient {
             });
         } catch (Exception e) {
             System.err.println("Failed to parse real-time auction cancelled event: " + e.getMessage());
+        }
+    }
+
+    private void handleGetCurrentUserEvent(Response response) {
+        try {
+            if (response.getStatus() == Status.SUCCESS) {
+                String userJson = GsonUtil.toJson(response.getData());
+                UserDTO freshUser = GsonUtil.fromJson(userJson, UserDTO.class);
+                if (freshUser != null) {
+                    Platform.runLater(() -> {
+                        UserDTO currentUser = UserSession.getInstance().getUser();
+                        if (currentUser != null) {
+                            currentUser.setAvailableBalance(freshUser.getAvailableBalance());
+                            currentUser.setFrozenBalance(freshUser.getFrozenBalance());
+                            if (MainAuctionController.getInstance() != null) {
+                                MainAuctionController.getInstance().refreshBalance();
+                            }
+                            System.out.println("Balance successfully synchronized with server.");
+                        }
+                    });
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse GET_CURRENT_USER event: " + e.getMessage());
         }
     }
 

@@ -109,6 +109,17 @@ public class ClientHandler implements Runnable {
                     continue;
                 }
 
+                if (req != null && req.getAction() == Action.GET_CURRENT_USER) {
+                    if (this.userId > 0) {
+                        auction_system.server.model.User userFromRam = auction_system.server.store.UserStore.getInstance().getUserById(this.userId);
+                        if (userFromRam != null) {
+                            Response userRes = new Response(Status.SUCCESS, Action.GET_CURRENT_USER, userFromRam.toDTO(), "User profile fetched");
+                            send(GsonUtil.toJson(userRes));
+                        }
+                    }
+                    continue;
+                }
+
                 RequestHandler handler = handlers.get(req != null ? req.getAction() : null);
 
                 try {
