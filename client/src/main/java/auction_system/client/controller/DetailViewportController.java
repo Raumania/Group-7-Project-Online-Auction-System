@@ -128,6 +128,14 @@ public class DetailViewportController {
             timeline.stop();
         }
 
+        // Tự động dọn dẹp Timeline khi view bị gỡ khỏi scene graph (ví dụ: người dùng bấm nút chuyển trang ở Sidebar)
+        // Điều này ngăn chặn lỗi rò rỉ bộ nhớ (Memory Leak) và CPU chạy ngầm vô hạn.
+        itemImageView.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                cleanup();
+            }
+        });
+
         // ĐÃ SỬA: So sánh bằng enum
         if (auctionDTO.getStatus() == AuctionStatus.OPEN) {
             setupCountdown(auctionDTO.getStartTime(), () -> {
