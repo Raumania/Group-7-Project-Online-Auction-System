@@ -534,6 +534,19 @@ public class BidViewportController implements Initializable {
                         bidStatusLabel.setText("Bid placed successfully!");
                         setStatusStyle("status-success");
 
+                        // Update local balance BEFORE changing auctionDTO
+                        BigDecimal oldPrice = auctionDTO.getCurrentPrice();
+                        String oldBidder = auctionDTO.getHighestBidderUsername();
+                        BigDecimal toFreeze = finalBidAmount;
+                        if (oldPrice != null && oldBidder != null && oldBidder.equals(currentUser.getUsername())) {
+                            toFreeze = finalBidAmount.subtract(oldPrice);
+                        }
+                        currentUser.setAvailableBalance(currentUser.getAvailableBalance().subtract(toFreeze));
+                        currentUser.setFrozenBalance(currentUser.getFrozenBalance().add(toFreeze));
+                        if (MainAuctionController.getInstance() != null) {
+                            MainAuctionController.getInstance().refreshBalance();
+                        }
+
                         // Update local view model
                         auctionDTO.setCurrentPrice(finalBidAmount);
                         auctionDTO.setHighestBidderUsername(currentUser.getUsername());
@@ -633,6 +646,21 @@ public class BidViewportController implements Initializable {
                             autoBidToggle.setText("Disable Auto Bidding");
                             bidStatusLabel.setText("Auto bidding enabled successfully!");
                             setStatusStyle("status-success");
+                            maxBidField.setDisable(true);
+                            incrementField.setDisable(true);
+                            
+                            // Update local balance
+                            BigDecimal oldPrice = auctionDTO.getCurrentPrice();
+                            String oldBidder = auctionDTO.getHighestBidderUsername();
+                            BigDecimal toFreeze = maxBid;
+                            if (oldPrice != null && oldBidder != null && oldBidder.equals(currentUser.getUsername())) {
+                                toFreeze = maxBid.subtract(oldPrice);
+                            }
+                            currentUser.setAvailableBalance(currentUser.getAvailableBalance().subtract(toFreeze));
+                            currentUser.setFrozenBalance(currentUser.getFrozenBalance().add(toFreeze));
+                            if (MainAuctionController.getInstance() != null) {
+                                MainAuctionController.getInstance().refreshBalance();
+                            }
                         } else {
                             String errMsg = (response != null && response.getMessage() != null) ? response.getMessage() : "Unknown error";
                             bidStatusLabel.setText("Failed: " + errMsg);
@@ -675,6 +703,27 @@ public class BidViewportController implements Initializable {
                             incrementField.setDisable(false);
                             bidStatusLabel.setText("Auto bidding disabled successfully.");
                             setStatusStyle("status-success");
+
+                            // Update local balance
+                            BigDecimal oldPrice = auctionDTO.getCurrentPrice();
+                            String oldBidder = auctionDTO.getHighestBidderUsername();
+                            BigDecimal maxBid;
+                            try {
+                                maxBid = new BigDecimal(maxBidField.getText().trim());
+                            } catch (Exception ex) {
+                                maxBid = BigDecimal.ZERO;
+                            }
+                            BigDecimal toUnfreeze = maxBid;
+                            if (oldPrice != null && oldBidder != null && oldBidder.equals(currentUser.getUsername())) {
+                                toUnfreeze = maxBid.subtract(oldPrice);
+                            }
+                            if (toUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
+                                currentUser.setAvailableBalance(currentUser.getAvailableBalance().add(toUnfreeze));
+                                currentUser.setFrozenBalance(currentUser.getFrozenBalance().subtract(toUnfreeze));
+                                if (MainAuctionController.getInstance() != null) {
+                                    MainAuctionController.getInstance().refreshBalance();
+                                }
+                            }
                         } else {
                             String errMsg = (response != null && response.getMessage() != null) ? response.getMessage() : "Unknown error";
                             bidStatusLabel.setText("Failed: " + errMsg);
