@@ -5,6 +5,7 @@ import auction_system.client.service.AuctionListService; // <-- THÊM IMPORT
 import auction_system.common.dto.UserDTO;
 import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -65,51 +66,58 @@ public class LoginController implements javafx.fxml.Initializable {
 
     @FXML
     void loginBtnAction(ActionEvent event) {
-        UserDTO user = new UserDTO(LoginUsernameTextField.getText(),LoginPasswordTextField.getText());
-        if(user.getUsername().isEmpty() || user.getPassword().isEmpty()) {
+        UserDTO user = new UserDTO(LoginUsernameTextField.getText(), LoginPasswordTextField.getText());
+        if (user.getUsername().isEmpty() || user.getPassword().isEmpty()) {
             LoginStatusLabel.setText("Vui lòng nhập đầy đủ thông tin!");
             return;
         }
 
-        int varCheck = AuthService.getInstance().checkLogin(user);
-        if(varCheck == 1) {
-            // BẮT ĐẦU TẢI DỮ LIỆU NGAY SAU KHI ĐĂNG NHẬP THÀNH CÔNG
-            AuctionListService.getInstance().fetchAllAuctions();
+        // Disable nút và hiển thị trạng thái chờ để tránh double-click
+        Button loginBtn = (Button) ((javafx.scene.Node) event.getSource());
+        loginBtn.setDisable(true);
+        LoginStatusLabel.setText("Đang đăng nhập...");
 
-            try {
-                FXMLLoader loader = new FXMLLoader();
-                loader.setLocation(getClass().getResource("/fxml/mainAuction.fxml"));
-                Parent root = loader.load();
-                Scene scene = new Scene(root);
-                Stage stage = (Stage) side_form.getScene().getWindow();
-                stage.setScene(scene);
-            }
-            catch(IOException e) {
-                e.printStackTrace();
-            }
-        }
-        else if(varCheck == -1) {
-            //Admin will be load in here :>
-            try {
-                FXMLLoader loader = new FXMLLoader();
-                loader.setLocation(getClass().getResource("/fxml/AdminMainAuction.fxml"));
-                Parent root = loader.load();
-                Scene scene = new Scene(root);
-                Stage stage = (Stage) side_form.getScene().getWindow();
-                stage.setScene(scene);
-            }
-            catch(IOException e) {
-                e.printStackTrace();
-            }
-        }
-        else {
-            String errorMsg = AuthService.getInstance().getLastErrorMessage();
-            if (errorMsg != null && !errorMsg.isEmpty()) {
-                LoginStatusLabel.setText(errorMsg);
-            } else {
-                LoginStatusLabel.setText("Sai tài khoản hoặc mật khẩu!");
-            }
-        }
+        // Thực hiện network I/O trên background thread để không block JavaFX UI thread
+        new Thread(() -> {
+            int varCheck = AuthService.getInstance().checkLogin(user);
+
+            Platform.runLater(() -> {
+                loginBtn.setDisable(false);
+                if (varCheck == 1) {
+                    // BẮT ĐẦU TẢI DỮ LIỆU NGAY SAU KHI ĐĂNG NHẬP THÀNH CÔNG
+                    AuctionListService.getInstance().fetchAllAuctions();
+                    try {
+                        FXMLLoader loader = new FXMLLoader();
+                        loader.setLocation(getClass().getResource("/fxml/mainAuction.fxml"));
+                        Parent root = loader.load();
+                        Scene scene = new Scene(root);
+                        Stage stage = (Stage) side_form.getScene().getWindow();
+                        stage.setScene(scene);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else if (varCheck == -1) {
+                    // Admin will be loaded in here :>
+                    try {
+                        FXMLLoader loader = new FXMLLoader();
+                        loader.setLocation(getClass().getResource("/fxml/AdminMainAuction.fxml"));
+                        Parent root = loader.load();
+                        Scene scene = new Scene(root);
+                        Stage stage = (Stage) side_form.getScene().getWindow();
+                        stage.setScene(scene);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    String errorMsg = AuthService.getInstance().getLastErrorMessage();
+                    if (errorMsg != null && !errorMsg.isEmpty()) {
+                        LoginStatusLabel.setText(errorMsg);
+                    } else {
+                        LoginStatusLabel.setText("Sai tài khoản hoặc mật khẩu!");
+                    }
+                }
+            });
+        }, "login-worker").start();
     }
 
     @FXML
@@ -118,28 +126,42 @@ public class LoginController implements javafx.fxml.Initializable {
         String username = registerUsernameTextField.getText();
         String password = registerPasswordTextField.getText();
         String confirmPassword = registerConfirmPasswordTextField.getText();
-        if(fullname.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+        if (fullname.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             RegisterStatusLabel.setText("Vui lòng nhập đầy đủ thông tin!");
             return;
         }
-        if(!password.equals(confirmPassword)) {
+        if (!password.equals(confirmPassword)) {
             RegisterStatusLabel.setText("Mật khẩu không khớp!");
             return;
         }
 
-        UserDTO user = new UserDTO(fullname,username,password);
-        if(AuthService.getInstance().checkRegister(user)) {
-            RegisterStatusLabel.setTextFill(Color.GREEN);
-            RegisterStatusLabel.setText("Đăng ký thành công, quay lại trang đăng nhập sau 3s!");
-            PauseTransition delay = new PauseTransition(Duration.seconds(3));
-            delay.setOnFinished(e -> {
-                switchForm(event);
+        // Disable nút và hiển thị trạng thái chờ
+        registerBtn.setDisable(true);
+        RegisterStatusLabel.setTextFill(Color.BLACK);
+        RegisterStatusLabel.setText("Đang đăng ký...");
+
+        UserDTO user = new UserDTO(fullname, username, password);
+
+        // Thực hiện network I/O trên background thread
+        new Thread(() -> {
+            boolean success = AuthService.getInstance().checkRegister(user);
+
+            Platform.runLater(() -> {
+                registerBtn.setDisable(false);
+                if (success) {
+                    RegisterStatusLabel.setTextFill(Color.GREEN);
+                    RegisterStatusLabel.setText("Đăng ký thành công, quay lại trang đăng nhập sau 3s!");
+                    PauseTransition delay = new PauseTransition(Duration.seconds(3));
+                    delay.setOnFinished(e -> {
+                        switchForm(event);
+                    });
+                    delay.play();
+                } else {
+                    RegisterStatusLabel.setTextFill(Color.RED);
+                    RegisterStatusLabel.setText("Tài khoản đã tồn tại!");
+                }
             });
-            delay.play();
-        }
-        else {
-            RegisterStatusLabel.setText("Tài khoản đã tồn tại!");
-        }
+        }, "register-worker").start();
     }
 
     @FXML

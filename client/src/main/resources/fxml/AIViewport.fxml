@@ -71,7 +71,7 @@
                             </graphic>
                         </Button>
                         <TextField fx:id="chatInput" promptText="Type your message or ask about an item..." styleClass="chat-field" HBox.hgrow="ALWAYS" />
-                        <Button mnemonicParsing="false" onAction="#handleSendMessage" styleClass="btn-send" text="Send" />
+                        <Button fx:id="sendButton" mnemonicParsing="false" onAction="#handleSendMessage" styleClass="btn-send" text="Send" />
                     </children>
                 </HBox>
             </children>

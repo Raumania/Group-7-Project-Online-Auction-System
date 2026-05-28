@@ -116,6 +116,17 @@ public class MainAuctionController implements Initializable{
     void listViewportBtn(ActionEvent event) throws IOException{
         viewport.getChildren().setAll(listViewport);
     }
+
+    /**
+     * Quay về màn hình danh sách đấu giá bằng cách tái sử dụng listViewport instance đã được cache.
+     * Dùng bởi DetailViewportController khi người dùng bấm "Back to List" để tránh tạo
+     * ListViewportController mới (gây Listener Accumulation và Memory Leak).
+     */
+    public void showListViewport() {
+        if (listViewport != null) {
+            viewport.getChildren().setAll(listViewport);
+        }
+    }
     @FXML
     void sellerViewportBtn(ActionEvent event) throws IOException{
         viewport.getChildren().setAll(sellerViewport);

@@ -27,6 +27,8 @@ public class ListViewportController implements Initializable {
     @FXML private ComboBox<String> statusComboBox;
 
     private final ObservableList<AuctionDTO> allAuctions = AuctionStore.getInstance().getAuctions();
+    // Lưu reference listener để có thể removeListener() khi controller bị destroy (defense in depth)
+    private ListChangeListener<AuctionDTO> auctionStoreListener;
 
     @FXML
     void handleFilterChange(ActionEvent event) {
@@ -53,8 +55,30 @@ public class ListViewportController implements Initializable {
         sortByComboBox.setItems(sortByOptions);
         sortByComboBox.getSelectionModel().selectFirst();
 
-        // Thêm listener để tự động render lại khi dữ liệu trong store thay đổi
-        allAuctions.addListener((ListChangeListener<AuctionDTO>) c -> renderAuctions());
+        // Đăng ký listener để tự động render lại khi dữ liệu trong store thay đổi
+        auctionStoreListener = c -> renderAuctions();
+        allAuctions.addListener(auctionStoreListener);
+
+        // ✅ Auto-cleanup + Auto-reconnect khi controller vào/ra khỏi scene.
+        // - Khi rời scene (newScene == null): xóa listener để tránh memory leak.
+        // - Khi vào lại scene (newScene != null): đăng ký lại listener VÀ render lại
+        //   để hiển thị những auction mới được thêm trong lúc đang ở tab khác.
+        categoryComboBox.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                // Rời scene → xóa listener
+                if (auctionStoreListener != null) {
+                    allAuctions.removeListener(auctionStoreListener);
+                    auctionStoreListener = null;
+                }
+            } else {
+                // Vào lại scene → đăng ký lại listener + render lại để cập nhật data mới
+                if (auctionStoreListener == null) {
+                    auctionStoreListener = c -> renderAuctions();
+                    allAuctions.addListener(auctionStoreListener);
+                }
+                renderAuctions();
+            }
+        });
 
         // Render dữ liệu có sẵn trong store ngay lập tức
         renderAuctions();

@@ -232,14 +232,19 @@ public class AdminUserManageController implements Initializable {
         UserDTO newUser = new UserDTO(0, fullname, username, roles, availableBalance, frozenBalance);
         newUser.setPassword(password);
 
-        if (AdminUserService.getInstance().createUser(newUser)) {
-            AdminUserStore.getInstance().addUser(newUser);
-            showInfo("Thêm người dùng mới thành công!");
-            handleResetForm(null);
-            handleRefreshTable(null);
-        } else {
-            showError("Có lỗi xảy ra khi thêm người dùng mới từ hệ thống!");
-        }
+        new Thread(() -> {
+            boolean success = AdminUserService.getInstance().createUser(newUser);
+            javafx.application.Platform.runLater(() -> {
+                if (success) {
+                    AdminUserStore.getInstance().addUser(newUser);
+                    showInfo("Thêm người dùng mới thành công!");
+                    handleResetForm(null);
+                    handleRefreshTable(null);
+                } else {
+                    showError("Có lỗi xảy ra khi thêm người dùng mới từ hệ thống!");
+                }
+            });
+        }).start();
     }
 
     @FXML
@@ -298,15 +303,27 @@ public class AdminUserManageController implements Initializable {
             } else {
                 selectedUser.setPassword(null);
             }
-            
-            if (AdminUserService.getInstance().updateUser(selectedUser)) {
-                AdminUserStore.getInstance().updateUser(selectedUser);
-                userTable.refresh();
-                showInfo("Cập nhật thông tin người dùng thành công!");
-                handleResetForm(null);
-            } else {
-                showError("Cập nhật thông tin thất bại từ hệ thống!");
-            }
+
+            // Disable nút để tránh double-submit
+            btnEdit.setDisable(true);
+
+            // Thực hiện network I/O trên background thread
+            UserDTO userToEdit = selectedUser;
+            new Thread(() -> {
+                boolean success = AdminUserService.getInstance().updateUser(userToEdit);
+
+                javafx.application.Platform.runLater(() -> {
+                    btnEdit.setDisable(false);
+                    if (success) {
+                        AdminUserStore.getInstance().updateUser(userToEdit);
+                        userTable.refresh();
+                        showInfo("Cập nhật thông tin người dùng thành công!");
+                        handleResetForm(null);
+                    } else {
+                        showError("Cập nhật thông tin thất bại từ hệ thống!");
+                    }
+                });
+            }, "admin-edit-user-worker").start();
         }
     }
 
@@ -330,28 +347,45 @@ public class AdminUserManageController implements Initializable {
 
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            if (AdminUserService.getInstance().banUser(selectedUser.getId())) {
-                selectedUser.setStatus(auction_system.common.enums.UserStatus.BANNED);
-                AdminUserStore.getInstance().updateUser(selectedUser);
-                userTable.refresh();
-                showInfo("Khóa tài khoản người dùng thành công!");
-                handleResetForm(null);
-            } else {
-                showError("Khóa tài khoản người dùng thất bại!");
-            }
+            // Disable nút để tránh double-click
+            btnBan.setDisable(true);
+
+            // Thực hiện network I/O trên background thread
+            UserDTO userToBan = selectedUser;
+            new Thread(() -> {
+                boolean success = AdminUserService.getInstance().banUser(userToBan.getId());
+
+                javafx.application.Platform.runLater(() -> {
+                    btnBan.setDisable(false);
+                    if (success) {
+                        userToBan.setStatus(auction_system.common.enums.UserStatus.BANNED);
+                        AdminUserStore.getInstance().updateUser(userToBan);
+                        userTable.refresh();
+                        showInfo("Khóa tài khoản người dùng thành công!");
+                        handleResetForm(null);
+                    } else {
+                        showError("Khóa tài khoản người dùng thất bại!");
+                    }
+                });
+            }, "admin-ban-user-worker").start();
         }
     }
 
     @FXML
     void handleRefreshTable(ActionEvent event) {
-        try {
-            List<UserDTO> dbUsers = AdminUserService.getInstance().getAllUsers();
-            AdminUserStore.getInstance().setUsers(dbUsers);
-            userTable.refresh();
-        } catch (Exception e) {
-            e.printStackTrace();
-            showError("Không thể tải danh sách người dùng từ máy chủ!");
-        }
+        // Thực hiện tải dữ liệu trên background thread
+        new Thread(() -> {
+            try {
+                List<UserDTO> dbUsers = AdminUserService.getInstance().getAllUsers();
+                javafx.application.Platform.runLater(() -> {
+                    AdminUserStore.getInstance().setUsers(dbUsers);
+                    userTable.refresh();
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                javafx.application.Platform.runLater(() -> showError("Không thể tải danh sách người dùng từ máy chủ!"));
+            }
+        }, "admin-refresh-users-worker").start();
     }
 
     @FXML

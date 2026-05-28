@@ -18,6 +18,9 @@ import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import java.math.BigDecimal;
 import auction_system.client.controller.MainAuctionController;
 
@@ -120,6 +123,24 @@ public class SocketClient {
                 }
             } catch (IOException e) {
                 System.out.println("Socket connection closed or read error: " + e.getMessage());
+                // Chống đứt mạng (Network Chaos): Báo lỗi và văng ra màn hình đăng nhập
+                if (isRunning) { // Chỉ báo lỗi nếu không phải do cố ý tắt app
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setTitle("Mất kết nối");
+                        alert.setHeaderText("Mất kết nối đến Server");
+                        alert.setContentText("Đường truyền mạng bị đứt hoặc Server đã đóng. Vui lòng kiểm tra lại mạng!");
+                        alert.showAndWait();
+                        
+                        try {
+                            // Chuyển về màn hình đăng nhập
+                            Parent root = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
+                            auction_system.client.util.ViewSingleton.getInstance().getViewport().getScene().setRoot(root);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    });
+                }
             } finally {
                 isRunning = false;
                 System.out.println("Reader thread stopped.");

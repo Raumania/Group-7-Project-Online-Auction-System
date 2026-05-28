@@ -12,6 +12,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
@@ -26,6 +27,7 @@ public class AIViewportController {
     @FXML private Label imageStatusLabel;
     @FXML private VBox messageContainer;
     @FXML private ScrollPane chatScrollPane;
+    @FXML private Button sendButton;
 
     private File selectedFile;
 
@@ -67,15 +69,26 @@ public class AIViewportController {
         File fileToSend = selectedFile;
         appendUserMessage(userText, fileToSend);
 
+        // Disable input to prevent spam
+        chatInput.setDisable(true);
+        if (sendButton != null) sendButton.setDisable(true);
+
         // Hiển thị trạng thái AI đang suy nghĩ (Không dùng hiệu ứng nhả chữ cho dòng này)
         HBox loadingBox = appendAIMessage("🤖 AI đang suy nghĩ...", false);
 
         // Gọi AIService để gửi dữ liệu lên Server và nhận kết quả
         auction_system.client.service.AIService.getInstance().sendChatRequest(userText, fileToSend, reply -> {
-            // Xóa bong bóng trạng thái đang suy nghĩ
-            messageContainer.getChildren().remove(loadingBox);
-            // Thêm tin nhắn trả về từ AI với hiệu ứng nhả chữ (true)
-            appendAIMessage(reply, true);
+            Platform.runLater(() -> {
+                // Xóa bong bóng trạng thái đang suy nghĩ
+                messageContainer.getChildren().remove(loadingBox);
+                // Thêm tin nhắn trả về từ AI với hiệu ứng nhả chữ (true)
+                appendAIMessage(reply, true);
+                
+                // Re-enable input
+                chatInput.setDisable(false);
+                if (sendButton != null) sendButton.setDisable(false);
+                chatInput.requestFocus();
+            });
         });
 
         // Sau đó xóa hết file và chatInput đi để cho user gửi dữ liệu mới
@@ -147,7 +160,11 @@ public class AIViewportController {
             final int index = i;
             KeyFrame keyFrame = new KeyFrame(
                 Duration.millis(index * 15),
-                event -> label.setText(fullText.substring(0, index))
+                event -> {
+                    label.setText(fullText.substring(0, index));
+                    // Ép thanh cuộn luôn bám theo đáy sau khi layout cập nhật thêm ký tự mới
+                    Platform.runLater(() -> chatScrollPane.setVvalue(1.0));
+                }
             );
             timeline.getKeyFrames().add(keyFrame);
         }

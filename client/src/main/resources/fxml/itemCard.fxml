@@ -24,7 +24,7 @@
          </children>
       </VBox>
 
-      <Label fx:id="itemNameLabel" styleClass="text-white-bold" text="iPhone 36 Pro Max" />
+      <Label fx:id="itemNameLabel" styleClass="item-name-label" wrapText="true" maxWidth="200.0" textAlignment="CENTER" alignment="CENTER" />
       <Label fx:id="categoryLabel" styleClass="card-tag" text="Electronics" />
       <Label fx:id="currentPriceLabel" styleClass="card-price" text="\$1,000" />
 

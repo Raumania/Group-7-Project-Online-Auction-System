@@ -41,21 +41,44 @@ public class DetailViewportController {
     private final NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("en", "US"));
     private AuctionDTO auctionDTO;
 
+    /**
+     * Dọn dẹp tài nguyên trước khi chuyển màn hình:
+     * Stop timeline đếm ngược để tránh CPU chạy ngầm (Timeline Leak).
+     */
+    private void cleanup() {
+        if (timeline != null) {
+            timeline.stop();
+            timeline = null;
+        }
+    }
+
     @FXML
     void handleBackToList(ActionEvent event) {
-        try {
-            FXMLLoader loader = new FXMLLoader();
-            loader.setLocation(getClass().getResource("/fxml/listViewport.fxml"));
-            VBox listViewport = loader.load();
-            ViewSingleton.getInstance().getViewport().getChildren().setAll(listViewport);
-        }
-        catch(IOException e) {
-            e.printStackTrace();
+        // Dọn dẹp trước khi rời màn hình
+        cleanup();
+
+        // Tái sử dụng listViewport instance đã có trong MainAuctionController
+        // KHÔNG load lại listViewport.fxml mới — đó là nguyên nhân gây Listener Accumulation!
+        if (MainAuctionController.getInstance() != null) {
+            MainAuctionController.getInstance().showListViewport();
+        } else {
+            // Fallback: nếu MainAuctionController chưa ready (trường hợp hiếm)
+            try {
+                javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader();
+                loader.setLocation(getClass().getResource("/fxml/listViewport.fxml"));
+                VBox listViewport = loader.load();
+                ViewSingleton.getInstance().getViewport().getChildren().setAll(listViewport);
+            } catch (java.io.IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     @FXML
     void handleJoinRoom(ActionEvent event) {
+        // Dọn dẹp trước khi rời màn hình
+        cleanup();
+
         try {
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(getClass().getResource("/fxml/bidViewport.fxml"));

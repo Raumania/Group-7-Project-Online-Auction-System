@@ -27,7 +27,11 @@ public class AuctionStore {
     }
 
     public void addAuction(AuctionDTO auction) {
-        auctions.add(auction);
+        // Idempotent: tránh duplicate khi broadcast và các luồng khác cùng add
+        boolean exists = auctions.stream().anyMatch(a -> a.getId() == auction.getId() && auction.getId() != 0);
+        if (!exists) {
+            auctions.add(auction);
+        }
     }
 
     public void updateAuction(AuctionDTO auction) {

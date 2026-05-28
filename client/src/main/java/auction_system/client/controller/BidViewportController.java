@@ -114,6 +114,22 @@ public class BidViewportController implements Initializable {
             }
             return new SimpleStringProperty("");
         });
+
+        // Chống Memory Leak: Tự động dọn dẹp khi View bị tháo khỏi Scene
+        historyTable.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                if (timeline != null) {
+                    timeline.stop();
+                    timeline = null;
+                }
+                if (storeListener != null) {
+                    AuctionStore.getInstance().getAuctions().removeListener(storeListener);
+                }
+                if (historyListener != null && auctionDTO != null) {
+                    BidTransactionStore.getInstance().getHistory(auctionDTO.getId()).removeListener(historyListener);
+                }
+            }
+        });
     }
 
     private void setupPriceInput(TextField textField) {

@@ -39,6 +39,14 @@
     -fx-text-fill: white;
 }
 
+/* Tên sản phẩm — font-size được set động từ ItemCardController tuỳ độ dài */
+.item-name-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-alignment: center;
+}
+
 .text-muted {
     -fx-text-fill: #93C5FD;
     -fx-font-size: 11px;

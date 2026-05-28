@@ -9,6 +9,7 @@ import auction_system.common.dto.AuctionDTO;
 import auction_system.common.enums.AuctionStatus;
 import auction_system.common.enums.ItemType;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -72,7 +73,7 @@ public class AdminAuctionManageController implements Initializable {
         setupComboBoxes();
         setupTimeSpinners(spinStartHour, spinStartMinute);
         setupTimeSpinners(spinEndHour, spinEndMinute);
-        setupPriceInput();
+        setupInputValidations();
         setupTable();
         setupTableSelectionListener();
 
@@ -85,16 +86,35 @@ public class AdminAuctionManageController implements Initializable {
         refreshTable(null);
     }
 
-    private void setupPriceInput() {
+    private void setupInputValidations() {
+        // 1. Giới hạn nhập số thực cho giá khởi điểm
         Pattern validDoubleText = Pattern.compile("^\\d*\\.?\\d{0,2}$");
-        UnaryOperator<TextFormatter.Change> filter = change -> {
+        UnaryOperator<TextFormatter.Change> priceFilter = change -> {
             String newText = change.getControlNewText();
             if (validDoubleText.matcher(newText).matches()) {
                 return change;
             }
             return null;
         };
-        txtStartPrice.setTextFormatter(new TextFormatter<>(filter));
+        txtStartPrice.setTextFormatter(new TextFormatter<>(priceFilter));
+
+        // 2. Giới hạn độ dài tên sản phẩm (tối đa 100 ký tự)
+        UnaryOperator<TextFormatter.Change> nameFilter = change -> {
+            if (change.getControlNewText().length() <= 100) {
+                return change;
+            }
+            return null;
+        };
+        txtProductName.setTextFormatter(new TextFormatter<>(nameFilter));
+
+        // 3. Giới hạn độ dài mô tả sản phẩm (tối đa 5000 ký tự)
+        UnaryOperator<TextFormatter.Change> descFilter = change -> {
+            if (change.getControlNewText().length() <= 5000) {
+                return change;
+            }
+            return null;
+        };
+        txtDescription.setTextFormatter(new TextFormatter<>(descFilter));
     }
 
     private void setupTable() {
@@ -198,6 +218,14 @@ public class AdminAuctionManageController implements Initializable {
             showError("Tên sản phẩm không được để trống!");
             return;
         }
+        if (name.length() > 100) {
+            showError("Tên sản phẩm không được vượt quá 100 ký tự!");
+            return;
+        }
+        if (description.length() > 5000) {
+            showError("Mô tả sản phẩm không được vượt quá 5000 ký tự!");
+            return;
+        }
 
         if (type == null || type.trim().isEmpty()) {
             showError("Vui lòng chọn danh mục cho sản phẩm!");
@@ -247,18 +275,29 @@ public class AdminAuctionManageController implements Initializable {
 
         AuctionDTO auctionDTO = new AuctionDTO(name, description, ItemType.valueOf(type.toUpperCase()), sellerId, price, startTime, endTime, ImageService.getInstance().fileToBase64(selectedImageFile));
 
-        if(AuctionManageService.getInstance().createAuction(auctionDTO)) {
-            AuctionStore.getInstance().addAuction(auctionDTO);
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Thông báo");
-            alert.setHeaderText(null);
-            alert.setContentText("Tạo phiên đấu giá thành công!");
-            alert.showAndWait();
-            refreshTable(null);
-            refreshAddProduct(null);
-        } else {
-            showError("Có lỗi trong quá trình khởi tạo đấu giá");
-        }
+        // Disable nút để tránh double-submit
+        btnAdd.setDisable(true);
+
+        // Thực hiện network I/O trên background thread
+        new Thread(() -> {
+            boolean success = AuctionManageService.getInstance().createAuction(auctionDTO);
+
+            javafx.application.Platform.runLater(() -> {
+                btnAdd.setDisable(false);
+                if (success) {
+                    AuctionStore.getInstance().addAuction(auctionDTO);
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Thông báo");
+                    alert.setHeaderText(null);
+                    alert.setContentText("Tạo phiên đấu giá thành công!");
+                    alert.showAndWait();
+                    refreshTable(null);
+                    refreshAddProduct(null);
+                } else {
+                    showError("Có lỗi trong quá trình khởi tạo đấu giá");
+                }
+            });
+        }, "admin-add-auction-worker").start();
     }
 
     private void showError(String message) {
@@ -340,6 +379,14 @@ public class AdminAuctionManageController implements Initializable {
             showError("Tên sản phẩm không được để trống!");
             return;
         }
+        if (name.length() > 100) {
+            showError("Tên sản phẩm không được vượt quá 100 ký tự!");
+            return;
+        }
+        if (description.length() > 5000) {
+            showError("Mô tả sản phẩm không được vượt quá 5000 ký tự!");
+            return;
+        }
         if (type == null || type.trim().isEmpty()) {
             showError("Vui lòng chọn danh mục cho sản phẩm!");
             return;
@@ -395,21 +442,30 @@ public class AdminAuctionManageController implements Initializable {
                 selectedAuction.setImageBase64(ImageService.getInstance().fileToBase64(selectedImageFile));
             }
 
-            boolean isEdited = AuctionManageService.getInstance().editAuction(selectedAuction);
+            // Disable nút để tránh double-submit
+            btnEdit.setDisable(true);
 
-            if (isEdited) {
-                AuctionStore.getInstance().updateAuction(selectedAuction);
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Thông báo");
-                alert.setHeaderText(null);
-                alert.setContentText("Cập nhật thông tin phiên đấu giá thành công!");
-                alert.showAndWait();
+            // Thực hiện network I/O trên background thread
+            AuctionDTO auctionToEdit = selectedAuction;
+            new Thread(() -> {
+                boolean isEdited = AuctionManageService.getInstance().editAuction(auctionToEdit);
 
-                productTable.refresh();
-                refreshAddProduct(null);
-            } else {
-                showError("Cập nhật phiên đấu giá thất bại từ hệ thống!");
-            }
+                javafx.application.Platform.runLater(() -> {
+                    btnEdit.setDisable(false);
+                    if (isEdited) {
+                        AuctionStore.getInstance().updateAuction(auctionToEdit);
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Thông báo");
+                        alert.setHeaderText(null);
+                        alert.setContentText("Cập nhật thông tin phiên đấu giá thành công!");
+                        alert.showAndWait();
+                        productTable.refresh();
+                        refreshAddProduct(null);
+                    } else {
+                        showError("Cập nhật phiên đấu giá thất bại từ hệ thống!");
+                    }
+                });
+            }, "admin-edit-auction-worker").start();
         }
     }
 
@@ -433,21 +489,31 @@ public class AdminAuctionManageController implements Initializable {
         confirmAlert.setContentText("Bạn có chắc chắn muốn xóa phiên đấu giá \"" + selectedAuction.getName() + "\" không?");
 
         if (confirmAlert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-            boolean isDeleted = AuctionManageService.getInstance().deleteAuction(selectedAuction);
+            // Disable nút để tránh double-click
+            btnDelete.setDisable(true);
 
-            if (isDeleted) {
-                AuctionStore.getInstance().removeAuction(selectedAuction.getId());
+            // Thực hiện network I/O trên background thread
+            AuctionDTO auctionToDelete = selectedAuction;
+            new Thread(() -> {
+                boolean isDeleted = AuctionManageService.getInstance().deleteAuction(auctionToDelete);
 
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Thông báo");
-                alert.setHeaderText(null);
-                alert.setContentText("Xóa phiên đấu giá thành công!");
-                alert.showAndWait();
+                javafx.application.Platform.runLater(() -> {
+                    btnDelete.setDisable(false);
+                    if (isDeleted) {
+                        AuctionStore.getInstance().removeAuction(auctionToDelete.getId());
 
-                refreshAddProduct(null);
-            } else {
-                showError("Xóa phiên đấu giá thất bại từ hệ thống!");
-            }
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Thông báo");
+                        alert.setHeaderText(null);
+                        alert.setContentText("Xóa phiên đấu giá thành công!");
+                        alert.showAndWait();
+
+                        refreshAddProduct(null);
+                    } else {
+                        showError("Xóa phiên đấu giá thất bại từ hệ thống!");
+                    }
+                });
+            }, "admin-delete-auction-worker").start();
         }
     }
 
@@ -473,35 +539,67 @@ public class AdminAuctionManageController implements Initializable {
         confirmAlert.setContentText("Bạn có chắc chắn muốn hủy phiên đấu giá \"" + selectedAuction.getName() + "\"? Hành động này không thể hoàn tác và sẽ cấm mọi người đặt giá.");
 
         if (confirmAlert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-            boolean isCancelled = AuctionManageService.getInstance().cancelAuction(selectedAuction);
+            // Disable nút để tránh double-click
+            btnCancel.setDisable(true);
 
-            if (isCancelled) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Thông báo");
-                alert.setHeaderText(null);
-                alert.setContentText("Hủy phiên đấu giá thành công!");
-                alert.showAndWait();
+            // Thực hiện network I/O trên background thread
+            AuctionDTO auctionToCancel = selectedAuction;
+            new Thread(() -> {
+                boolean isCancelled = AuctionManageService.getInstance().cancelAuction(auctionToCancel);
 
-                refreshAddProduct(null);
-                refreshTable(null);
-            } else {
-                showError("Hủy phiên đấu giá thất bại từ hệ thống!");
-            }
+                javafx.application.Platform.runLater(() -> {
+                    btnCancel.setDisable(false);
+                    if (isCancelled) {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Thông báo");
+                        alert.setHeaderText(null);
+                        alert.setContentText("Hủy phiên đấu giá thành công!");
+                        alert.showAndWait();
+
+                        refreshAddProduct(null);
+                        refreshTable(null);
+                    } else {
+                        showError("Hủy phiên đấu giá thất bại từ hệ thống!");
+                    }
+                });
+            }, "admin-cancel-auction-worker").start();
         }
     }
     
     @FXML
     void refreshTable(ActionEvent event) {
+        // fetchAllAuctions() tự chạy trên background thread, gọi trực tiếp là an toàn
         try {
             AuctionListService.getInstance().fetchAllAuctions();
-            System.out.println("Đã tải " + adminAuctions.size() + " phiên đấu giá cho Admin.");
         } catch (Exception e) {
             e.printStackTrace();
             showError("Không thể tải danh sách sản phẩm từ máy chủ!");
         }
     }
 
+    /**
+     * Tính lại trạng thái các nút dựa theo status thực tế của auction được truyền vào.
+     * Gọi từ cả selection listener lẫn store change listener để luôn đồng bộ với server.
+     */
+    private void updateButtonStates(AuctionDTO auction) {
+        if (auction == null) {
+            btnAdd.setDisable(false);
+            btnEdit.setDisable(true);
+            btnDelete.setDisable(true);
+            btnCancel.setDisable(true);
+            return;
+        }
+        btnAdd.setDisable(true);
+        boolean isOpen = auction.getStatus() == AuctionStatus.OPEN;
+        btnEdit.setDisable(!isOpen);
+        btnDelete.setDisable(!isOpen);
+        boolean canCancel = auction.getStatus() == AuctionStatus.OPEN
+                         || auction.getStatus() == AuctionStatus.RUNNING;
+        btnCancel.setDisable(!canCancel);
+    }
+
     private void setupTableSelectionListener() {
+        // Listener 1: Khi user click chọn dòng khác trên bảng
         productTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 txtProductName.setText(newSelection.getName());
@@ -549,13 +647,26 @@ public class AdminAuctionManageController implements Initializable {
                     imageVbox.setVisible(true);
                 }
 
-                btnAdd.setDisable(true);
-                boolean isOpen = newSelection.getStatus() == AuctionStatus.OPEN;
-                btnEdit.setDisable(!isOpen);
-                btnDelete.setDisable(!isOpen);
-                
-                boolean canCancel = newSelection.getStatus() == AuctionStatus.OPEN || newSelection.getStatus() == AuctionStatus.RUNNING;
-                btnCancel.setDisable(!canCancel);
+                updateButtonStates(newSelection);
+            }
+        });
+
+        // Listener 2: Khi store được cập nhật từ server push (ví dụ OPEN → RUNNING → FINISHED)
+        // Phát hiện nếu item đang được chọn bị thay đổi trạng thái → cập nhật nút ngay lập tức
+        adminAuctions.addListener((ListChangeListener<AuctionDTO>) change -> {
+            AuctionDTO currentlySelected = productTable.getSelectionModel().getSelectedItem();
+            if (currentlySelected == null) return;
+
+            while (change.next()) {
+                if (change.wasReplaced() || change.wasAdded()) {
+                    for (AuctionDTO updated : change.getAddedSubList()) {
+                        if (updated.getId() == currentlySelected.getId()) {
+                            // Item đang được chọn vừa bị cập nhật từ server → tính lại trạng thái nút
+                            updateButtonStates(updated);
+                            return;
+                        }
+                    }
+                }
             }
         });
     }

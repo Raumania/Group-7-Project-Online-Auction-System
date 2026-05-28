@@ -6,14 +6,16 @@ import java.sql.SQLException;
 
 public class DatabaseConnection {
 
+    // Đổi lại URL thành của localhost
     private static final String DEV_URL =
-            "jdbc:mysql://db-aws-test.cbyq8kk8c2tm.ap-southeast-1.rds.amazonaws.com:3306/auction_system?useSSL=false&serverTimezone=UTC";
+            "jdbc:mysql://localhost:3306/auction_system?useSSL=false&serverTimezone=UTC";
 
     private static final String TEST_URL =
-            "jdbc:mysql://db-aws-test.cbyq8kk8c2tm.ap-southeast-1.rds.amazonaws.com:3306/auction_system_test?useSSL=false&serverTimezone=UTC";
+            "jdbc:mysql://localhost:3306/auction_system_test?useSSL=false&serverTimezone=UTC";
 
-    private static final String USERNAME = "admin";
-    private static final String PASSWORD = "chuataidaxiu";
+    // Sửa mật khẩu tương ứng với MySQL trên máy bạn
+    private static final String USERNAME = "root";
+    private static final String PASSWORD = "123456";
 
     private static boolean testMode = false;
 

@@ -344,15 +344,9 @@ public class AuctionService {
                 winnerFromRam = userStore.getUserById(highestBidderId);
                 sellerFromRam = userStore.getUserById(sellerId);
                 
-                if (winnerFromRam != null) {
-                    BigDecimal newWinnerFrozen = winnerFromRam.getFrozenBalance().subtract(winningPrice);
-                    UserDAO.getInstance().updateBalance(connection, winnerFromRam.getId(), winnerFromRam.getAvailableBalance(), newWinnerFrozen);
-                }
-                
-                if (sellerFromRam != null) {
-                    BigDecimal newSellerAvailable = sellerFromRam.getAvailableBalance().add(winningPrice);
-                    UserDAO.getInstance().updateBalance(connection, sellerFromRam.getId(), newSellerAvailable, sellerFromRam.getFrozenBalance());
-                }
+                // Tiền vẫn được đóng băng (frozen_balance) của winner
+                // Tạm thời chưa chuyển tiền (available_balance) cho seller.
+                // Tính năng xác nhận chuyển tiền sẽ được thực hiện sau.
             }
 
             auction.setStatus(AuctionStatus.FINISHED);
@@ -363,13 +357,7 @@ public class AuctionService {
             
             // Sync with RAM Cache
             auctionStore.updateAuction(auction);
-            
-            if (winnerFromRam != null) {
-                winnerFromRam.setFrozenBalance(winnerFromRam.getFrozenBalance().subtract(winningPrice));
-            }
-            if (sellerFromRam != null) {
-                sellerFromRam.deposit(winningPrice);
-            }
+
             
             eventBus.publishAuctionEdited(auction);
 

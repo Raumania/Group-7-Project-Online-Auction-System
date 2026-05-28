@@ -48,7 +48,7 @@
                         <PasswordField fx:id="LoginPasswordTextField" prefHeight="45.0" prefWidth="300.0" promptText="Password" style="-fx-font-size: 16px;" styleClass="textfield" />
                      </children>
                   </VBox>
-                  <Button layoutX="170.0" layoutY="440.0" mnemonicParsing="false" onAction="#loginBtnAction" prefHeight="50.0" prefWidth="300.0" style="-fx-font-size: 18px; -fx-font-weight: bold;" styleClass="login-btn" stylesheets="@../css/login.css" text="Login" />
+                  <Button fx:id="loginBtn" layoutX="170.0" layoutY="440.0" mnemonicParsing="false" onAction="#loginBtnAction" prefHeight="50.0" prefWidth="300.0" style="-fx-font-size: 18px; -fx-font-weight: bold;" styleClass="login-btn" stylesheets="@../css/login.css" text="Login" />
                   <Label fx:id="LoginStatusLabel" layoutX="170.0" layoutY="401.0" styleClass="error-label" />
                </children>
             </AnchorPane>

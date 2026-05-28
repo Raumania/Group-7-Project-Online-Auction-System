@@ -18,6 +18,8 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
+import java.util.List;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -659,6 +661,266 @@ class BidServiceTest {
                     () -> assertThrows(RuntimeException.class,
                             () -> bidService.getHighestBidder(0))
             );
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // NHÓM 7: Thuật toán Anti-sniping (Gia hạn thời gian)
+    // ═══════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("Anti-sniping: Tự động gia hạn khi bid ở những giây cuối")
+    class AntiSnipingTests {
+
+        private User seller;
+        private User bidder;
+        private Auction auction;
+
+        @BeforeEach
+        void setUp() {
+            seller = userService.createSeller("Seller", uniqueUsername(), "password123");
+            seller = userService.getUserByUsername(seller.getUsername());
+            bidder = createBidder(new BigDecimal("99999"));
+        }
+
+        @AfterEach
+        void tearDown() {
+            cleanUpAuction(auction);
+            cleanUpUser(bidder);
+            cleanUpUser(seller);
+        }
+
+        @Test
+        @DisplayName("Bid trong 30s cuối -> Thời gian kết thúc cộng thêm 1 phút")
+        void placeBid_inLast30Seconds_shouldExtendEndTime() throws SQLException {
+            // Tạo auction có thời gian kết thúc chỉ còn 10 giây
+            LocalDateTime start = LocalDateTime.now().minusHours(1);
+            LocalDateTime end = LocalDateTime.now().plusSeconds(10);
+            
+            AuctionDTO dto = new AuctionDTO("Item", "Desc", ItemType.ELECTRONICS, seller.getId(), new BigDecimal("100"), start, end);
+            auction = new Auction(dto);
+            auctionService.createAuction(auction);
+            
+            int auctionId = auction.getId();
+            
+            // Thực hiện đặt giá
+            bidService.placeBid(auctionId, bidder, new BigDecimal("100"));
+            
+            // Lấy lại từ DB
+            Auction updatedAuction = auctionService.getAuctionById(auctionId);
+            
+            // Kiểm tra thời gian kết thúc mới phải lớn hơn thời gian cũ
+            assertTrue(updatedAuction.getEndTime().isAfter(end), "Thời gian kết thúc phải được gia hạn");
+            // Khoảng cách xấp xỉ 1 phút so với thời gian cũ
+            long secondsDiff = java.time.Duration.between(end, updatedAuction.getEndTime()).getSeconds();
+            assertTrue(secondsDiff >= 59 && secondsDiff <= 61, "Phải cộng thêm đúng 1 phút (60s)");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // NHÓM 8: Luồng tài chính (Trừ tiền, Đóng băng, Hoàn tiền)
+    // ═══════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("Finance Flow: Đóng băng và Hoàn tiền khi bị outbid")
+    class FinanceFlowTests {
+
+        private User seller;
+        private User bidder1;
+        private User bidder2;
+        private Auction auction;
+
+        @BeforeEach
+        void setUp() {
+            seller = userService.createSeller("Seller", uniqueUsername(), "password123");
+            seller = userService.getUserByUsername(seller.getUsername());
+            bidder1 = createBidder(new BigDecimal("1000"));
+            bidder2 = createBidder(new BigDecimal("2000"));
+            auction = createRunningAuction(seller, new BigDecimal("100"));
+        }
+
+        @AfterEach
+        void tearDown() {
+            cleanUpAuction(auction);
+            cleanUpUser(bidder2);
+            cleanUpUser(bidder1);
+            cleanUpUser(seller);
+        }
+
+        @Test
+        @DisplayName("Outbid: Trừ tiền người mới, hoàn tiền người cũ")
+        void placeBid_outbid_shouldRefundPreviousBidder() throws SQLException {
+            // 1. Bidder 1 đặt 100
+            bidService.placeBid(auction.getId(), bidder1, new BigDecimal("100"));
+            
+            // Kiểm tra Bidder 1 sau lần 1
+            User b1AfterFirstBid = userService.getUserById(bidder1.getId());
+            assertBigDecimalValueEquals("900", b1AfterFirstBid.getAvailableBalance());
+            assertBigDecimalValueEquals("100", b1AfterFirstBid.getFrozenBalance());
+
+            // 2. Bidder 2 đặt 200 (Outbid Bidder 1)
+            bidService.placeBid(auction.getId(), bidder2, new BigDecimal("200"));
+            
+            // Kiểm tra Bidder 2 (Bị trừ 200)
+            User b2AfterBid = userService.getUserById(bidder2.getId());
+            assertBigDecimalValueEquals("1800", b2AfterBid.getAvailableBalance());
+            assertBigDecimalValueEquals("200", b2AfterBid.getFrozenBalance());
+            
+            // Kiểm tra Bidder 1 (Được hoàn lại 100)
+            User b1AfterOutbid = userService.getUserById(bidder1.getId());
+            assertBigDecimalValueEquals("1000", b1AfterOutbid.getAvailableBalance());
+            assertBigDecimalValueEquals("0", b1AfterOutbid.getFrozenBalance());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // NHÓM 9: Giao dịch Database (Rollback Test)
+    // ═══════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("Integration: Database Transaction Rollback")
+    class TransactionRollbackTests {
+
+        private User seller;
+        private User validBidder;
+        private User evilBidder;
+        private Auction auction;
+
+        @BeforeEach
+        void setUp() {
+            seller = userService.createSeller("Seller", uniqueUsername(), "password123");
+            seller = userService.getUserByUsername(seller.getUsername());
+            validBidder = createBidder(new BigDecimal("1000"));
+            evilBidder = createBidder(new BigDecimal("2000"));
+            auction = createRunningAuction(seller, new BigDecimal("100"));
+        }
+
+        @AfterEach
+        void tearDown() {
+            cleanUpAuction(auction);
+            cleanUpUser(evilBidder);
+            cleanUpUser(validBidder);
+            cleanUpUser(seller);
+        }
+
+        @Test
+        @DisplayName("Lỗi DB giữa Transaction -> Hoàn tác toàn bộ thay đổi (Rollback)")
+        void placeBid_dbError_shouldRollbackTransaction() throws SQLException {
+            // 1. Valid Bidder đặt giá hợp lệ đầu tiên (Đóng băng 100)
+            bidService.placeBid(auction.getId(), validBidder, new BigDecimal("100"));
+            
+            // 2. Tạo một lỗi bằng cách gán ID của evilBidder thành một số không tồn tại trong DB.
+            // Khi lưu vào bảng bid_transactions sẽ bị lỗi Foreign Key Constraint -> Kích hoạt Rollback
+            int realEvilId = evilBidder.getId();
+            evilBidder.setId(-999); 
+            
+            assertThrows(RuntimeException.class, () -> 
+                bidService.placeBid(auction.getId(), evilBidder, new BigDecimal("200"))
+            );
+            
+            // Khôi phục ID để @AfterEach có thể xóa
+            evilBidder.setId(realEvilId);
+            
+            // 3. Kiểm tra tính toàn vẹn (Rollback có hoạt động không)
+            // Valid Bidder KHÔNG ĐƯỢC hoàn tiền (vì giao dịch của evilBidder đã bị rollback)
+            User validBidderAfter = userService.getUserById(validBidder.getId());
+            assertBigDecimalValueEquals("900", validBidderAfter.getAvailableBalance());
+            assertBigDecimalValueEquals("100", validBidderAfter.getFrozenBalance());
+            
+            // Auction không bị đổi giá thầu lên 200
+            Auction auctionAfter = auctionService.getAuctionById(auction.getId());
+            assertBigDecimalValueEquals("100", auctionAfter.getCurrentPrice());
+            assertEquals(validBidder.getId(), auctionAfter.getHighestBidderId());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // NHÓM 10: Tương tranh (Concurrency Test)
+    // ═══════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("Concurrency: Xử lý 50 request đặt giá cùng lúc")
+    class ConcurrencyTests {
+
+        private User seller;
+        private Auction auction;
+        private final int THREAD_COUNT = 50;
+        private final List<User> concurrentBidders = new ArrayList<>();
+
+        @BeforeEach
+        void setUp() {
+            seller = userService.createSeller("Seller", uniqueUsername(), "password123");
+            seller = userService.getUserByUsername(seller.getUsername());
+            auction = createRunningAuction(seller, new BigDecimal("100"));
+            
+            // Tạo 50 bidders
+            for (int i = 0; i < THREAD_COUNT; i++) {
+                concurrentBidders.add(createBidder(new BigDecimal("10000")));
+            }
+        }
+
+        @AfterEach
+        void tearDown() {
+            cleanUpAuction(auction);
+            for (User u : concurrentBidders) {
+                cleanUpUser(u);
+            }
+            cleanUpUser(seller);
+        }
+
+        @Test
+        @DisplayName("50 người cùng đặt 5.000 -> Chỉ 1 người thành công")
+        void placeBid_concurrentRequests_onlyOneSucceeds() throws InterruptedException {
+            java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(THREAD_COUNT);
+            java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+            java.util.concurrent.CountDownLatch doneLatch = new java.util.concurrent.CountDownLatch(THREAD_COUNT);
+            
+            java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+            java.util.concurrent.atomic.AtomicInteger failCount = new java.util.concurrent.atomic.AtomicInteger(0);
+
+            for (int i = 0; i < THREAD_COUNT; i++) {
+                final User bidder = concurrentBidders.get(i);
+                executor.submit(() -> {
+                    try {
+                        latch.await(); // Đợi để tất cả cùng xuất phát
+                        bidService.placeBid(auction.getId(), bidder, new BigDecimal("5000"));
+                        successCount.incrementAndGet();
+                    } catch (Exception e) {
+                        failCount.incrementAndGet();
+                    } finally {
+                        doneLatch.countDown();
+                    }
+                });
+            }
+
+            // Bắt đầu thả xích cho 50 thread chạy cùng lúc
+            latch.countDown();
+            
+            // Đợi tất cả chạy xong (Tối đa 30 giây để tránh treo test)
+            assertTrue(doneLatch.await(30, java.util.concurrent.TimeUnit.SECONDS));
+            executor.shutdown();
+
+            // Kiểm tra kết quả
+            assertEquals(1, successCount.get(), "Chỉ có duy nhất 1 người đặt giá 5.000 thành công");
+            assertEquals(THREAD_COUNT - 1, failCount.get(), "49 người còn lại phải bị từ chối do khóa Pessimistic Locking");
+
+            // Kiểm tra tính toàn vẹn của DB
+            Auction dbAuction = auctionService.getAuctionById(auction.getId());
+            assertBigDecimalValueEquals("5000", dbAuction.getCurrentPrice());
+            assertNotNull(dbAuction.getHighestBidderId());
+            
+            // Kiểm tra tài chính: Duy nhất người thắng bị trừ tiền
+            int winnerId = dbAuction.getHighestBidderId();
+            for (User u : concurrentBidders) {
+                User dbUser = userService.getUserById(u.getId());
+                if (u.getId() == winnerId) {
+                    assertBigDecimalValueEquals("5000", dbUser.getAvailableBalance());
+                    assertBigDecimalValueEquals("5000", dbUser.getFrozenBalance());
+                } else {
+                    assertBigDecimalValueEquals("10000", dbUser.getAvailableBalance());
+                    assertBigDecimalValueEquals("0", dbUser.getFrozenBalance());
+                }
+            }
         }
     }
 }

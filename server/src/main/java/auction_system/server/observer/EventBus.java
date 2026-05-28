@@ -64,10 +64,6 @@ public class EventBus {
 
     // Publish event when a new auction is created
     public void publishAuctionCreated(Auction auction) {
-        dispatchAuctionCreated(auction);
-    }
-
-    private void dispatchAuctionCreated(Auction auction) {
         for (AuctionObserver observer : observers) {
             dispatcher.submit(() -> {
                 try {
@@ -81,10 +77,6 @@ public class EventBus {
 
     // Publish event when an auction is edited
     public void publishAuctionEdited(Auction auction) {
-        dispatchAuctionEdited(auction);
-    }
-
-    private void dispatchAuctionEdited(Auction auction) {
         for (AuctionObserver observer : observers) {
             dispatcher.submit(() -> {
                 try {
@@ -98,10 +90,6 @@ public class EventBus {
 
     // Publish event when an auction is deleted
     public void publishAuctionDeleted(int auctionId) {
-        dispatchAuctionDeleted(auctionId);
-    }
-
-    private void dispatchAuctionDeleted(int auctionId) {
         for (AuctionObserver observer : observers) {
             dispatcher.submit(() -> {
                 try {
