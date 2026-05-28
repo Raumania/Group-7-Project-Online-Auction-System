@@ -3,10 +3,13 @@ package auction_system.client.controller;
 import auction_system.client.util.TimeUtil;
 import auction_system.client.util.ViewSingleton;
 import auction_system.client.service.ImageService;
+import auction_system.client.store.AuctionStore;
 import auction_system.common.dto.AuctionDTO;
 import auction_system.common.enums.AuctionStatus;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -39,6 +42,7 @@ public class ItemCardController {
     private Timeline timeline;
     private final NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("en", "US"));
     private AuctionDTO auctionDTO;
+    private ListChangeListener<AuctionDTO> storeListener;
 
 
     @FXML
@@ -56,6 +60,11 @@ public class ItemCardController {
     }
 
     public void setData(AuctionDTO auctionDTO) {
+        // Remove previous listener if this card is being reused
+        if (storeListener != null) {
+            AuctionStore.getInstance().getAuctions().removeListener(storeListener);
+        }
+
         this.auctionDTO = auctionDTO;
         categoryLabel.setText(String.valueOf(auctionDTO.getType()));
         itemNameLabel.setText(auctionDTO.getName());
@@ -68,6 +77,29 @@ public class ItemCardController {
         } else {
             highestBidderUsernameLabel.setText("No bidder yet");
         }
+
+        // Listen for real-time auction updates from server broadcasts
+        storeListener = c -> {
+            for (AuctionDTO updated : AuctionStore.getInstance().getAuctions()) {
+                if (updated.getId() == this.auctionDTO.getId()) {
+                    Platform.runLater(() -> {
+                        this.auctionDTO = updated;
+                        // Update current price label
+                        loadCurrentPrice(updated);
+                        // Update highest bidder label
+                        if (updated.getHighestBidderUsername() != null && !updated.getHighestBidderUsername().isEmpty()) {
+                            highestBidderUsernameLabel.setText(updated.getHighestBidderUsername());
+                        } else {
+                            highestBidderUsernameLabel.setText("No bidder yet");
+                        }
+                        // Update status label
+                        statusLabel.setText(updated.getStatus().toString());
+                    });
+                    break;
+                }
+            }
+        };
+        AuctionStore.getInstance().getAuctions().addListener(storeListener);
 
         if (timeline != null) {
             timeline.stop();

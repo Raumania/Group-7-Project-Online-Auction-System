@@ -39,6 +39,14 @@ public class SellerAuctionStore {
             }
         }
         if (index != -1) {
+            AuctionDTO existing = auctions.get(index);
+            if (auction.getName() == null) auction.setName(existing.getName());
+            if (auction.getDescription() == null) auction.setDescription(existing.getDescription());
+            if (auction.getType() == null) auction.setType(existing.getType());
+            if (auction.getSellerId() == 0) auction.setSellerId(existing.getSellerId());
+            if (auction.getStartingPrice() == null) auction.setStartingPrice(existing.getStartingPrice());
+            if (auction.getImageBase64() == null) auction.setImageBase64(existing.getImageBase64());
+            
             auctions.set(index, auction);
         }
     }

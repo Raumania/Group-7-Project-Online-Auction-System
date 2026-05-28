@@ -24,11 +24,34 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.net.URL;
 import java.text.NumberFormat;
+import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
 public class MainAuctionController implements Initializable{
-    @FXML private Label balanceCardLabel;
+    private static MainAuctionController instance;
+
+    public static MainAuctionController getInstance() {
+        return instance;
+    }
+
+    public void refreshBalance() {
+        javafx.application.Platform.runLater(() -> {
+            UserDTO user = UserSession.getInstance().getUser();
+            if (user != null && user.getAvailableBalance() != null && user.getFrozenBalance() != null) {
+                NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("en", "US"));
+                availableBalanceLabel.setText(currencyFormatter.format(user.getAvailableBalance()));
+                frozenBalanceLabel.setText(currencyFormatter.format(user.getFrozenBalance()));
+                
+                BigDecimal total = user.getAvailableBalance().add(user.getFrozenBalance());
+                totalBalanceLabel.setText(currencyFormatter.format(total));
+            }
+        });
+    }
+
+    @FXML private Label availableBalanceLabel;
+    @FXML private Label frozenBalanceLabel;
+    @FXML private Label totalBalanceLabel;
     @FXML private Label fullnameCardLabel;
     @FXML private Label fullnameHeaderLabel;
     @FXML private Label usernameCardLabel;
@@ -43,17 +66,24 @@ public class MainAuctionController implements Initializable{
     private SellerViewportController sellerViewController;
 
     public void initialize(URL location, ResourceBundle resources) {
+        instance = this;
         try {
             //load user's info
             UserDTO user = UserSession.getInstance().getUser();
             fullnameCardLabel.setText(user.getFullname());
             fullnameHeaderLabel.setText(user.getFullname());
             usernameCardLabel.setText(user.getUsername());
-            if (user.getBalance() != null) {
+            if (user.getAvailableBalance() != null && user.getFrozenBalance() != null) {
                 NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("en", "US"));
-                balanceCardLabel.setText(currencyFormatter.format(user.getBalance()));
+                availableBalanceLabel.setText(currencyFormatter.format(user.getAvailableBalance()));
+                frozenBalanceLabel.setText(currencyFormatter.format(user.getFrozenBalance()));
+                
+                BigDecimal total = user.getAvailableBalance().add(user.getFrozenBalance());
+                totalBalanceLabel.setText(currencyFormatter.format(total));
             } else {
-                balanceCardLabel.setText("$0.00");
+                availableBalanceLabel.setText("$0.00");
+                frozenBalanceLabel.setText("$0.00");
+                totalBalanceLabel.setText("$0.00");
             }
             //load stage
             ViewSingleton.getInstance().setViewport(viewport);

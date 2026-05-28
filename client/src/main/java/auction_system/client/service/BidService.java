@@ -66,4 +66,11 @@ public class BidService {
         socketClient.send(request);
         return socketClient.receive();
     }
+
+    public Response getAutoBidConfig(int userId, int auctionId) {
+        AutoBidDTO autoBidDTO = new AutoBidDTO(userId, auctionId, BigDecimal.ZERO, BigDecimal.ZERO);
+        Request request = new Request(Action.GET_AUTO_BID_CONFIG, GsonUtil.getGson().toJsonTree(autoBidDTO));
+        socketClient.send(request);
+        return socketClient.receive();
+    }
 }

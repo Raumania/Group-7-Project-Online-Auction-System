@@ -70,4 +70,11 @@ public class AdminUserService {
         Response response = SocketClient.getInstance().receive();
         return response != null && response.getStatus() == Status.SUCCESS;
     }
+
+    public boolean banUser(int userId) {
+        Request request = new Request(Action.BAN_USER, GsonUtil.getGson().toJsonTree(userId));
+        SocketClient.getInstance().send(request);
+        Response response = SocketClient.getInstance().receive();
+        return response != null && response.getStatus() == Status.SUCCESS;
+    }
 }

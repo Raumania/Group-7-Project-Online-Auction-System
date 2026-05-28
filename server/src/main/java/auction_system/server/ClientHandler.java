@@ -20,6 +20,7 @@ public class ClientHandler implements Runnable {
     private final Socket socket;
     private final Map<Action, RequestHandler> handlers = new ConcurrentHashMap<>();
     private DataOutputStream out;
+    private int userId = -1;
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -66,12 +67,14 @@ public class ClientHandler implements Runnable {
         AutoBidController autoBidController = new AutoBidController();
         handlers.put(Action.SET_AUTO_BID, autoBidController);
         handlers.put(Action.CANCEL_AUTO_BID, autoBidController);
+        handlers.put(Action.GET_AUTO_BID_CONFIG, autoBidController);
 
         UserController userController = new UserController();
         handlers.put(Action.GET_ALL_USERS, userController);
         handlers.put(Action.CREATE_USER, userController);
         handlers.put(Action.UPDATE_USER, userController);
         handlers.put(Action.DELETE_USER, userController);
+        handlers.put(Action.BAN_USER, userController);
 
     }
 
@@ -112,6 +115,18 @@ public class ClientHandler implements Runnable {
                     Response res;
                     if (handler != null) {
                         res = handler.handle(req);
+                        if (req.getAction() == Action.LOGIN && res.getStatus() == Status.SUCCESS) {
+                            try {
+                                String userJson = GsonUtil.toJson(res.getData());
+                                auction_system.common.dto.UserDTO loggedInUser = GsonUtil.fromJson(userJson, auction_system.common.dto.UserDTO.class);
+                                if (loggedInUser != null) {
+                                    this.userId = loggedInUser.getId();
+                                    System.out.println("ClientHandler: User ID " + this.userId + " successfully authenticated on this socket.");
+                                }
+                            } catch (Exception e) {
+                                System.err.println("Failed to extract userId from login response: " + e.getMessage());
+                            }
+                        }
                     } else {
                         res = new Response(Status.ERROR, "Unknown action: " + (req != null ? req.getAction() : "null"), null);
                     }
@@ -160,6 +175,10 @@ public class ClientHandler implements Runnable {
                 }
             }
         }
+    }
+
+    public int getUserId() {
+        return userId;
     }
 
     // Helper ẩn chuỗi Base64 dài khi in log để dễ debug ở phía Server

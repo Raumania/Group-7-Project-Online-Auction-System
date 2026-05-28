@@ -18,7 +18,7 @@ import javafx.util.Duration;
 
 import java.io.IOException;
 
-public class LoginController  {
+public class LoginController implements javafx.fxml.Initializable {
     @FXML private PasswordField LoginPasswordTextField;
     @FXML private Label LoginStatusLabel;
     @FXML private TextField LoginUsernameTextField;
@@ -31,6 +31,37 @@ public class LoginController  {
     @FXML private Button side_alreadyHave;
     @FXML private AnchorPane side_form;
     @FXML private Button registerBtn;
+
+    @FXML private javafx.scene.layout.StackPane loginRoot;
+    @FXML private AnchorPane mainForm;
+
+    @Override
+    public void initialize(java.net.URL location, java.util.ResourceBundle resources) {
+        javafx.application.Platform.runLater(() -> {
+            if (loginRoot != null && loginRoot.getScene() != null) {
+                bindScale(loginRoot.getScene());
+            }
+        });
+    }
+
+    private void bindScale(Scene scene) {
+        javafx.scene.transform.Scale scale = new javafx.scene.transform.Scale(1, 1, 640, 360);
+        mainForm.getTransforms().add(scale);
+
+        Runnable updateScale = () -> {
+            double w = scene.getWidth();
+            double h = scene.getHeight();
+            if (w > 0 && h > 0) {
+                double scaleFactor = Math.min(w / 1280.0, h / 720.0);
+                scale.setX(scaleFactor);
+                scale.setY(scaleFactor);
+            }
+        };
+
+        scene.widthProperty().addListener((obs, oldVal, newVal) -> updateScale.run());
+        scene.heightProperty().addListener((obs, oldVal, newVal) -> updateScale.run());
+        updateScale.run();
+    }
 
     @FXML
     void loginBtnAction(ActionEvent event) {
@@ -72,7 +103,12 @@ public class LoginController  {
             }
         }
         else {
-            LoginStatusLabel.setText("Sai tài khoản hoặc mật khẩu!");
+            String errorMsg = AuthService.getInstance().getLastErrorMessage();
+            if (errorMsg != null && !errorMsg.isEmpty()) {
+                LoginStatusLabel.setText(errorMsg);
+            } else {
+                LoginStatusLabel.setText("Sai tài khoản hoặc mật khẩu!");
+            }
         }
     }
 

@@ -10,6 +10,7 @@ import auction_system.server.model.User;
 import auction_system.server.service.BidService;
 import auction_system.server.service.UserService;
 import auction_system.server.util.GsonUtil;
+import auction_system.server.exception.InvalidBidException;
 import com.google.gson.JsonElement;
 
 /**
@@ -56,6 +57,8 @@ public class BidController implements RequestHandler {
             // Trả về object trực tiếp, không dùng GsonUtil.toJson()
             return new Response(Status.SUCCESS, action, latestBid, "Bid placed successfully");
 
+        } catch (InvalidBidException e) {
+            return new Response(Status.ERROR, action, null, e.getMessage());
         } catch (Exception e) {
             return new Response(Status.ERROR, action, null, "Place bid failed: " + e.getMessage());
         }

@@ -37,7 +37,8 @@ public class RegisterController implements RequestHandler {
             responseUser.setId(userRespond.getId());
             responseUser.setFullname(userRespond.getFullname());
             responseUser.setUsername(userRespond.getUsername());
-            responseUser.setBalance(userRespond.getBalance());
+            responseUser.setAvailableBalance(userRespond.getAvailableBalance());
+            responseUser.setFrozenBalance(userRespond.getFrozenBalance());
             responseUser.setRoles(userRespond.getRoles());
             // password left as null for security
 

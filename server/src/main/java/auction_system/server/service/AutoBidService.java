@@ -82,7 +82,7 @@ public class AutoBidService {
         }
 
         // 6. Verify user balance is sufficient for the next minimum bid
-        if (user.getBalance().compareTo(nextMinBid) < 0) {
+        if (user.getAvailableBalance().compareTo(nextMinBid) < 0) {
             throw new RuntimeException("Insufficient balance to place the next required bid of " + nextMinBid);
         }
 
@@ -112,5 +112,15 @@ public class AutoBidService {
         }
         // Sync with memory cache
         autoBidStore.disableAutoBid(userId, auctionId);
+    }
+
+    public AutoBid getAutoBidConfig(int userId, int auctionId) {
+        java.util.List<AutoBid> activeBids = autoBidStore.getActiveAutoBidsByAuctionId(auctionId);
+        for (AutoBid ab : activeBids) {
+            if (ab.getUserId() == userId) {
+                return ab;
+            }
+        }
+        return null;
     }
 }

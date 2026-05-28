@@ -31,8 +31,6 @@ public class AuctionStore {
     }
 
     public void updateAuction(AuctionDTO auction) {
-        // This is a simple approach. For more complex scenarios, you might want to replace
-        // the item instead of just updating properties if the AuctionDTO is not mutable.
         int index = -1;
         for (int i = 0; i < auctions.size(); i++) {
             if (auctions.get(i).getId() == auction.getId()) {
@@ -41,6 +39,14 @@ public class AuctionStore {
             }
         }
         if (index != -1) {
+            AuctionDTO existing = auctions.get(index);
+            if (auction.getName() == null) auction.setName(existing.getName());
+            if (auction.getDescription() == null) auction.setDescription(existing.getDescription());
+            if (auction.getType() == null) auction.setType(existing.getType());
+            if (auction.getSellerId() == 0) auction.setSellerId(existing.getSellerId());
+            if (auction.getStartingPrice() == null) auction.setStartingPrice(existing.getStartingPrice());
+            if (auction.getImageBase64() == null) auction.setImageBase64(existing.getImageBase64());
+            
             auctions.set(index, auction);
         }
     }

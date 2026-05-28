@@ -6,10 +6,12 @@ import auction_system.common.dto.UserDTO;
 import auction_system.server.model.User;
 import auction_system.common.enums.Action;
 import auction_system.common.enums.Status;
+import auction_system.common.enums.UserStatus;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import auction_system.server.model.BidTransaction;
 import auction_system.server.service.BidService;
+import auction_system.server.store.UserStore;
 import auction_system.server.util.GsonUtil;
 
 import java.util.ArrayList;
@@ -18,9 +20,11 @@ import java.util.List;
 public class BidHistoryController implements RequestHandler {
 
     private final BidService bidService;
+    private final UserStore userStore;
 
     public BidHistoryController() {
         this.bidService = BidService.getInstance();
+        this.userStore = UserStore.getInstance();
     }
 
     @Override
@@ -43,7 +47,14 @@ public class BidHistoryController implements RequestHandler {
             List<BidTransactionDTO> historyDTO = new ArrayList<>();
             for (BidTransaction tx : history) {
                 User bidder = tx.getBidder();
-                UserDTO bidderDTO = new UserDTO(bidder.getId(), bidder.getFullname(), bidder.getUsername(), bidder.getRoles(), bidder.getBalance());
+
+                // Kiểm tra status từ Store (luôn mới nhất, không bị stale)
+                User storeUser = userStore.getUserById(bidder.getId());
+                if (storeUser != null && storeUser.getStatus() == UserStatus.BANNED) {
+                    continue; // Ẩn bid của tài khoản bị ban
+                }
+
+                UserDTO bidderDTO = new UserDTO(bidder.getId(), bidder.getFullname(), bidder.getUsername(), bidder.getRoles(), bidder.getAvailableBalance(), bidder.getFrozenBalance());
                 BidTransactionDTO txDTO = new BidTransactionDTO(tx.getId(), bidderDTO, tx.getAmount(), tx.getBidTime());
                 historyDTO.add(txDTO);
             }

@@ -245,6 +245,40 @@ public class BidViewportController implements Initializable {
 
         // Dynamically configure inputs/buttons state
         updateBiddingUIState();
+
+        // Fetch active AutoBid config for current user and this auction
+        UserDTO currentUser = UserSession.getInstance().getUser();
+        if (currentUser != null) {
+            new Thread(() -> {
+                try {
+                    Response res = bidService.getAutoBidConfig(currentUser.getId(), auctionDTO.getId());
+                    Platform.runLater(() -> {
+                        if (res != null && res.getStatus() == Status.SUCCESS && res.getData() != null) {
+                            try {
+                                auction_system.common.dto.AutoBidDTO abConfig = auction_system.client.util.GsonUtil.fromJsonElement((com.google.gson.JsonElement) res.getData(), auction_system.common.dto.AutoBidDTO.class);
+                                if (abConfig != null) {
+                                    autoBidToggle.setSelected(true);
+                                    autoBidToggle.setText("Disable Auto Bidding");
+                                    maxBidField.setText(abConfig.getMaxBid().toPlainString());
+                                    incrementField.setText(abConfig.getBidIncrement().toPlainString());
+                                    maxBidField.setDisable(true);
+                                    incrementField.setDisable(true);
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            autoBidToggle.setSelected(false);
+                            autoBidToggle.setText("Enable Auto Bidding");
+                            maxBidField.clear();
+                            incrementField.clear();
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }, "fetch-autobid-config-worker").start();
+        }
     }
     private AuctionStatus lastCountdownStatus = null;
 

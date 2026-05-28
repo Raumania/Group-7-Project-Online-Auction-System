@@ -170,9 +170,9 @@ public class BidEngine implements AuctionObserver {
                     }
 
                     // Check if the user has sufficient balance
-                    if (bidder.getBalance().compareTo(actualNextBid) < 0) {
-                        System.out.println("[BidEngine] Deactivating Auto Bid for User " + ab.getUserId() +
-                                " due to insufficient balance " + bidder.getBalance() + " for next bid " + actualNextBid);
+                    if (bidder.getAvailableBalance().compareTo(actualNextBid) < 0) {
+                        System.out.println("AutoBid failed for user " + bidder.getUsername() + 
+                                " due to insufficient balance " + bidder.getAvailableBalance() + " for next bid " + actualNextBid);
                         autoBidDAO.deactivate(connection, ab.getId());
                         AutoBidStore.getInstance().deactivateAutoBid(ab.getId());
                         continue;
@@ -192,6 +192,32 @@ public class BidEngine implements AuctionObserver {
 
                 // 5. Place the auto-bid on behalf of this user inside a Transaction
                 User bidder = userService.getUserById(eligibleAutoBid.getUserId());
+
+                // --- BALANCE UPDATE LOGIC ---
+                BigDecimal newBidderAvailable = bidder.getAvailableBalance().subtract(nextBidAmount);
+                BigDecimal newBidderFrozen = bidder.getFrozenBalance().add(nextBidAmount);
+                UserDAO.getInstance().updateBalance(connection, bidder.getId(), newBidderAvailable, newBidderFrozen);
+
+                User previousBidderFromRam = null;
+                if (highestBidderId != 0 && currentPrice != null && currentPrice.compareTo(BigDecimal.ZERO) > 0) {
+                    previousBidderFromRam = UserStore.getInstance().getUserById(highestBidderId);
+                    if (previousBidderFromRam != null) {
+                        BigDecimal newPrevAvailable = previousBidderFromRam.getAvailableBalance().add(currentPrice);
+                        BigDecimal newPrevFrozen = previousBidderFromRam.getFrozenBalance().subtract(currentPrice);
+                        UserDAO.getInstance().updateBalance(connection, previousBidderFromRam.getId(), newPrevAvailable, newPrevFrozen);
+                    }
+                }
+
+                // --- ANTI-SNIPING LOGIC ---
+                LocalDateTime endTime = auction.getEndTime();
+                LocalDateTime now = LocalDateTime.now();
+                if (endTime != null && !now.isAfter(endTime)) {
+                    long remainingSeconds = java.time.Duration.between(now, endTime).getSeconds();
+                    if (remainingSeconds <= 30 && remainingSeconds >= 0) {
+                        auctionDAO.antisnippingtime(auctionId);
+                        auction.setEndTime(endTime.plusMinutes(1));
+                    }
+                }
                 
                 BidTransaction transaction = new BidTransaction(bidder, nextBidAmount);
                 bidTransactionDAO.save(connection, auctionId, transaction);
@@ -207,6 +233,11 @@ public class BidEngine implements AuctionObserver {
                 // Sync with Server Store RAM Cache
                 AuctionStore.getInstance().updateAuction(auction);
                 BidTransactionStore.getInstance().addBid(auctionId, transaction);
+                
+                bidder.freezeBalance(nextBidAmount);
+                if (previousBidderFromRam != null) {
+                    previousBidderFromRam.unfreezeBalance(currentPrice);
+                }
 
                 System.out.println("[BidEngine] Auto bid placed SUCCESSFUL for User " + bidder.getId() +
                         " on auction " + auctionId + " with amount " + nextBidAmount);

@@ -32,12 +32,17 @@ public class LoginController implements RequestHandler {
             User user = userService.login(loginData.getUsername(), loginData.getPassword());
 
             if (user != null) {
+                if (user.getStatus() == auction_system.common.enums.UserStatus.BANNED) {
+                    return new Response(Status.ERROR, action, null, "Tài khoản của bạn đã bị khóa do vi phạm điều khoản của sàn.");
+                }
                 UserDTO responseUser = new UserDTO();
                 responseUser.setId(user.getId());
                 responseUser.setFullname(user.getFullname());
                 responseUser.setUsername(user.getUsername());
-                responseUser.setBalance(user.getBalance());
+                responseUser.setAvailableBalance(user.getAvailableBalance());
+                responseUser.setFrozenBalance(user.getFrozenBalance());
                 responseUser.setRoles(user.getRoles());
+                responseUser.setStatus(user.getStatus());
                 // password left as null for security
                 return new Response(Status.SUCCESS, action, responseUser, "Login successful");
             } else {

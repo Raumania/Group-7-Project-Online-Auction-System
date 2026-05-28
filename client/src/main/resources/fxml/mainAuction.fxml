@@ -9,8 +9,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane maxHeight="720.0" maxWidth="1280.0" minHeight="720.0" minWidth="1280.0" prefHeight="720.0" prefWidth="1280.0" styleClass="main-root" stylesheets="@../css/mainAuction.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.MainAuctionController">
-
+<BorderPane prefHeight="720.0" prefWidth="1280.0" styleClass="main-root" stylesheets="@../css/mainAuction.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.MainAuctionController">
    <top>
       <HBox alignment="CENTER_LEFT" spacing="20.0" styleClass="top-bar" BorderPane.alignment="CENTER">
          <children>
@@ -29,46 +28,91 @@
    </top>
 
    <left>
-      <VBox prefWidth="250.0" spacing="15.0" styleClass="sidebar" BorderPane.alignment="CENTER">
-         <children>
-            <Button maxWidth="1.7976931348623157E308" onAction="#listViewportBtn" styleClass="sidebar-btn" text="📋 Auction List" />
-            <Button maxWidth="1.7976931348623157E308" onAction="#sellerViewportBtn" styleClass="sidebar-btn" text="📦 My Items" />
-            <Button maxWidth="1.7976931348623157E308" onAction="#AIViewportBtn" styleClass="sidebar-btn" text="🤖 AI Assistant" />
-
-            <Region VBox.vgrow="ALWAYS" />
-
-            <VBox spacing="10.0" styleClass="user-info-card">
+      <javafx.scene.control.ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" style="-fx-background-color: #172554; -fx-background: #172554; -fx-padding: 0; -fx-border-width: 0;" BorderPane.alignment="CENTER">
+         <content>
+            <VBox prefWidth="248.0" spacing="10.0" styleClass="sidebar">
                <children>
-                  <HBox alignment="CENTER_LEFT" spacing="10.0">
+                  <Button maxWidth="1.7976931348623157E308" onAction="#listViewportBtn" styleClass="sidebar-btn" text="📋 Auction List" />
+                  <Button maxWidth="1.7976931348623157E308" onAction="#sellerViewportBtn" styleClass="sidebar-btn" text="📦 My Items" />
+                  <Button maxWidth="1.7976931348623157E308" onAction="#AIViewportBtn" styleClass="sidebar-btn" text="🤖 AI Assistant" />
+      
+                  <Region VBox.vgrow="ALWAYS" />
+      
+                  <VBox spacing="10.0" styleClass="user-info-card">
                      <children>
-                        <Label prefHeight="46.0" prefWidth="38.0" styleClass="user-icon" text="👤" />
-                        <VBox prefHeight="46.0" prefWidth="139.0">
+                        <HBox alignment="CENTER_LEFT" spacing="12.0">
                            <children>
-                              <Label fx:id="fullnameCardLabel" styleClass="text-white-bold" text="Tran Vu Duc" />
-                              <Label fx:id="usernameCardLabel" styleClass="text-muted" text="52ducbanh" />
+                              <StackPane styleClass="avatar-container">
+                                 <Label styleClass="user-icon" text="👤" />
+                              </StackPane>
+                              <VBox alignment="CENTER_LEFT" spacing="4.0" HBox.hgrow="ALWAYS">
+                                 <children>
+                                    <Label fx:id="fullnameCardLabel" styleClass="text-white-bold" text="t" />
+                                    <Label fx:id="usernameCardLabel" styleClass="text-muted-blue" text="t" />
+                                    <HBox alignment="CENTER_LEFT" spacing="0.0">
+                                       <children>
+                                          <Label styleClass="status-active" text="● Active" />
+                                       </children>
+                                    </HBox>
+                                 </children>
+                              </VBox>
+                           </children>
+                        </HBox>
+      
+                        <Label styleClass="section-title" text="Balance" />
+      
+                        <VBox spacing="10.0">
+                           <children>
+                              <VBox alignment="CENTER_LEFT" spacing="6.0" styleClass="balance-box, balance-available">
+                                 <children>
+                                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                       <children>
+                                          <Label styleClass="balance-icon-green" text="💳" />
+                                          <Label styleClass="balance-title" text="Available Balance" />
+                                       </children>
+                                    </HBox>
+                                    <Label fx:id="availableBalanceLabel" styleClass="balance-amount-green" text="\$320,000,000.00" />
+                                 </children>
+                              </VBox>
+                              <VBox alignment="CENTER_LEFT" spacing="6.0" styleClass="balance-box, balance-frozen">
+                                 <children>
+                                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                       <children>
+                                          <Label styleClass="balance-icon-blue" text="🔒" />
+                                          <Label styleClass="balance-title" text="Frozen Balance" />
+                                       </children>
+                                    </HBox>
+                                    <Label fx:id="frozenBalanceLabel" styleClass="balance-amount-blue" text="\$40,000,000.00" />
+                                 </children>
+                              </VBox>
+                           </children>
+                        </VBox>
+      
+                        <VBox alignment="CENTER_LEFT" spacing="6.0" styleClass="total-balance-box">
+                           <children>
+                              <Label styleClass="total-balance-title" text="Total Balance" />
+                              <Label fx:id="totalBalanceLabel" styleClass="total-balance-amount" text="\$360,000,000.00" />
                            </children>
                         </VBox>
                      </children>
-                  </HBox>
-                  <VBox spacing="2.0">
-                     <children>
-                        <Label styleClass="text-muted" text="Balance" />
-                        <Label fx:id="balanceCardLabel" styleClass="text-balance" text="\$36,000,000" />
-                     </children>
                   </VBox>
+                  <Button maxWidth="1.7976931348623157E308" onAction="#logoutBtn" styleClass="logout-btn" text="[→ Logout" />
+                  <Button maxWidth="1.7976931348623157E308" onAction="#exitBtn" styleClass="logout-btn" text="⏻ Exit" />
                </children>
             </VBox>
-            <Button maxWidth="1.7976931348623157E308" onAction="#logoutBtn" styleClass="logout-btn" text="[→ Logout" />
-            <Button maxWidth="1.7976931348623157E308" onAction="#exitBtn" styleClass="logout-btn" text="⏻ Exit" />
-         </children>
-      </VBox>
+         </content>
+      </javafx.scene.control.ScrollPane>
    </left>
 
    <center>
       <!-- Đã xóa khối <top> rỗng ở đây -->
       <BorderPane styleClass="main-content" BorderPane.alignment="CENTER">
          <center>
-            <StackPane fx:id="viewport" BorderPane.alignment="CENTER" />
+            <javafx.scene.control.ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" style="-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0; -fx-border-width: 0;">
+               <content>
+                  <StackPane fx:id="viewport" />
+               </content>
+            </javafx.scene.control.ScrollPane>
          </center>
       </BorderPane>
    </center>

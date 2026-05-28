@@ -9,6 +9,7 @@ import auction_system.server.model.User;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import auction_system.server.exception.InvalidBidException;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -485,6 +486,17 @@ class BidServiceTest {
             assertThrows(RuntimeException.class, () ->
                     bidService.placeBid(auction.getId(), bidder2, new BigDecimal("100"))
             );
+        }
+
+        @Test
+        @DisplayName("EP: Đang là người giữ giá cao nhất mà bid tiếp -> throw InvalidBidException")
+        void placeBid_selfOutbid_shouldThrow() throws SQLException {
+            bidService.placeBid(auction.getId(), bidder1, new BigDecimal("100"));
+
+            var exception = assertThrows(InvalidBidException.class, () ->
+                    bidService.placeBid(auction.getId(), bidder1, new BigDecimal("110"))
+            );
+            assertEquals("Bạn đang là người đấu giá cao nhất", exception.getMessage());
         }
 
         @Test

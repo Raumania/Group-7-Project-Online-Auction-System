@@ -1,6 +1,7 @@
 package auction_system.server.dao;
 
 import auction_system.common.enums.UserRole;
+import auction_system.common.enums.UserStatus;
 import auction_system.server.model.User;
 
 import java.math.BigDecimal;
@@ -32,13 +33,14 @@ public class UserDAO {
         username
         password
         roles
-        balance
+        available_balance
+        frozen_balance
 
         No email anymore.
         No user_roles table anymore.
     */
     public void save(User user) {
-        String sql = "INSERT INTO users(fullname, username, password, roles, balance) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users(fullname, username, password, roles, available_balance, frozen_balance, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -47,7 +49,9 @@ public class UserDAO {
             statement.setString(2, user.getUsername());
             statement.setString(3, user.getPassword());
             statement.setString(4, rolesToString(user.getRoles()));
-            statement.setBigDecimal(5, user.getBalance());
+            statement.setBigDecimal(5, user.getAvailableBalance());
+            statement.setBigDecimal(6, user.getFrozenBalance());
+            statement.setString(7, user.getStatus().name());
 
             statement.executeUpdate();
 
@@ -155,6 +159,26 @@ public class UserDAO {
         }
     }
 
+    public User findByIdForUpdate(Connection connection, int id) {
+        String sql = "SELECT * FROM users WHERE id = ? FOR UPDATE";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setInt(1, id);
+
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return mapResultSetToUser(resultSet);
+            }
+
+            return null;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot find user by id for update", e);
+        }
+    }
+
     /*
         The update method is used to update user details in the database.
 
@@ -162,7 +186,7 @@ public class UserDAO {
         roles resides directly in the users table.
     */
     public void update(User user) {
-        String sql = "UPDATE users SET fullname = ?, username = ?, password = ?, roles = ?, balance = ? WHERE id = ?";
+        String sql = "UPDATE users SET fullname = ?, username = ?, password = ?, roles = ?, available_balance = ?, frozen_balance = ?, status = ? WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -171,13 +195,36 @@ public class UserDAO {
             statement.setString(2, user.getUsername());
             statement.setString(3, user.getPassword());
             statement.setString(4, rolesToString(user.getRoles()));
-            statement.setBigDecimal(5, user.getBalance());
-            statement.setInt(6, user.getId());
+            statement.setBigDecimal(5, user.getAvailableBalance());
+            statement.setBigDecimal(6, user.getFrozenBalance());
+            statement.setString(7, user.getStatus().name());
+            statement.setInt(8, user.getId());
 
             statement.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot update user", e);
+        }
+    }
+
+    public void update(Connection connection, User user) {
+        String sql = "UPDATE users SET fullname = ?, username = ?, password = ?, roles = ?, available_balance = ?, frozen_balance = ?, status = ? WHERE id = ?";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, user.getFullname());
+            statement.setString(2, user.getUsername());
+            statement.setString(3, user.getPassword());
+            statement.setString(4, rolesToString(user.getRoles()));
+            statement.setBigDecimal(5, user.getAvailableBalance());
+            statement.setBigDecimal(6, user.getFrozenBalance());
+            statement.setString(7, user.getStatus().name());
+            statement.setInt(8, user.getId());
+
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot update user in transaction", e);
         }
     }
 
@@ -207,14 +254,15 @@ public class UserDAO {
     /*
         The updateBalance method is used to update a user's balance.
     */
-    public boolean updateBalance(int userId, BigDecimal newBalance) {
-        String sql = "UPDATE users SET balance = ? WHERE id = ?";
+    public boolean updateBalance(int userId, BigDecimal newBalance, BigDecimal newFrozenBalance) {
+        String sql = "UPDATE users SET available_balance = ?, frozen_balance = ? WHERE id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setBigDecimal(1, newBalance);
-            statement.setInt(2, userId);
+            statement.setBigDecimal(2, newFrozenBalance);
+            statement.setInt(3, userId);
 
             int affectedRows = statement.executeUpdate();
 
@@ -222,6 +270,62 @@ public class UserDAO {
 
         } catch (SQLException e) {
             throw new RuntimeException("Cannot update balance", e);
+        }
+    }
+
+    public boolean updateBalance(Connection connection, int userId, BigDecimal newBalance, BigDecimal newFrozenBalance) {
+        String sql = "UPDATE users SET available_balance = ?, frozen_balance = ? WHERE id = ?";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setBigDecimal(1, newBalance);
+            statement.setBigDecimal(2, newFrozenBalance);
+            statement.setInt(3, userId);
+
+            int affectedRows = statement.executeUpdate();
+
+            return affectedRows > 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot update balance in transaction", e);
+        }
+    }
+
+    /*
+        The updateStatus method is used to update user status.
+    */
+    public boolean updateStatus(int userId, UserStatus status) {
+        String sql = "UPDATE users SET status = ? WHERE id = ?";
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, status.name());
+            statement.setInt(2, userId);
+
+            int affectedRows = statement.executeUpdate();
+
+            return affectedRows > 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot update status", e);
+        }
+    }
+
+    public boolean updateStatus(Connection connection, int userId, UserStatus status) {
+        String sql = "UPDATE users SET status = ? WHERE id = ?";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, status.name());
+            statement.setInt(2, userId);
+
+            int affectedRows = statement.executeUpdate();
+
+            return affectedRows > 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot update status in transaction", e);
         }
     }
 
@@ -243,7 +347,9 @@ public class UserDAO {
         String username = resultSet.getString("username");
         String password = resultSet.getString("password");
         String rolesText = resultSet.getString("roles");
-        BigDecimal balance = resultSet.getBigDecimal("balance");
+        BigDecimal balance = resultSet.getBigDecimal("available_balance");
+        BigDecimal frozenBalance = resultSet.getBigDecimal("frozen_balance");
+        String statusText = resultSet.getString("status");
 
         Set<UserRole> roles = stringToRoles(rolesText);
 
@@ -254,7 +360,20 @@ public class UserDAO {
         User user = new User(fullname, username, password, roles);
 
         user.setId(id);
-        user.setBalance(balance);
+        user.setAvailableBalance(balance);
+        if (frozenBalance != null) {
+            user.setFrozenBalance(frozenBalance);
+        }
+        
+        UserStatus status = UserStatus.ACTIVE;
+        if (statusText != null) {
+            try {
+                status = UserStatus.valueOf(statusText);
+            } catch (IllegalArgumentException e) {
+                status = UserStatus.ACTIVE;
+            }
+        }
+        user.setStatus(status);
 
         return user;
     }

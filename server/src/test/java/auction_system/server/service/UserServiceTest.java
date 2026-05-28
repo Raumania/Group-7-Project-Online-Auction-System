@@ -62,7 +62,6 @@ class UserServiceTest {
         }
     }
 
-
     // ═══════════════════════════════════════════════════════
     // NHÓM 1: registerUser
     // ═══════════════════════════════════════════════════════
@@ -261,7 +260,7 @@ class UserServiceTest {
             userService.deposit(testUserId, new BigDecimal("100000"));
 
             User user = userService.getUserById(testUserId);
-            assertBigDecimalValueEquals("100000", user.getBalance());
+            assertBigDecimalValueEquals("100000", user.getAvailableBalance());
         }
 
         @Test
@@ -334,7 +333,7 @@ class UserServiceTest {
             userService.withdraw(testUserId, new BigDecimal(withdrawAmt));
 
             User user = userService.getUserById(testUserId);
-            assertBigDecimalValueEquals(expectedBalance, user.getBalance());
+            assertBigDecimalValueEquals(expectedBalance, user.getAvailableBalance());
         }
     }
 

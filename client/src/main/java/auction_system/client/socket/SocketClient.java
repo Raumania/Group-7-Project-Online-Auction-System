@@ -4,17 +4,27 @@ import auction_system.client.util.GsonUtil;
 import auction_system.client.store.AuctionStore;
 import auction_system.client.store.BidTransactionStore;
 import auction_system.client.store.SellerAuctionStore;
-import auction_system.common.dto.BidTransactionDTO;
-import auction_system.client.session.UserSession;
+import auction_system.client.store.AdminUserStore;
+import auction_system.client.service.BidService;
 import auction_system.common.dto.AuctionDTO;
+import auction_system.common.dto.BidTransactionDTO;
+import auction_system.common.dto.UserDTO;
+import auction_system.client.session.UserSession;
 import auction_system.common.enums.Action;
+import auction_system.common.enums.Status;
 import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import java.math.BigDecimal;
+import auction_system.client.controller.MainAuctionController;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -83,6 +93,10 @@ public class SocketClient {
                                 handleAuctionDeletedEvent(response);
                             } else if (response.getType() == Action.EVENT_BID_PLACED) {
                                 handleBidPlacedEvent(response);
+                            } else if (response.getType() == Action.EVENT_USER_BANNED) {
+                                handleUserBannedEvent(response);
+                            } else if (response.getType() == Action.EVENT_AUCTION_CANCELLED) {
+                                handleAuctionCancelledEvent(response);
                             } else if (response.getType() == Action.PING) {
                                 // Phản hồi PING/PONG giữ kết nối (heartbeat), chỉ cần log và bỏ qua
                                 System.out.println("Heartbeat: received PONG from server");
@@ -164,11 +178,88 @@ public class SocketClient {
             AuctionDTO updatedAuction = GsonUtil.fromJson(jsonData, AuctionDTO.class);
             if (updatedAuction != null) {
                 System.out.println("Real-time: Updating edited auction ID: " + updatedAuction.getId());
-                // Cập nhật UI an toàn trên luồng JavaFX
+                final int auctionId = updatedAuction.getId();
+
+                // Cập nhật Store và tính toán số dư trên luồng JavaFX
                 Platform.runLater(() -> {
+                    UserDTO currentUser = UserSession.getInstance().getUser();
+                    if (currentUser != null && currentUser.getUsername() != null) {
+                        AuctionDTO oldAuction = null;
+                        for (AuctionDTO a : AuctionStore.getInstance().getAuctions()) {
+                            if (a.getId() == updatedAuction.getId()) {
+                                oldAuction = a;
+                                break;
+                            }
+                        }
+
+                        if (oldAuction != null) {
+                            String myUsername = currentUser.getUsername();
+                            String oldBidder = oldAuction.getHighestBidderUsername();
+                            String newBidder = updatedAuction.getHighestBidderUsername();
+                            
+                            BigDecimal oldPrice = oldAuction.getCurrentPrice() != null ? oldAuction.getCurrentPrice() : BigDecimal.ZERO;
+                            BigDecimal newPrice = updatedAuction.getCurrentPrice() != null ? updatedAuction.getCurrentPrice() : BigDecimal.ZERO;
+
+                            boolean wasHighest = myUsername.equals(oldBidder);
+                            boolean isHighest = myUsername.equals(newBidder);
+
+                            BigDecimal avail = currentUser.getAvailableBalance() != null ? currentUser.getAvailableBalance() : BigDecimal.ZERO;
+                            BigDecimal froz = currentUser.getFrozenBalance() != null ? currentUser.getFrozenBalance() : BigDecimal.ZERO;
+
+                            boolean balanceChanged = false;
+
+                            if (wasHighest && !isHighest) {
+                                // Bị outbid hoặc người giữ giá trước bị ban: Trả lại tiền đóng băng cũ
+                                avail = avail.add(oldPrice);
+                                froz = froz.subtract(oldPrice);
+                                balanceChanged = true;
+                                System.out.println("Balance Outbid Reactive: +" + oldPrice + " to available.");
+                            } else if (!wasHighest && isHighest) {
+                                // Vừa đặt thầu thành công hoặc được đôn lên thay thế người bị ban: Đóng băng tiền mới
+                                avail = avail.subtract(newPrice);
+                                froz = froz.add(newPrice);
+                                balanceChanged = true;
+                                System.out.println("Balance Bid Reactive: -" + newPrice + " from available.");
+                            } else if (wasHighest && isHighest) {
+                                // Tự outbid chính mình (tăng giá thầu): Trả tiền cũ, đóng băng tiền mới
+                                avail = avail.add(oldPrice).subtract(newPrice);
+                                froz = froz.subtract(oldPrice).add(newPrice);
+                                balanceChanged = true;
+                                System.out.println("Balance Self-outbid Reactive: diff=" + (oldPrice.subtract(newPrice)));
+                            }
+
+                            if (balanceChanged) {
+                                // Bảo đảm không bị âm
+                                if (avail.compareTo(BigDecimal.ZERO) < 0) avail = BigDecimal.ZERO;
+                                if (froz.compareTo(BigDecimal.ZERO) < 0) froz = BigDecimal.ZERO;
+
+                                currentUser.setAvailableBalance(avail);
+                                currentUser.setFrozenBalance(froz);
+                                
+                                // Refresh Sidebar UI
+                                if (MainAuctionController.getInstance() != null) {
+                                    MainAuctionController.getInstance().refreshBalance();
+                                }
+                            }
+                        }
+                    }
+
                     AuctionStore.getInstance().updateAuction(updatedAuction);
                     SellerAuctionStore.getInstance().updateAuction(updatedAuction);
                 });
+
+                // Re-fetch bid history trên background thread (không block JavaFX thread)
+                // Đảm bảo bids của user bị ban biến mất khỏi bảng ngay khi có update
+                new Thread(() -> {
+                    try {
+                        List<BidTransactionDTO> freshHistory = BidService.getInstance().getBidHistory(auctionId);
+                        Platform.runLater(() -> {
+                            BidTransactionStore.getInstance().setHistory(auctionId, freshHistory);
+                        });
+                    } catch (Exception e) {
+                        System.err.println("Failed to re-fetch bid history after auction edit: " + e.getMessage());
+                    }
+                }, "bid-history-refresh-" + auctionId).start();
             }
         } catch (Exception e) {
             System.err.println("Failed to parse real-time auction edited event: " + e.getMessage());
@@ -201,6 +292,95 @@ public class SocketClient {
             });
         } catch (Exception e) {
             System.err.println("Failed to parse real-time auction deleted event: " + e.getMessage());
+        }
+    }
+
+    private void handleUserBannedEvent(Response response) {
+        System.out.println("Real-time: Account has been BANNED by administrator. Force-logging out...");
+        Platform.runLater(() -> {
+            try {
+                // Clear sessions and stores
+                UserSession.getInstance().logout();
+                AdminUserStore.getInstance().logout();
+                AuctionStore.getInstance().logout();
+                BidTransactionStore.getInstance().logout();
+                SellerAuctionStore.getInstance().logout();
+                
+                // Show warning alert dialog
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Tài khoản bị khóa");
+                alert.setHeaderText("Thông báo từ quản trị viên");
+                alert.setContentText(response.getMessage() != null ? response.getMessage() : "Tài khoản của bạn đã bị khóa do vi phạm điều khoản của sàn.");
+                alert.showAndWait();
+                
+                // Transition to login screen
+                javafx.stage.Window activeWindow = javafx.stage.Window.getWindows().stream()
+                        .filter(javafx.stage.Window::isShowing)
+                        .findFirst()
+                        .orElse(null);
+                
+                if (activeWindow instanceof javafx.stage.Stage stage) {
+                    FXMLLoader loader = new FXMLLoader();
+                    loader.setLocation(getClass().getResource("/fxml/login.fxml"));
+                    Parent root = loader.load();
+                    Scene scene = new Scene(root);
+                    stage.setScene(scene);
+                } else {
+                    System.exit(0);
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to force-logout banned user: " + e.getMessage());
+                e.printStackTrace();
+                System.exit(0);
+            }
+        });
+    }
+
+    private void handleAuctionCancelledEvent(Response response) {
+        try {
+            int cancelledAuctionId = GsonUtil.getGson().toJsonTree(response.getData()).getAsInt();
+            System.out.println("Real-time: Auction has been cancelled: " + cancelledAuctionId);
+            
+            Platform.runLater(() -> {
+                UserDTO currentUser = UserSession.getInstance().getUser();
+                // Find the auction in store and update its status to CANCELLED
+                for (AuctionDTO auction : AuctionStore.getInstance().getAuctions()) {
+                    if (auction.getId() == cancelledAuctionId) {
+                        // Nếu ta là người thầu cao nhất của đấu giá bị hủy
+                        if (currentUser != null && currentUser.getUsername() != null && currentUser.getUsername().equals(auction.getHighestBidderUsername())) {
+                            BigDecimal refundAmount = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : BigDecimal.ZERO;
+                            BigDecimal avail = currentUser.getAvailableBalance() != null ? currentUser.getAvailableBalance() : BigDecimal.ZERO;
+                            BigDecimal froz = currentUser.getFrozenBalance() != null ? currentUser.getFrozenBalance() : BigDecimal.ZERO;
+
+                            avail = avail.add(refundAmount);
+                            froz = froz.subtract(refundAmount);
+
+                            if (froz.compareTo(BigDecimal.ZERO) < 0) froz = BigDecimal.ZERO;
+
+                            currentUser.setAvailableBalance(avail);
+                            currentUser.setFrozenBalance(froz);
+
+                            if (MainAuctionController.getInstance() != null) {
+                                MainAuctionController.getInstance().refreshBalance();
+                            }
+                            System.out.println("Balance Cancelled Reactive: +" + refundAmount + " to available.");
+                        }
+
+                        auction.setStatus(auction_system.common.enums.AuctionStatus.CANCELLED);
+                        AuctionStore.getInstance().updateAuction(auction);
+                        break;
+                    }
+                }
+                for (AuctionDTO auction : SellerAuctionStore.getInstance().getAuctions()) {
+                    if (auction.getId() == cancelledAuctionId) {
+                        auction.setStatus(auction_system.common.enums.AuctionStatus.CANCELLED);
+                        SellerAuctionStore.getInstance().updateAuction(auction);
+                        break;
+                    }
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("Failed to parse real-time auction cancelled event: " + e.getMessage());
         }
     }
 

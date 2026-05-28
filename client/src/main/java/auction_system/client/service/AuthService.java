@@ -25,12 +25,18 @@ public class AuthService {
     Gson gson = new Gson();
     //Main code in below
 
-    public int checkLogin(UserDTO user) {
+    private String lastErrorMessage;
 
+    public String getLastErrorMessage() {
+        return lastErrorMessage;
+    }
+
+    public int checkLogin(UserDTO user) {
+        lastErrorMessage = null;
         Request request = new Request(Action.LOGIN, GsonUtil.getGson().toJsonTree(user));
         SocketClient.getInstance().send(request);
         Response response = SocketClient.getInstance().receive();
-        if(response.getStatus() == Status.SUCCESS) {
+        if(response != null && response.getStatus() == Status.SUCCESS) {
             //fill full data for user session hehe :>
             UserSession.getInstance().setUser(gson.fromJson(GsonUtil.getGson().toJsonTree(response.getData()),UserDTO.class));
             if(UserSession.getInstance().getUser().getRoles().contains(UserRole.ADMIN)) {
@@ -39,6 +45,9 @@ public class AuthService {
             else return 1;
         }
         else {
+            if (response != null) {
+                lastErrorMessage = response.getMessage();
+            }
             return 0;
         }
     }

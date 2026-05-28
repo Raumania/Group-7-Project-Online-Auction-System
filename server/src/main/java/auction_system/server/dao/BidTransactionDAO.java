@@ -1,6 +1,7 @@
 package auction_system.server.dao;
 
 import auction_system.common.enums.UserRole;
+import auction_system.common.enums.UserStatus;
 import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;
 
@@ -96,7 +97,15 @@ public class BidTransactionDAO {
         Retrieve the bid history of an auction.
     */
     public List<BidTransaction> findByAuctionId(int auctionId) {
-        String sql = "SELECT bt.*, u.fullname, u.username, u.password, u.roles, u.balance " +
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            return findByAuctionId(connection, auctionId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot find bid history", e);
+        }
+    }
+
+    public List<BidTransaction> findByAuctionId(Connection connection, int auctionId) {
+        String sql = "SELECT bt.*, u.fullname, u.username, u.password, u.roles, u.available_balance, u.frozen_balance, u.status " +
                      "FROM bid_transactions bt " +
                      "INNER JOIN users u ON bt.bidder_id = u.id " +
                      "WHERE bt.auction_id = ? " +
@@ -104,8 +113,7 @@ public class BidTransactionDAO {
 
         List<BidTransaction> transactions = new ArrayList<>();
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, auctionId);
 
@@ -119,7 +127,7 @@ public class BidTransactionDAO {
             return transactions;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find bid history", e);
+            throw new RuntimeException("Cannot find bid history in transaction", e);
         }
      }
 
@@ -127,14 +135,21 @@ public class BidTransactionDAO {
         Retrieve the latest bid of the auction.
     */
     public BidTransaction findLatestByAuctionId(int auctionId) {
-        String sql = "SELECT bt.*, u.fullname, u.username, u.password, u.roles, u.balance " +
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            return findLatestByAuctionId(connection, auctionId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot find latest bid", e);
+        }
+    }
+
+    public BidTransaction findLatestByAuctionId(Connection connection, int auctionId) {
+        String sql = "SELECT bt.*, u.fullname, u.username, u.password, u.roles, u.available_balance, u.frozen_balance, u.status " +
                      "FROM bid_transactions bt " +
                      "INNER JOIN users u ON bt.bidder_id = u.id " +
                      "WHERE bt.auction_id = ? " +
                      "ORDER BY bt.biddingtime DESC LIMIT 1";
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, auctionId);
 
@@ -147,7 +162,7 @@ public class BidTransactionDAO {
             return null;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot find latest bid", e);
+            throw new RuntimeException("Cannot find latest bid in transaction", e);
         }
     }
 
@@ -189,7 +204,9 @@ public class BidTransactionDAO {
         String username = resultSet.getString("username");
         String password = resultSet.getString("password");
         String rolesText = resultSet.getString("roles");
-        BigDecimal balance = resultSet.getBigDecimal("balance");
+        BigDecimal availableBalance = resultSet.getBigDecimal("available_balance");
+        BigDecimal frozenBalance = resultSet.getBigDecimal("frozen_balance");
+        String statusText = resultSet.getString("status");
 
         java.util.Set<UserRole> roles = new java.util.HashSet<>();
         if (rolesText != null && !rolesText.trim().isEmpty()) {
@@ -204,7 +221,20 @@ public class BidTransactionDAO {
 
         User bidder = new User(fullname, username, password, roles);
         bidder.setId(bidderId);
-        bidder.setBalance(balance);
+        bidder.setAvailableBalance(availableBalance);
+        if (frozenBalance != null) {
+            bidder.setFrozenBalance(frozenBalance);
+        }
+        
+        UserStatus status = UserStatus.ACTIVE;
+        if (statusText != null) {
+            try {
+                status = UserStatus.valueOf(statusText);
+            } catch (IllegalArgumentException e) {
+                status = UserStatus.ACTIVE;
+            }
+        }
+        bidder.setStatus(status);
 
         BidTransaction transaction = new BidTransaction(bidder, amount);
         transaction.setId(id);

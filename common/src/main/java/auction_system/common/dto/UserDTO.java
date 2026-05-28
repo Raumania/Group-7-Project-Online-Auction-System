@@ -1,6 +1,7 @@
 package auction_system.common.dto;
 
 import auction_system.common.enums.UserRole;
+import auction_system.common.enums.UserStatus;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -10,30 +11,40 @@ public class UserDTO {
     private String fullname;
     private String username;
     private String password;
-    private BigDecimal balance;
+    private BigDecimal availableBalance;
+    private BigDecimal frozenBalance;
     private Set<UserRole> roles;
+    private UserStatus status;
 
     public UserDTO() {
-
+        this.status = UserStatus.ACTIVE;
     }
 
     public UserDTO(String fullname, String username, String password) {
         this.fullname = fullname;
         this.username = username;
         this.password = password;
+        this.status = UserStatus.ACTIVE;
     }
 
     public UserDTO(String username, String password) {
         this.username = username;
         this.password = password;
+        this.status = UserStatus.ACTIVE;
     }
     
-    public UserDTO(int id, String fullname, String username, Set<UserRole> roles, BigDecimal balance) {
+    public UserDTO(int id, String fullname, String username, Set<UserRole> roles, BigDecimal availableBalance, BigDecimal frozenBalance) {
+        this(id, fullname, username, roles, availableBalance, frozenBalance, UserStatus.ACTIVE);
+    }
+
+    public UserDTO(int id, String fullname, String username, Set<UserRole> roles, BigDecimal availableBalance, BigDecimal frozenBalance, UserStatus status) {
         this.id = id;
         this.fullname = fullname;
         this.username = username;
         this.roles = roles;
-        this.balance = balance;
+        this.availableBalance = availableBalance;
+        this.frozenBalance = frozenBalance;
+        this.status = status;
     }
 
     public int getId() {
@@ -52,12 +63,20 @@ public class UserDTO {
         return password;
     }
 
-    public BigDecimal getBalance() {
-        return balance;
+    public BigDecimal getAvailableBalance() {
+        return availableBalance;
+    }
+
+    public BigDecimal getFrozenBalance() {
+        return frozenBalance;
     }
 
     public Set<UserRole> getRoles() {
         return roles;
+    }
+
+    public UserStatus getStatus() {
+        return status;
     }
 
     public boolean isAdmin() {
@@ -80,11 +99,19 @@ public class UserDTO {
         this.password = password;
     }
 
-    public void setBalance(BigDecimal balance) {
-        this.balance = balance;
+    public void setAvailableBalance(BigDecimal availableBalance) {
+        this.availableBalance = availableBalance;
+    }
+
+    public void setFrozenBalance(BigDecimal frozenBalance) {
+        this.frozenBalance = frozenBalance;
     }
 
     public void setRoles(Set<UserRole> roles) {
         this.roles = roles;
+    }
+
+    public void setStatus(UserStatus status) {
+        this.status = status;
     }
 }

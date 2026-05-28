@@ -31,6 +31,8 @@ public class UserController implements RequestHandler {
                     return updateUser(action, request.getData());
                 case DELETE_USER:
                     return deleteUser(action, request.getData());
+                case BAN_USER:
+                    return banUser(action, request.getData());
                 default:
                     return new Response(Status.ERROR, action, null, "Unknown action: " + action);
             }
@@ -59,10 +61,9 @@ public class UserController implements RequestHandler {
                 userDTO.getRoles()
             );
             // Set balance if provided
-            if (userDTO.getBalance() != null && userDTO.getBalance().compareTo(java.math.BigDecimal.ZERO) > 0) {
-                user.setBalance(userDTO.getBalance());
-                // Save balance update
-                userService.deposit(user.getId(), userDTO.getBalance());
+            if (userDTO.getAvailableBalance() != null && userDTO.getAvailableBalance().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                // Deposit the initial balance safely to DB and memory store
+                userService.deposit(user.getId(), userDTO.getAvailableBalance());
             }
             UserDTO responseDTO = user.toDTO();
             return new Response(Status.SUCCESS, action, responseDTO, "User created successfully");
@@ -79,7 +80,12 @@ public class UserController implements RequestHandler {
             user.setFullname(userDTO.getFullname());
             user.setUsername(userDTO.getUsername());
             user.setRoles(userDTO.getRoles());
-            user.setBalance(userDTO.getBalance());
+            user.setAvailableBalance(userDTO.getAvailableBalance());
+            
+            if (userDTO.getPassword() != null && !userDTO.getPassword().trim().isEmpty()) {
+                String hashpassword = auction_system.server.util.HashUtil.hashPassword(userDTO.getPassword());
+                user.setPassword(hashpassword);
+            }
             
             // Save to DB
             auction_system.server.dao.UserDAO.getInstance().update(user);
@@ -100,6 +106,17 @@ public class UserController implements RequestHandler {
         } catch (Exception e) {
             e.printStackTrace();
             return new Response(Status.ERROR, action, null, "Delete user failed: " + e.getMessage());
+        }
+    }
+
+    private Response banUser(Action action, JsonElement data) {
+        try {
+            int userId = GsonUtil.fromJson(data, Integer.class);
+            userService.banUser(userId);
+            return new Response(Status.SUCCESS, action, null, "User banned successfully");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new Response(Status.ERROR, action, null, "Ban user failed: " + e.getMessage());
         }
     }
 }

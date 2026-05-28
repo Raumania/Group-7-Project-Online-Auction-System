@@ -11,6 +11,7 @@ import auction_system.server.model.*;
 import auction_system.server.observer.EventBus;
 import auction_system.server.store.AuctionStore;
 import auction_system.server.store.UserStore;
+import auction_system.server.dao.UserDAO;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -331,6 +332,28 @@ public class AuctionService {
                 throw new RuntimeException("Auction is not open");
             }
 
+            Integer highestBidderId = auction.getHighestBidderId();
+            BigDecimal winningPrice = auction.getCurrentPrice();
+            int sellerId = auction.getSellerId();
+            
+            User winnerFromRam = null;
+            User sellerFromRam = null;
+
+            if (highestBidderId != null && highestBidderId != 0 && winningPrice != null) {
+                winnerFromRam = userStore.getUserById(highestBidderId);
+                sellerFromRam = userStore.getUserById(sellerId);
+                
+                if (winnerFromRam != null) {
+                    BigDecimal newWinnerFrozen = winnerFromRam.getFrozenBalance().subtract(winningPrice);
+                    UserDAO.getInstance().updateBalance(connection, winnerFromRam.getId(), winnerFromRam.getAvailableBalance(), newWinnerFrozen);
+                }
+                
+                if (sellerFromRam != null) {
+                    BigDecimal newSellerAvailable = sellerFromRam.getAvailableBalance().add(winningPrice);
+                    UserDAO.getInstance().updateBalance(connection, sellerFromRam.getId(), newSellerAvailable, sellerFromRam.getFrozenBalance());
+                }
+            }
+
             auction.setStatus(AuctionStatus.FINISHED);
 
             auctionDAO.update(connection, auction);
@@ -339,6 +362,14 @@ public class AuctionService {
             
             // Sync with RAM Cache
             auctionStore.updateAuction(auction);
+            
+            if (winnerFromRam != null) {
+                winnerFromRam.setFrozenBalance(winnerFromRam.getFrozenBalance().subtract(winningPrice));
+            }
+            if (sellerFromRam != null) {
+                sellerFromRam.deposit(winningPrice);
+            }
+            
             eventBus.publishAuctionEdited(auction);
 
         } catch (Exception e) {

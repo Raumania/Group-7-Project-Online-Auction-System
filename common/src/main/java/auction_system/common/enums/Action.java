@@ -65,6 +65,9 @@ public enum Action {
     /** Xóa người dùng */
     DELETE_USER,
 
+    /** Khóa tài khoản người dùng */
+    BAN_USER,
+
     // ==================== QUẢN LÝ SẢN PHẨM (Item) ====================
     /** Lấy danh sách sản phẩm của seller */
     GET_SELLER_ITEMS,
@@ -80,6 +83,10 @@ public enum Action {
     //Auto Bid
     SET_AUTO_BID,
     CANCEL_AUTO_BID,
+    GET_AUTO_BID_CONFIG,
     // Real-time event: Server broadcasts when a new bid is placed successfully
-    EVENT_BID_PLACED
+    EVENT_BID_PLACED,
+    // Real-time events for banning users
+    EVENT_USER_BANNED,
+    EVENT_AUCTION_CANCELLED
 }

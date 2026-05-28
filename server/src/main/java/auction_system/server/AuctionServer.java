@@ -31,6 +31,25 @@ public class AuctionServer {
             client.send(message);
         }
     }
+
+    public static void disconnectUser(int userId) {
+        for (ClientHandler client : activeClients) {
+            if (client.getUserId() == userId) {
+                try {
+                    auction_system.common.protocol.Response response = new auction_system.common.protocol.Response(
+                        auction_system.common.enums.Status.ERROR,
+                        auction_system.common.enums.Action.EVENT_USER_BANNED,
+                        null,
+                        "Tài khoản của bạn đã bị khóa do vi phạm điều khoản của sàn."
+                    );
+                    client.send(auction_system.server.util.GsonUtil.toJson(response));
+                    System.out.println("AuctionServer: Sent EVENT_USER_BANNED to user " + userId + ". Force-closing socket.");
+                } catch (Exception e) {
+                    System.err.println("Failed to send ban notification to client: " + e.getMessage());
+                }
+            }
+        }
+    }
     //end of Observer Pattern
 
     // Socket server dùng để lắng nghe kết nối từ client
@@ -53,6 +72,8 @@ public class AuctionServer {
         // Khởi chạy EventBus và đăng ký ClientNotificationObserver
         EventBus.getInstance();
         EventBus.registerObserver(new ClientNotificationObserver());
+        auction_system.server.engine.BidEngine.getInstance();
+
 
         // Initialize Server Stores
         auction_system.server.store.UserStore.getInstance().init();

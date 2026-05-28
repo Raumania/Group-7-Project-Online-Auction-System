@@ -50,24 +50,24 @@
 
                                 <GridPane hgap="10.0" minHeight="-Infinity" vgap="4.0" HBox.hgrow="ALWAYS">
                                     <columnConstraints>
-                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" percentWidth="40.0" />
-                                        <ColumnConstraints halignment="RIGHT" hgrow="SOMETIMES" minWidth="10.0" percentWidth="60.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="120.0" />
+                                        <ColumnConstraints halignment="RIGHT" hgrow="ALWAYS" minWidth="100.0" />
                                     </columnConstraints>
                                     <rowConstraints>
-                                        <RowConstraints minHeight="10.0" prefHeight="20.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="20.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="20.0" vgrow="SOMETIMES" />
-                                        <RowConstraints minHeight="10.0" prefHeight="20.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="15.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="15.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="15.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                                        <RowConstraints minHeight="15.0" prefHeight="25.0" vgrow="SOMETIMES" />
                                     </rowConstraints>
                                     <children>
                                         <Label styleClass="text-muted" text="👤 Seller:" />
-                                        <Label fx:id="sellerLabel" styleClass="text-bold" text="Tran Vu Duc" GridPane.columnIndex="1" />
+                                        <Label fx:id="sellerLabel" styleClass="text-bold" text="Tran Vu Duc" wrapText="true" GridPane.columnIndex="1" />
                                         <Label styleClass="text-muted" text="🏷 Category:" GridPane.rowIndex="1" />
-                                        <Label fx:id="categoryLabel" styleClass="text-bold" text="Electronic" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                        <Label fx:id="categoryLabel" styleClass="text-bold" text="Electronic" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                         <Label styleClass="text-muted" text="💰 Starting price:" GridPane.rowIndex="2" />
-                                        <Label fx:id="startingPriceLabel" styleClass="text-bold" text="\$120,000.00" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                        <Label fx:id="startingPriceLabel" styleClass="text-bold" text="\$120,000.00" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                         <Label styleClass="text-muted" text="📈 Minimum increment:" GridPane.rowIndex="3" />
-                                        <Label fx:id="minIncrementLabel" styleClass="text-bold" text="\$500.00" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                        <Label fx:id="minIncrementLabel" styleClass="text-bold" text="\$500.00" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                                     </children>
                                 </GridPane>
                             </children>
@@ -81,7 +81,7 @@
                                 <VBox minHeight="0.0" spacing="0.0">
                                     <children>
                                         <Label minHeight="-Infinity" styleClass="section-title" text="Bidding Chart" />
-                                        <LineChart fx:id="biddingChart" minHeight="0.0" titleSide="BOTTOM" VBox.vgrow="ALWAYS">
+                                        <LineChart fx:id="biddingChart" minHeight="150.0" titleSide="BOTTOM" VBox.vgrow="ALWAYS">
                                             <xAxis>
                                                 <CategoryAxis label="Time" side="BOTTOM" />
                                             </xAxis>

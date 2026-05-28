@@ -267,6 +267,54 @@ public class AuctionDAO {
         return auctions;
     }
 
+    public List<Auction> findActiveAuctionsBySeller(Connection connection, int sellerId) {
+        String sql = """
+            SELECT
+                a.*, i.name, i.description, i.type,
+                u.username AS highest_bidder_username
+            FROM auctions a
+            INNER JOIN items i ON a.item_id = i.id
+            LEFT JOIN users u ON a.highest_bidder_id = u.id
+            WHERE a.seller_id = ? AND (a.status = 'OPEN' OR a.status = 'RUNNING')
+            """;
+        List<Auction> auctions = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, sellerId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    auctions.add(mapResultSetToAuctionWithItem(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            throw new findingException("Cannot find active auctions by seller ID: " + sellerId);
+        }
+        return auctions;
+    }
+
+    public List<Auction> findActiveAuctionsByHighestBidder(Connection connection, int bidderId) {
+        String sql = """
+            SELECT
+                a.*, i.name, i.description, i.type,
+                u.username AS highest_bidder_username
+            FROM auctions a
+            INNER JOIN items i ON a.item_id = i.id
+            LEFT JOIN users u ON a.highest_bidder_id = u.id
+            WHERE a.highest_bidder_id = ? AND (a.status = 'OPEN' OR a.status = 'RUNNING')
+            """;
+        List<Auction> auctions = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, bidderId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    auctions.add(mapResultSetToAuctionWithItem(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            throw new findingException("Cannot find active auctions by highest bidder ID: " + bidderId);
+        }
+        return auctions;
+    }
+
     /*
         Update bình thường.
         Không dùng transaction bên ngoài.
@@ -284,6 +332,24 @@ public class AuctionDAO {
         Dùng trong transaction ở Service.
     */
     public void update(Connection connection, Auction auction) throws SQLException {
+        // Nếu highest_bidder_id có giá trị nhưng username bị null (dữ liệu cũ bị thiếu),
+        // tra cứu username từ DB để tránh ghi NULL đè lên dữ liệu đúng đang có.
+        if (auction.getHighestBidderId() != null && auction.getHighestBidderUsername() == null) {
+            try {
+                String lookupSql = "SELECT username FROM users WHERE id = ?";
+                try (PreparedStatement ps = connection.prepareStatement(lookupSql)) {
+                    ps.setInt(1, auction.getHighestBidderId());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            auction.setHighestBidderUsername(rs.getString("username"));
+                        }
+                    }
+                }
+            } catch (SQLException ignored) {
+                // Không block update chính nếu lookup phụ lỗi
+            }
+        }
+
         String sql = """
                 UPDATE auctions
                 SET seller_id = ?,

@@ -1,0 +1,310 @@
+﻿package auction_system.server.service;
+
+import auction_system.common.enums.UserRole;
+import auction_system.server.dao.UserDAO;
+import auction_system.server.dao.AuctionDAO;
+import auction_system.server.dao.BidTransactionDAO;
+import auction_system.server.dao.DatabaseConnection;
+import auction_system.server.exception.AuthorizationException;
+import auction_system.server.exception.ControllerException.*;
+import auction_system.server.model.User;
+import auction_system.server.model.Auction;
+import auction_system.server.model.BidTransaction;
+import auction_system.server.store.UserStore;
+import auction_system.server.util.HashUtil;
+import auction_system.server.AuctionServer;
+
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Set;
+
+public class UserService {
+    private static UserService instance;
+    private final UserDAO userDAO;
+    private final UserStore userStore;
+
+    private UserService() {
+        this.userDAO = UserDAO.getInstance();
+        this.userStore = UserStore.getInstance();
+    }
+
+    public static UserService getInstance() {
+        if (instance == null) {
+            instance = new UserService();
+        }
+        return instance;
+    }
+
+    public User registerUser(String fullname, String username, String password) {
+        return registerUser(
+                fullname,
+                username,
+                password,
+                Set.of(UserRole.BIDDER, UserRole.SELLER)
+        );
+    }
+
+    public User registerUser(String fullname, String username, String password, Set<UserRole> roles) {
+        User existingUser = userStore.getUserByUsername(username);
+
+        if (existingUser != null) {
+            throw new DuplicateResourceException("Username already exists");
+        }
+
+        if (roles == null || roles.isEmpty()) {
+            throw new InvalidInputException("User must have at least one role");
+        }
+        String hashpassword = HashUtil.hashPassword(password);
+        User user = new User(fullname, username, hashpassword, roles);
+
+        userDAO.save(user);
+        
+        // Sync with memory cache
+        userStore.addUser(user);
+
+        return user;
+    }
+
+    /*
+        Táº¡o Seller má»›i.
+        HÃ m nÃ y giá»¯ láº¡i Ä‘á»ƒ code cÅ© chÆ°a bá»‹ lá»—i ngay.
+        NhÆ°ng báº£n cháº¥t bÃ¢y giá» khÃ´ng táº¡o Seller object ná»¯a,
+        mÃ  táº¡o User cÃ³ role SELLER.
+    */
+    public User createSeller(String fullname, String username, String password) {
+        return registerUser(
+                fullname,
+                username,
+                password,
+                Set.of(UserRole.SELLER)
+        );
+    }
+
+    /*
+        Táº¡o Bidder má»›i.
+        HÃ m nÃ y giá»¯ láº¡i Ä‘á»ƒ code cÅ© chÆ°a bá»‹ lá»—i ngay.
+        NhÆ°ng báº£n cháº¥t bÃ¢y giá» khÃ´ng táº¡o Bidder object ná»¯a,
+        mÃ  táº¡o User cÃ³ role BIDDER.
+    */
+    public User createBidder(String fullname, String username, String password) {
+        return registerUser(
+                fullname,
+                username,
+                password,
+                Set.of(UserRole.BIDDER)
+        );
+    }
+
+    /*
+        Táº¡o user vá»«a lÃ  Bidder vá»«a lÃ  Seller.
+        DÃ¹ng khi 1 tÃ i khoáº£n vá»«a cÃ³ thá»ƒ Ä‘áº¥u giÃ¡,
+        vá»«a cÃ³ thá»ƒ Ä‘Äƒng bÃ¡n sáº£n pháº©m.
+        Thá»±c ra hÃ m nÃ y bÃ¢y giá» giá»‘ng registerUser(fullname, username, password).
+        Giá»¯ láº¡i Ä‘á»ƒ code dá»… Ä‘á»c.
+    */
+    public User createBidderAndSeller(String fullname, String username, String password) {
+        return registerUser(fullname, username, password);
+    }
+
+    /*
+        Táº¡o Admin.
+        KhÃ´ng nÃªn cho má»i user máº·c Ä‘á»‹nh lÃ  ADMIN.
+        Admin nÃªn táº¡o riÃªng báº±ng hÃ m nÃ y hoáº·c báº±ng seed data.
+    */
+    public User createAdmin(String fullname, String username, String password) {
+        return registerUser(
+                fullname,
+                username,
+                password,
+                Set.of(UserRole.ADMIN)
+        );
+    }
+
+    /*
+        Táº¡o Admin cÃ³ cáº£ quyá»n BIDDER vÃ  SELLER.
+        DÃ¹ng náº¿u báº¡n muá»‘n admin cÅ©ng cÃ³ thá»ƒ mua/bÃ¡n.
+    */
+    public User createFullAdmin(String fullname, String username, String password) {
+        return registerUser(
+                fullname,
+                username,
+                password,
+                Set.of(UserRole.ADMIN, UserRole.BIDDER, UserRole.SELLER)
+        );
+    }
+
+    /*
+        TÃ¬m user theo id.
+        Náº¿u RAM Store tráº£ vá» null nghÄ©a lÃ  cache khÃ´ng cÃ³ user Ä‘Ã³.
+    */
+    public User getUserById(int id) {
+        User user = userStore.getUserById(id);
+
+        if (user == null) {
+            throw new UserNotFoundException(id);
+        }
+
+        return user;
+    }
+
+    /*
+        TÃ¬m user theo username.
+    */
+    public User getUserByUsername(String username) {
+        User user = userStore.getUserByUsername(username);
+
+        if (user == null) {
+            throw new UserNotFoundException(username);
+        }
+
+        return user;
+    }
+
+    /*
+        Láº¥y user theo id vÃ  kiá»ƒm tra user Ä‘Ã³ cÃ³ role SELLER hay khÃ´ng.
+        TrÆ°á»›c Ä‘Ã¢y:
+        - dÃ¹ng instanceof Seller
+        BÃ¢y giá»:
+        - khÃ´ng dÃ¹ng instanceof ná»¯a
+        - dÃ¹ng hasRole(UserRole.SELLER)
+    */
+    public User getSellerById(int id) {
+        User user = getUserById(id);
+
+        if (user.hasRole(UserRole.SELLER)) {
+            return user;
+        }
+
+        throw new AuthorizationException("User with id " + id + " is not a seller");
+    }
+
+    /*
+        Láº¥y user theo id vÃ  kiá»ƒm tra user Ä‘Ã³ cÃ³ role ADMIN hay khÃ´ng.
+    */
+    public User getAdminById(int id) {
+        User user = getUserById(id);
+
+        if (user.hasRole(UserRole.ADMIN)) {
+            return user;
+        }
+
+        throw new AuthorizationException("User with id " + id + " is not an admin");
+    }
+
+    /*
+        ThÃªm role cho user.
+        VÃ­ dá»¥:
+        - user ban Ä‘áº§u chá»‰ lÃ  BIDDER
+        - sau Ä‘Ã³ muá»‘n user Ä‘Ã³ Ä‘Äƒng bÃ¡n sáº£n pháº©m
+        - thÃ¬ thÃªm role SELLER
+    */
+    public void addRole(int userId, UserRole role) {
+        User user = getUserById(userId);
+
+        user.addRole(role);
+
+        userDAO.update(user);
+        
+        // Sync cache
+        userStore.updateUser(user);
+    }
+
+    /*
+        XÃ³a role cá»§a user.
+        VÃ­ dá»¥:
+        - xÃ³a quyá»n SELLER
+        - nhÆ°ng user váº«n cÃ²n BIDDER
+        Trong class User nÃªn cháº·n trÆ°á»ng há»£p xÃ³a háº¿t role.
+    */
+    public void removeRole(int userId, UserRole role) {
+        User user = getUserById(userId);
+
+        user.removeRole(role);
+
+        userDAO.update(user);
+        
+        // Sync cache
+        userStore.updateUser(user);
+    }
+
+    /*
+        ÄÄƒng nháº­p.
+        BÆ°á»›c 1: tÃ¬m user theo username.
+        BÆ°á»›c 2: kiá»ƒm tra password.
+        BÆ°á»›c 3: Ä‘Ãºng thÃ¬ tráº£ vá» user.
+    */
+    public User login(String username, String password) {
+        User user = userStore.getUserByUsername(username);
+
+        if (user == null) {
+            throw new AuthenticationException("Username does not exist");
+        }
+
+        boolean correctPassword = HashUtil.checkPassword(password, user.getPassword());
+
+        if (!correctPassword) {
+            throw new AuthenticationException("Wrong password");
+        }
+
+        return user;
+    }
+
+    /*
+        Láº¥y táº¥t cáº£ user.
+    */
+    public List<User> getAllUsers() {
+        return userStore.getAllUsers();
+    }
+
+    /*
+        XÃ³a user theo id.
+    */
+    public void removeUser(int id) {
+        boolean removed = userDAO.deleteById(id);
+
+        if (!removed) {
+            throw new UserNotFoundException(id);
+        }
+        
+        // Sync cache
+        userStore.removeUser(id);
+    }
+
+    public void deposit(int userId, BigDecimal amount) {
+        User user = getUserById(userId);
+
+        user.deposit(amount);
+
+        boolean updated = userDAO.updateBalance(user.getId(), user.getAvailableBalance(), user.getFrozenBalance());
+
+        if (!updated) {
+            throw new DatabaseException("Cannot update balance");
+        }
+        
+        // Sync cache
+        userStore.updateUser(user);
+    }
+
+    public void withdraw(int userId, BigDecimal amount) {
+        User user = getUserById(userId);
+
+        user.withdraw(amount);
+
+        boolean updated = userDAO.updateBalance(user.getId(), user.getAvailableBalance(), user.getFrozenBalance());
+
+        if (!updated) {
+            throw new DatabaseException("Cannot update balance");
+        }
+        
+        // Sync cache
+        userStore.updateUser(user);
+    }
+
+    public void banUser(int userId) {
+        // 1. Äá»ŒC tá»« Store (nhanh, khÃ´ng cáº§n chá» DB)
+        User user = getUserById(userId);
+
+        // 2. Ghi: má»Ÿ Transaction Ä‘á»ƒ Ä‘áº£m báº£o atomic trong DB
+        try (Connection connection = DatabaseConnection.getConnection()) {

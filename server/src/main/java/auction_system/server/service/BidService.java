@@ -9,6 +9,8 @@ import auction_system.server.exception.InvalidBidException;
 import auction_system.server.model.Auction;
 import auction_system.server.model.BidTransaction;
 import auction_system.server.model.User;
+import auction_system.server.model.User;
+import auction_system.server.dao.UserDAO;
 import auction_system.server.observer.BidEvent;
 import auction_system.server.observer.EventBus;
 import auction_system.server.store.AuctionStore;
@@ -95,11 +97,16 @@ public class BidService {
 
             Integer previousBidderId = auction.getHighestBidderId();
             BigDecimal previousPrice = auction.getCurrentPrice();
+            User previousBidderFromRam = null;
 
             updateStatusInternal(auction);
 
             if (bidder == null) {
                 throw new NullPointerException("Bidder cannot be null");
+            }
+
+            if (previousBidderId != null && previousBidderId.intValue() == bidder.getId()) {
+                throw new InvalidBidException("Bạn đang là người đấu giá cao nhất");
             }
 
             if (!bidder.hasRole(UserRole.BIDDER)) {
@@ -127,8 +134,22 @@ public class BidService {
                 }
             }
 
-            if (bidder.getBalance().compareTo(amount) < 0) {
+            BigDecimal newBidderAvailable = bidder.getAvailableBalance().subtract(amount);
+            BigDecimal newBidderFrozen = bidder.getFrozenBalance().add(amount);
+
+            if (newBidderAvailable.compareTo(BigDecimal.ZERO) < 0) {
                 throw new RuntimeException("Not enough balance");
+            }
+
+            UserDAO.getInstance().updateBalance(connection, bidder.getId(), newBidderAvailable, newBidderFrozen);
+
+            if (previousBidderId != null && previousBidderId != 0 && previousPrice != null) {
+                previousBidderFromRam = userStore.getUserById(previousBidderId);
+                if (previousBidderFromRam != null) {
+                    BigDecimal newPrevAvailable = previousBidderFromRam.getAvailableBalance().add(previousPrice);
+                    BigDecimal newPrevFrozen = previousBidderFromRam.getFrozenBalance().subtract(previousPrice);
+                    UserDAO.getInstance().updateBalance(connection, previousBidderFromRam.getId(), newPrevAvailable, newPrevFrozen);
+                }
             }
             
             LocalDateTime endTime = auction.getEndTime();
@@ -156,6 +177,7 @@ public class BidService {
             bidTransactionDAO.save(connection, auctionId, latestTransaction);
             auction.setCurrentPrice(amount);
             auction.setHighestBidderId(bidder.getId());
+            auction.setHighestBidderUsername(bidder.getUsername()); // Đảm bảo broadcast có tên bidder
             auctionDAO.update(connection, auction);
             connection.commit();
 
@@ -163,11 +185,19 @@ public class BidService {
             auctionStore.updateAuction(auction);
             bidTransactionStore.addBid(auctionId, latestTransaction);
 
+            bidder.freezeBalance(amount);
+            if (previousBidderFromRam != null) {
+                previousBidderFromRam.unfreezeBalance(previousPrice);
+            }
+
             eventToPublish = new BidEvent(
                     auctionId, bidder.getId(), previousBidderId,
                     amount, previousPrice,
                     LocalDateTime.now());
 
+        } catch (InvalidBidException e) {
+            rollback(connection);
+            throw e;
         } catch (Exception e) {
             rollback(connection);
             throw new RuntimeException(e.getMessage() != null ? e.getMessage() : "Cannot place bid", e);
