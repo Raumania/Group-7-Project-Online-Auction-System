@@ -245,3 +245,11 @@
     -fx-font-size: 16px;
     -fx-font-weight: bold;
 }
+
+/* Make the center viewport scroll pane fully transparent so the blue root background shows */
+.main-content-scroll-pane {
+    -fx-background-color: transparent;
+}
+.main-content-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}

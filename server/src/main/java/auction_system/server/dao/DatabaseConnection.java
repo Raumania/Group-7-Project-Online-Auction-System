@@ -15,17 +15,24 @@ public class DatabaseConnection {
     private static final String USERNAME = "admin";
     private static final String PASSWORD = "chuataidaxiu";
 
-    private static boolean isRunningTest() {
+    private static boolean testMode = false;
+
+    static {
         for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-            if (element.getClassName().contains("org.junit") || element.getClassName().contains("org.testng")) {
-                return true;
+            if (element.getClassName().contains("org.junit") || element.getClassName().contains("org.testng")
+                    || System.getProperty("testMode") != null) {
+                testMode = true;
+                break;
             }
         }
-        return false;
+    }
+
+    public static void setTestMode(boolean mode) {
+        testMode = mode;
     }
 
     public static Connection getConnection() throws SQLException {
-        String url = isRunningTest() ? TEST_URL : DEV_URL;
+        String url = testMode ? TEST_URL : DEV_URL;
         return DriverManager.getConnection(url, USERNAME, PASSWORD);
     }
 }

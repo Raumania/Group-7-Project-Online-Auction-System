@@ -86,7 +86,12 @@ public class DetailViewportController {
 
         try {
             Image itemImage = ImageService.getInstance().base64ToImage(auctionDTO.getImageBase64());
-            itemImageView.setImage(itemImage);
+            if (itemImage != null) {
+                itemImageView.setImage(itemImage);
+            } else {
+                Image placeholder = new Image(getClass().getResourceAsStream("/images/items/placeholder.png"));
+                itemImageView.setImage(placeholder);
+            }
         } catch (Exception e) {
             try {
                 Image placeholder = new Image(getClass().getResourceAsStream("/images/items/placeholder.png"));

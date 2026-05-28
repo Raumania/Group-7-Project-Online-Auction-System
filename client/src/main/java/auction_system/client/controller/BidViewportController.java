@@ -255,7 +255,8 @@ public class BidViewportController implements Initializable {
                     Platform.runLater(() -> {
                         if (res != null && res.getStatus() == Status.SUCCESS && res.getData() != null) {
                             try {
-                                auction_system.common.dto.AutoBidDTO abConfig = auction_system.client.util.GsonUtil.fromJsonElement((com.google.gson.JsonElement) res.getData(), auction_system.common.dto.AutoBidDTO.class);
+                                String jsonStr = auction_system.client.util.GsonUtil.toJson(res.getData());
+                                auction_system.common.dto.AutoBidDTO abConfig = auction_system.client.util.GsonUtil.fromJson(jsonStr, auction_system.common.dto.AutoBidDTO.class);
                                 if (abConfig != null) {
                                     autoBidToggle.setSelected(true);
                                     autoBidToggle.setText("Disable Auto Bidding");

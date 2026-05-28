@@ -45,7 +45,7 @@ public class AuctionStore {
             if (auction.getType() == null) auction.setType(existing.getType());
             if (auction.getSellerId() == 0) auction.setSellerId(existing.getSellerId());
             if (auction.getStartingPrice() == null) auction.setStartingPrice(existing.getStartingPrice());
-            if (auction.getImageBase64() == null) auction.setImageBase64(existing.getImageBase64());
+            if (auction.getImageBase64() == null || auction.getImageBase64().isBlank()) auction.setImageBase64(existing.getImageBase64());
             
             auctions.set(index, auction);
         }

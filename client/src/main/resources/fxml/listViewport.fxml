@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox stylesheets="@../css/mainAuction.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.ListViewportController">
+<VBox styleClass="viewport-background" stylesheets="@../css/listViewport.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.ListViewportController">
    <children>
       <HBox spacing="15.0">
          <children>
@@ -33,7 +33,7 @@
          </children>
       </HBox>
       <Label styleClass="section-title" text="⏱ Top Upcoming Auctions" />
-      <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 20 0 0 0;" VBox.vgrow="ALWAYS">
+      <ScrollPane fitToWidth="true" styleClass="list-scroll-pane" VBox.vgrow="ALWAYS">
          <content>
             <FlowPane fx:id="itemContainer" alignment="CENTER_LEFT" hgap="20.0" vgap="20.0">
                <padding>

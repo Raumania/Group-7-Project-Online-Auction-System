@@ -63,10 +63,14 @@ public class AutoBidService {
         }
 
         // 4. Calculate default bid increment if empty
+        BigDecimal refPrice = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : auction.getStartingPrice();
+        BigDecimal platformMinIncrement = bidService.getBidIncrement(refPrice);
+
         BigDecimal finalIncrement = bidIncrement;
         if (finalIncrement == null || finalIncrement.compareTo(BigDecimal.ZERO) <= 0) {
-            BigDecimal refPrice = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : auction.getStartingPrice();
-            finalIncrement = bidService.getBidIncrement(refPrice);
+            finalIncrement = platformMinIncrement;
+        } else if (finalIncrement.compareTo(platformMinIncrement) < 0) {
+            throw new RuntimeException("Bid increment (" + finalIncrement + ") must be at least the platform minimum increment (" + platformMinIncrement + ")");
         }
 
         // 5. Verify bid validity compared to current price
@@ -81,16 +85,49 @@ public class AutoBidService {
             throw new RuntimeException("Your max bid (" + maxBid + ") is lower than the next minimum bid required (" + nextMinBid + ")");
         }
 
-        // 6. Verify user balance is sufficient for the next minimum bid
-        if (user.getAvailableBalance().compareTo(nextMinBid) < 0) {
-            throw new RuntimeException("Insufficient balance to place the next required bid of " + nextMinBid);
+        // 6. Calculate amount to freeze for the Max Bid
+        BigDecimal amountToFreeze;
+        AutoBid existingAutoBid = getAutoBidConfig(userId, auctionId);
+        if (existingAutoBid != null) {
+            amountToFreeze = maxBid.subtract(existingAutoBid.getMaxBid());
+        } else {
+            Integer currentHighestBidder = auction.getHighestBidderId();
+            if (currentHighestBidder != null && currentHighestBidder == userId) {
+                BigDecimal currentPrice = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : BigDecimal.ZERO;
+                amountToFreeze = maxBid.subtract(currentPrice);
+            } else {
+                amountToFreeze = maxBid;
+            }
         }
 
-        // 7. Save or update configuration in the database
+        if (amountToFreeze.compareTo(BigDecimal.ZERO) > 0 && user.getAvailableBalance().compareTo(amountToFreeze) < 0) {
+            throw new RuntimeException("Insufficient available balance. Required to freeze for Max Bid: " + amountToFreeze);
+        }
+
+        // 7. Save or update configuration in the database and freeze balance
         AutoBid autoBid = new AutoBid(userId, auctionId, maxBid, finalIncrement);
         
         try (Connection connection = DatabaseConnection.getConnection()) {
-            autoBidDAO.saveOrUpdate(connection, autoBid);
+            connection.setAutoCommit(false);
+            try {
+                if (amountToFreeze.compareTo(BigDecimal.ZERO) != 0) {
+                    BigDecimal newAvail = user.getAvailableBalance().subtract(amountToFreeze);
+                    BigDecimal newFrozen = user.getFrozenBalance().add(amountToFreeze);
+                    auction_system.server.dao.UserDAO.getInstance().updateBalance(connection, user.getId(), newAvail, newFrozen);
+                    
+                    if (amountToFreeze.compareTo(BigDecimal.ZERO) > 0) {
+                        user.freezeBalance(amountToFreeze);
+                    } else {
+                        user.unfreezeBalance(amountToFreeze.abs());
+                    }
+                }
+
+                autoBidDAO.saveOrUpdate(connection, autoBid);
+                connection.commit();
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            }
         }
 
         // Sync with memory cache
@@ -107,8 +144,37 @@ public class AutoBidService {
     }
 
     public void cancelAutoBid(int userId, int auctionId) throws SQLException {
+        AutoBid ab = getAutoBidConfig(userId, auctionId);
+        if (ab == null) return;
+        
         try (Connection connection = DatabaseConnection.getConnection()) {
-            autoBidDAO.disableAutoBid(connection, userId, auctionId);
+            connection.setAutoCommit(false);
+            try {
+                autoBidDAO.disableAutoBid(connection, userId, auctionId);
+                
+                Auction auction = auctionService.getAuctionById(auctionId);
+                BigDecimal amountToUnfreeze;
+                Integer currentHighestBidder = auction.getHighestBidderId();
+                if (currentHighestBidder != null && currentHighestBidder == userId) {
+                    BigDecimal currentPrice = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : BigDecimal.ZERO;
+                    amountToUnfreeze = ab.getMaxBid().subtract(currentPrice);
+                } else {
+                    amountToUnfreeze = ab.getMaxBid();
+                }
+
+                if (amountToUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
+                    User user = userService.getUserById(userId);
+                    BigDecimal newAvail = user.getAvailableBalance().add(amountToUnfreeze);
+                    BigDecimal newFrozen = user.getFrozenBalance().subtract(amountToUnfreeze);
+                    auction_system.server.dao.UserDAO.getInstance().updateBalance(connection, user.getId(), newAvail, newFrozen);
+                    user.unfreezeBalance(amountToUnfreeze);
+                }
+
+                connection.commit();
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            }
         }
         // Sync with memory cache
         autoBidStore.disableAutoBid(userId, auctionId);

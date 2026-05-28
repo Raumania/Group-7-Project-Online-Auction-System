@@ -22,17 +22,16 @@
     </padding>
 
     <children>
-        <HBox alignment="CENTER_LEFT" spacing="15.0">
-            <children>
-                <Button mnemonicParsing="false" onAction="#handleBackToList" styleClass="btn-back" text="&lt; Back to list" />
-                <Label fx:id="itemNameLabel" styleClass="page-title" text="iPhone 15 Pro Max 256GB - Natural Titanium" />
-            </children>
-        </HBox>
-
         <HBox spacing="20.0" VBox.vgrow="ALWAYS">
             <children>
                 <VBox spacing="15.0" styleClass="content-card" HBox.hgrow="ALWAYS">
                     <children>
+                        <HBox alignment="CENTER_LEFT" spacing="15.0">
+                            <children>
+                                <Button mnemonicParsing="false" onAction="#handleBackToList" styleClass="btn-back" text="&lt; Back to list" />
+                                <Label fx:id="itemNameLabel" styleClass="page-title" text="iPhone 15 Pro Max 256GB - Natural Titanium" />
+                            </children>
+                        </HBox>
                         <!-- Giảm minHeight của khung ảnh từ 300 xuống 200 -->
                         <VBox alignment="CENTER" maxHeight="300.0" minHeight="200.0" styleClass="image-preview-area">
                             <children>

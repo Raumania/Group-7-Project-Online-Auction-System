@@ -68,15 +68,16 @@ public class AuctionService {
             }
 
             // 3. Lưu ảnh (nếu có)
-            String imagePath = null;
+            String imagePathToSave = null;
             String imageBase64 = auction.getImageBase64();
             if (imageBase64 != null && !imageBase64.isBlank()) {
-                imagePath = imageService.saveBase64Image(connection, imageBase64);
+                imagePathToSave = imageService.saveBase64Image(connection, imageBase64);
             }
 
             // 4. Tạo Auction với item_id và image path
-            int auctionId = auctionDAO.save(connection, auction, itemId, imagePath);
+            int auctionId = auctionDAO.save(connection, auction, itemId, imagePathToSave);
             auction.setId(auctionId);
+            auction.setImagePath(imagePathToSave); // PRESERVE PATH IN RAM CACHE
 
             connection.commit();
             

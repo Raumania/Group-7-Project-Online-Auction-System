@@ -5,23 +5,24 @@
 
 /* Nút Back và Tiêu đề Header */
 .btn-back {
-    -fx-background-color: rgba(255, 255, 255, 0.15);
+    -fx-background-color: #3b82f6; /* Blue 500 */
     -fx-text-fill: white;
     -fx-background-radius: 8;
-    -fx-padding: 8 15;
+    -fx-padding: 8 16;
     -fx-font-weight: bold;
     -fx-cursor: hand;
-    -fx-border-color: rgba(255, 255, 255, 0.3);
-    -fx-border-radius: 8;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(three-pass-box, rgba(59, 130, 246, 0.2), 6, 0, 0, 2);
 }
 .btn-back:hover {
-    -fx-background-color: rgba(255, 255, 255, 0.25);
+    -fx-background-color: #2563eb; /* Blue 600 */
+    -fx-effect: dropshadow(three-pass-box, rgba(37, 99, 235, 0.3), 8, 0, 0, 3);
 }
 
 .page-title {
-    -fx-font-size: 20px;
+    -fx-font-size: 22px;
     -fx-font-weight: bold;
-    -fx-text-fill: white;
+    -fx-text-fill: #0f172a; /* Slate 900 */
 }
 
 /* --- THẺ NỘI DUNG (WHITE CARDS) --- */

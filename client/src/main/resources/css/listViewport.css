@@ -1,0 +1,65 @@
+/* --- listViewport.css --- */
+
+.viewport-background {
+    -fx-background-color: transparent;
+}
+
+.text-muted {
+    -fx-text-fill: #E0F2FE; /* Light sky blue for contrast on dark blue */
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.section-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white; /* White title on blue background */
+    -fx-padding: 20 0 15 0;
+}
+
+.combo-box-filter {
+    -fx-background-color: #1e3a8a; /* Dark Blue */
+    -fx-base: #1e3a8a;
+    -fx-background-radius: 8;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.combo-box-filter .label {
+    -fx-text-fill: white;
+}
+
+.combo-box-filter .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: #1e3a8a;
+}
+
+/* ScrollPane containing the auction item cards */
+.list-scroll-pane {
+    -fx-background-color: #F8FAFC; /* Clean white/light-gray */
+    -fx-background: #F8FAFC;
+    -fx-background-radius: 16 16 0 0; /* Premium rounded top corners */
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.list-scroll-pane > .viewport {
+    -fx-background-color: #F8FAFC;
+    -fx-background-radius: 16 16 0 0;
+}
+
+/* Custom ScrollBar style within list scroll pane */
+.list-scroll-pane .thumb {
+    -fx-background-color: #CBD5E1;
+    -fx-background-radius: 10;
+}
+
+.list-scroll-pane .thumb:hover {
+    -fx-background-color: #94A3B8;
+}
+
+.list-scroll-pane .track {
+    -fx-background-color: #F1F5F9;
+    -fx-background-radius: 10;
+}

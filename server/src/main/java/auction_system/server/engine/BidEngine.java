@@ -19,6 +19,7 @@ import auction_system.server.store.UserStore;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -75,9 +76,12 @@ public class BidEngine implements AuctionObserver {
     }
 
     public void triggerAutoBids(int auctionId, int currentHighestBidderId) {
+        System.out.println("[BidEngine] triggerAutoBids called for auction: " + auctionId + ", leader: " + currentHighestBidderId);
         executorService.submit(() -> {
             try {
+                System.out.println("[BidEngine] Thread started for auction: " + auctionId);
                 processAutoBids(auctionId, currentHighestBidderId);
+                System.out.println("[BidEngine] Thread finished for auction: " + auctionId);
             } catch (Exception e) {
                 System.err.println("[BidEngine] Critical error during auto bid processing for auction: " + auctionId);
                 e.printStackTrace();
@@ -86,193 +90,252 @@ public class BidEngine implements AuctionObserver {
     }
 
     private void processAutoBids(int auctionId, int currentHighestBidderId) throws SQLException {
-        while (true) {
-            Connection connection = null;
-            try {
-                connection = DatabaseConnection.getConnection();
-                connection.setAutoCommit(false);
+        Connection connection = null;
+        try {
+            connection = DatabaseConnection.getConnection();
+            connection.setAutoCommit(false);
 
-                // 1. Lock the auction row to fetch the latest data (prevent concurrency race conditions)
-                Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
-                if (auction == null) {
-                    System.out.println("[BidEngine] Auction not found, id = " + auctionId);
-                    connection.commit();
-                    break;
-                }
-
-                if (auction.getStatus() != AuctionStatus.RUNNING) {
-                    System.out.println("[BidEngine] Auction " + auctionId + " is not in RUNNING status. Stopping Auto Bid.");
-                    connection.commit();
-                    break;
-                }
-
-                int highestBidderId = auction.getHighestBidderId() != null ? auction.getHighestBidderId() : 0;
-                BigDecimal currentPrice = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : BigDecimal.ZERO;
-
-                // 2. Fetch all active auto bids for this auction from RAM Store
-                List<AutoBid> activeBids = AutoBidStore.getInstance().getActiveAutoBidsByAuctionId(auctionId);
-                
-                // Exclude the current highest bidder (do not bid against oneself)
-                activeBids.removeIf(ab -> ab.getUserId() == highestBidderId);
-
-                if (activeBids.isEmpty()) {
-                    System.out.println("[BidEngine] No other active auto bid configurations found for auction " + auctionId);
-                    connection.commit();
-                    break;
-                }
-
-                // 3. Calculate next required bid amount
-                // If no one has placed a bid, the minimum next bid is the Starting Price
-                BigDecimal nextBidAmount;
-                if (currentPrice.compareTo(BigDecimal.ZERO) == 0) {
-                    nextBidAmount = auction.getStartingPrice();
-                } else {
-                    // Use system standard bid increment
-                    BigDecimal increment = BidService.getInstance().getBidIncrement(currentPrice);
-                    nextBidAmount = currentPrice.add(increment);
-                }
-
-                // 4. Sort to find the most optimal auto bid:
-                // Priority 1: Highest max_bid
-                // Priority 2: Oldest configuration (createdAt) ascending
-                activeBids.sort((a, b) -> {
-                    int cmp = b.getMaxBid().compareTo(a.getMaxBid());
-                    if (cmp != 0) return cmp;
-                    return a.getCreatedAt().compareTo(b.getCreatedAt());
-                });
-
-                AutoBid eligibleAutoBid = null;
-                for (AutoBid ab : activeBids) {
-                    User bidder = userService.getUserById(ab.getUserId());
-                    
-                    if (bidder == null || !bidder.hasRole(UserRole.BIDDER)) {
-                        // Deactivate invalid configuration
-                        System.out.println("[BidEngine] Deactivating Auto Bid due to invalid User ID " + ab.getUserId() + " or missing BIDDER role");
-                        autoBidDAO.deactivate(connection, ab.getId());
-                        AutoBidStore.getInstance().deactivateAutoBid(ab.getId());
-                        continue;
-                    }
-
-                    // Use custom bid increment if declared
-                    BigDecimal userIncrement = ab.getBidIncrement();
-                    BigDecimal actualNextBid = nextBidAmount;
-                    if (currentPrice.compareTo(BigDecimal.ZERO) > 0 && userIncrement != null && userIncrement.compareTo(BigDecimal.ZERO) > 0) {
-                        actualNextBid = currentPrice.add(userIncrement);
-                    }
-
-                    // Check if next bid exceeds the configured max bid
-                    if (actualNextBid.compareTo(ab.getMaxBid()) > 0) {
-                        System.out.println("[BidEngine] Deactivating Auto Bid for User " + ab.getUserId() +
-                                " because next bid " + actualNextBid + " exceeds max_bid " + ab.getMaxBid());
-                        autoBidDAO.deactivate(connection, ab.getId());
-                        AutoBidStore.getInstance().deactivateAutoBid(ab.getId());
-                        continue;
-                    }
-
-                    // Check if the user has sufficient balance
-                    if (bidder.getAvailableBalance().compareTo(actualNextBid) < 0) {
-                        System.out.println("AutoBid failed for user " + bidder.getUsername() + 
-                                " due to insufficient balance " + bidder.getAvailableBalance() + " for next bid " + actualNextBid);
-                        autoBidDAO.deactivate(connection, ab.getId());
-                        AutoBidStore.getInstance().deactivateAutoBid(ab.getId());
-                        continue;
-                    }
-
-                    // Eligible! Set as the next bidding representative
-                    eligibleAutoBid = ab;
-                    nextBidAmount = actualNextBid;
-                    break;
-                }
-
-                if (eligibleAutoBid == null) {
-                    System.out.println("[BidEngine] No other eligible auto bidders found for auction " + auctionId);
-                    connection.commit();
-                    break;
-                }
-
-                // 5. Place the auto-bid on behalf of this user inside a Transaction
-                User bidder = userService.getUserById(eligibleAutoBid.getUserId());
-
-                // --- BALANCE UPDATE LOGIC ---
-                BigDecimal newBidderAvailable = bidder.getAvailableBalance().subtract(nextBidAmount);
-                BigDecimal newBidderFrozen = bidder.getFrozenBalance().add(nextBidAmount);
-                UserDAO.getInstance().updateBalance(connection, bidder.getId(), newBidderAvailable, newBidderFrozen);
-
-                User previousBidderFromRam = null;
-                if (highestBidderId != 0 && currentPrice != null && currentPrice.compareTo(BigDecimal.ZERO) > 0) {
-                    previousBidderFromRam = UserStore.getInstance().getUserById(highestBidderId);
-                    if (previousBidderFromRam != null) {
-                        BigDecimal newPrevAvailable = previousBidderFromRam.getAvailableBalance().add(currentPrice);
-                        BigDecimal newPrevFrozen = previousBidderFromRam.getFrozenBalance().subtract(currentPrice);
-                        UserDAO.getInstance().updateBalance(connection, previousBidderFromRam.getId(), newPrevAvailable, newPrevFrozen);
-                    }
-                }
-
-                // --- ANTI-SNIPING LOGIC ---
-                LocalDateTime endTime = auction.getEndTime();
-                LocalDateTime now = LocalDateTime.now();
-                if (endTime != null && !now.isAfter(endTime)) {
-                    long remainingSeconds = java.time.Duration.between(now, endTime).getSeconds();
-                    if (remainingSeconds <= 30 && remainingSeconds >= 0) {
-                        auctionDAO.antisnippingtime(auctionId);
-                        auction.setEndTime(endTime.plusMinutes(1));
-                    }
-                }
-                
-                BidTransaction transaction = new BidTransaction(bidder, nextBidAmount);
-                bidTransactionDAO.save(connection, auctionId, transaction);
-
-                auction.setCurrentPrice(nextBidAmount);
-                auction.setHighestBidderId(bidder.getId());
-                auction.setHighestBidderUsername(bidder.getUsername());
-                auctionDAO.update(connection, auction);
-
-                // Commit Transaction successfully!
-                connection.commit();
-
-                // Sync with Server Store RAM Cache
-                AuctionStore.getInstance().updateAuction(auction);
-                BidTransactionStore.getInstance().addBid(auctionId, transaction);
-                
-                bidder.freezeBalance(nextBidAmount);
-                if (previousBidderFromRam != null) {
-                    previousBidderFromRam.unfreezeBalance(currentPrice);
-                }
-
-                System.out.println("[BidEngine] Auto bid placed SUCCESSFUL for User " + bidder.getId() +
-                        " on auction " + auctionId + " with amount " + nextBidAmount);
-
-                // 6. Publish the new BidEvent to EventBus to trigger the next round of competition
-                BidEvent nextEvent = new BidEvent(
-                        auctionId, bidder.getId(), highestBidderId,
-                        nextBidAmount, currentPrice, LocalDateTime.now()
-                );
-                EventBus.getInstance().publish(nextEvent);
-
-                // Break the current loop; the next match will be triggered asynchronously via EventBus.publish() above!
-                break;
-
-            } catch (Exception e) {
-                if (connection != null) {
-                    try {
-                        connection.rollback();
-                    } catch (SQLException sqle) {
-                        System.err.println("[BidEngine] Rollback failed");
-                        sqle.printStackTrace();
-                    }
-                }
-                throw e;
-            } finally {
-                if (connection != null) {
-                    try {
-                        connection.setAutoCommit(true);
-                        connection.close();
-                    } catch (SQLException sqle) {
-                        System.err.println("[BidEngine] Connection close failed");
-                        sqle.printStackTrace();
+            System.out.println("[BidEngine] Checking if auction " + auctionId + " exists...");
+            try (PreparedStatement ps = connection.prepareStatement("SELECT id, item_id, status FROM auctions WHERE id = ?")) {
+                ps.setInt(1, auctionId);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        System.out.println("[BidEngine] Auction exists directly in DB! item_id: " + rs.getInt("item_id") + ", status: " + rs.getString("status"));
+                    } else {
+                        System.out.println("[BidEngine] Auction DOES NOT EXIST in DB directly!");
                     }
                 }
             }
+
+            Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
+            if (auction == null || auction.getStatus() != AuctionStatus.RUNNING) {
+                System.out.println("[BidEngine] processAutoBids aborted. auction=" + (auction != null ? auction.getId() : "null") + ", status=" + (auction != null ? auction.getStatus() : "null"));
+                connection.commit();
+                return;
+            }
+
+            List<AutoBid> activeBids = AutoBidStore.getInstance().getActiveAutoBidsByAuctionId(auctionId);
+            if (activeBids.isEmpty()) {
+                System.out.println("[BidEngine] processAutoBids aborted. No active bids.");
+                connection.commit();
+                return;
+            }
+
+            int leaderId = auction.getHighestBidderId() != null ? auction.getHighestBidderId() : 0;
+            BigDecimal currentPrice = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : BigDecimal.ZERO;
+            System.out.println("[BidEngine] leaderId=" + leaderId + ", currentPrice=" + currentPrice);
+
+            List<AutoBid> validBids = new java.util.ArrayList<>();
+            for (AutoBid ab : activeBids) {
+                User bidder = userService.getUserById(ab.getUserId());
+                if (bidder == null || !bidder.hasRole(UserRole.BIDDER)) {
+                    System.out.println("[BidEngine] Deactivating auto bid for user: " + ab.getUserId() + " due to missing or invalid bidder.");
+                    deactivateAutoBid(connection, ab, leaderId, currentPrice);
+                    continue;
+                }
+                
+                if (ab.getUserId() != leaderId && ab.getMaxBid().compareTo(currentPrice) <= 0) {
+                    System.out.println("[BidEngine] Deactivating auto bid for user: " + ab.getUserId() + " because max bid " + ab.getMaxBid() + " <= currentPrice " + currentPrice);
+                    deactivateAutoBid(connection, ab, leaderId, currentPrice);
+                    continue;
+                }
+                
+                if (ab.getUserId() == leaderId && ab.getMaxBid().compareTo(currentPrice) <= 0) {
+                    System.out.println("[BidEngine] Deactivating auto bid for leader: " + ab.getUserId() + " because max bid " + ab.getMaxBid() + " <= currentPrice " + currentPrice);
+                    deactivateAutoBid(connection, ab, leaderId, currentPrice);
+                    continue;
+                }
+                
+                System.out.println("[BidEngine] Valid auto bid found for user: " + ab.getUserId() + " with max bid " + ab.getMaxBid());
+                validBids.add(ab);
+            }
+
+            if (validBids.isEmpty()) {
+                System.out.println("[BidEngine] No valid auto bids remain.");
+                connection.commit();
+                return;
+            }
+
+            validBids.sort((a, b) -> {
+                int cmp = b.getMaxBid().compareTo(a.getMaxBid());
+                if (cmp != 0) return cmp;
+                return a.getCreatedAt().compareTo(b.getCreatedAt());
+            });
+
+            AutoBid winnerAb = validBids.get(0);
+
+            if (validBids.size() == 1) {
+                if (winnerAb.getUserId() == leaderId) {
+                    connection.commit();
+                    return;
+                } else {
+                    BigDecimal userIncrement = winnerAb.getBidIncrement();
+                    BigDecimal auctionMinIncrement = BidService.getInstance().getBidIncrement(currentPrice);
+                    BigDecimal effectiveIncrement = (userIncrement != null && userIncrement.compareTo(auctionMinIncrement) > 0)
+                        ? userIncrement : auctionMinIncrement;
+
+                    BigDecimal bidWithUserIncrement;
+                    BigDecimal bidWithMinIncrement;
+
+                    if (currentPrice.compareTo(BigDecimal.ZERO) == 0) {
+                        bidWithUserIncrement = auction.getStartingPrice();
+                        bidWithMinIncrement = auction.getStartingPrice();
+                    } else {
+                        bidWithUserIncrement = currentPrice.add(effectiveIncrement);
+                        bidWithMinIncrement = currentPrice.add(auctionMinIncrement);
+                    }
+
+                    BigDecimal finalPrice;
+                    boolean winnerDeactivated = false;
+                    
+                    if (bidWithUserIncrement.compareTo(winnerAb.getMaxBid()) <= 0) {
+                        finalPrice = bidWithUserIncrement;
+                    } else if (bidWithMinIncrement.compareTo(winnerAb.getMaxBid()) <= 0) {
+                        finalPrice = bidWithMinIncrement;
+                        winnerDeactivated = true;
+                    } else {
+                        // Max bid is not enough to beat the competitor with minimum increment
+                        deactivateAutoBid(connection, winnerAb, leaderId, currentPrice);
+                        connection.commit();
+                        return;
+                    }
+
+                    executeBid(connection, auction, winnerAb.getUserId(), finalPrice);
+                    
+                    if (winnerDeactivated) {
+                        deactivateAutoBid(connection, winnerAb, winnerAb.getUserId(), finalPrice);
+                    }
+
+                    connection.commit();
+                    EventBus.getInstance().publish(new BidEvent(
+                        auctionId, winnerAb.getUserId(), leaderId,
+                        finalPrice, currentPrice, LocalDateTime.now()
+                    ));
+                    return;
+                }
+            }
+
+            AutoBid runnerUpAb = validBids.get(1);
+
+            for (int i = 1; i < validBids.size(); i++) {
+                AutoBid loser = validBids.get(i);
+                deactivateAutoBid(connection, loser, leaderId, currentPrice);
+            }
+
+            BigDecimal runnerUpMax = runnerUpAb.getMaxBid();
+            BigDecimal winnerMax = winnerAb.getMaxBid();
+
+            BigDecimal userIncrement = winnerAb.getBidIncrement();
+            BigDecimal auctionMinIncrement = BidService.getInstance().getBidIncrement(runnerUpMax);
+            BigDecimal effectiveIncrement = (userIncrement != null && userIncrement.compareTo(auctionMinIncrement) > 0)
+                ? userIncrement : auctionMinIncrement;
+
+            BigDecimal targetPriceWithUserIncrement = runnerUpMax.add(effectiveIncrement);
+            BigDecimal targetPriceWithMinIncrement = runnerUpMax.add(auctionMinIncrement);
+
+            BigDecimal finalPrice;
+            boolean winnerDeactivated = false;
+
+            if (targetPriceWithUserIncrement.compareTo(winnerMax) <= 0) {
+                finalPrice = targetPriceWithUserIncrement;
+            } else if (targetPriceWithMinIncrement.compareTo(winnerMax) <= 0) {
+                finalPrice = targetPriceWithMinIncrement;
+                winnerDeactivated = true;
+            } else {
+                // If runnerUpMax < winnerMax < targetPriceWithMinIncrement, the winner still wins but at exactly winnerMax
+                finalPrice = winnerMax;
+                winnerDeactivated = true;
+            }
+
+            executeBid(connection, auction, winnerAb.getUserId(), finalPrice);
+
+            if (winnerDeactivated) {
+                deactivateAutoBid(connection, winnerAb, winnerAb.getUserId(), finalPrice);
+            }
+
+            connection.commit();
+            EventBus.getInstance().publish(new BidEvent(
+                auctionId, winnerAb.getUserId(), leaderId,
+                finalPrice, currentPrice, LocalDateTime.now()
+            ));
+
+        } catch (Exception e) {
+            if (connection != null) {
+                try { connection.rollback(); } catch (SQLException sqle) { sqle.printStackTrace(); }
+            }
+            e.printStackTrace();
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.setAutoCommit(true);
+                    connection.close();
+                } catch (SQLException sqle) { sqle.printStackTrace(); }
+            }
         }
+    }
+
+    private void deactivateAutoBid(Connection conn, AutoBid ab, int currentLeaderId, BigDecimal currentPrice) throws SQLException {
+        autoBidDAO.deactivate(conn, ab.getId());
+        AutoBidStore.getInstance().deactivateAutoBid(ab.getId());
+
+        User user = userService.getUserById(ab.getUserId());
+        if (user != null) {
+            BigDecimal amountToUnfreeze;
+            if (currentLeaderId == ab.getUserId()) {
+                amountToUnfreeze = ab.getMaxBid().subtract(currentPrice);
+            } else {
+                amountToUnfreeze = ab.getMaxBid();
+            }
+
+            if (amountToUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal newAvail = user.getAvailableBalance().add(amountToUnfreeze);
+                BigDecimal newFrozen = user.getFrozenBalance().subtract(amountToUnfreeze);
+                UserDAO.getInstance().updateBalance(conn, user.getId(), newAvail, newFrozen);
+                user.unfreezeBalance(amountToUnfreeze);
+            }
+        }
+    }
+
+    private void executeBid(Connection conn, Auction auction, int newBidderId, BigDecimal finalPrice) throws SQLException {
+        int previousBidderId = auction.getHighestBidderId() != null ? auction.getHighestBidderId() : 0;
+        BigDecimal previousPrice = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : BigDecimal.ZERO;
+        
+        LocalDateTime endTime = auction.getEndTime();
+        LocalDateTime now = LocalDateTime.now();
+        if (endTime != null && !now.isAfter(endTime)) {
+            long remainingSeconds = java.time.Duration.between(now, endTime).getSeconds();
+            if (remainingSeconds <= 30 && remainingSeconds >= 0) {
+                auctionDAO.antisnippingtime(auction.getId());
+                auction.setEndTime(endTime.plusMinutes(1));
+            }
+        }
+
+        User newBidder = userService.getUserById(newBidderId);
+        
+        if (previousBidderId != 0 && previousBidderId != newBidderId) {
+            boolean prevHasActiveAutoBid = AutoBidStore.getInstance().getActiveAutoBidsByAuctionId(auction.getId())
+                .stream().anyMatch(ab -> ab.getUserId() == previousBidderId);
+                
+            if (!prevHasActiveAutoBid) {
+                User prevBidder = UserStore.getInstance().getUserById(previousBidderId);
+                if (prevBidder != null) {
+                    BigDecimal newPrevAvail = prevBidder.getAvailableBalance().add(previousPrice);
+                    BigDecimal newPrevFrozen = prevBidder.getFrozenBalance().subtract(previousPrice);
+                    UserDAO.getInstance().updateBalance(conn, prevBidder.getId(), newPrevAvail, newPrevFrozen);
+                    prevBidder.unfreezeBalance(previousPrice);
+                }
+            }
+        }
+
+        BidTransaction transaction = new BidTransaction(newBidder, finalPrice);
+        bidTransactionDAO.save(conn, auction.getId(), transaction);
+
+        auction.setCurrentPrice(finalPrice);
+        auction.setHighestBidderId(newBidder.getId());
+        auction.setHighestBidderUsername(newBidder.getUsername());
+        auctionDAO.update(conn, auction);
+
+        AuctionStore.getInstance().updateAuction(auction);
+        BidTransactionStore.getInstance().addBid(auction.getId(), transaction);
     }
 }

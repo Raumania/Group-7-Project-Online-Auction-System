@@ -16,6 +16,8 @@ import auction_system.server.observer.EventBus;
 import auction_system.server.store.AuctionStore;
 import auction_system.server.store.UserStore;
 import auction_system.server.store.BidTransactionStore;
+import auction_system.server.store.AutoBidStore;
+import auction_system.server.model.AutoBid;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -113,6 +115,13 @@ public class BidService {
                 throw new RuntimeException("Only bidder can place bid");
             }
 
+            List<AutoBid> activeAutoBids = AutoBidStore.getInstance().getActiveAutoBidsByAuctionId(auctionId);
+            boolean bidderHasActiveAutoBid = activeAutoBids.stream()
+                    .anyMatch(ab -> ab.getUserId() == bidder.getId());
+            if (bidderHasActiveAutoBid) {
+                throw new InvalidBidException("Bạn đang có Auto-Bid hoạt động, không thể đặt giá thủ công");
+            }
+
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new InvalidBidException("Bid amount must be greater than 0");
             }
@@ -144,11 +153,16 @@ public class BidService {
             UserDAO.getInstance().updateBalance(connection, bidder.getId(), newBidderAvailable, newBidderFrozen);
 
             if (previousBidderId != null && previousBidderId != 0 && previousPrice != null) {
-                previousBidderFromRam = userStore.getUserById(previousBidderId);
-                if (previousBidderFromRam != null) {
-                    BigDecimal newPrevAvailable = previousBidderFromRam.getAvailableBalance().add(previousPrice);
-                    BigDecimal newPrevFrozen = previousBidderFromRam.getFrozenBalance().subtract(previousPrice);
-                    UserDAO.getInstance().updateBalance(connection, previousBidderFromRam.getId(), newPrevAvailable, newPrevFrozen);
+                boolean prevHasActiveAutoBid = activeAutoBids.stream()
+                        .anyMatch(ab -> ab.getUserId() == previousBidderId);
+                
+                if (!prevHasActiveAutoBid) {
+                    previousBidderFromRam = userStore.getUserById(previousBidderId);
+                    if (previousBidderFromRam != null) {
+                        BigDecimal newPrevAvailable = previousBidderFromRam.getAvailableBalance().add(previousPrice);
+                        BigDecimal newPrevFrozen = previousBidderFromRam.getFrozenBalance().subtract(previousPrice);
+                        UserDAO.getInstance().updateBalance(connection, previousBidderFromRam.getId(), newPrevAvailable, newPrevFrozen);
+                    }
                 }
             }
             

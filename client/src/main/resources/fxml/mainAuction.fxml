@@ -108,7 +108,7 @@
       <!-- Đã xóa khối <top> rỗng ở đây -->
       <BorderPane styleClass="main-content" BorderPane.alignment="CENTER">
          <center>
-            <javafx.scene.control.ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" style="-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0; -fx-border-width: 0;">
+            <javafx.scene.control.ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="main-content-scroll-pane" style="-fx-background-color: transparent; -fx-padding: 0; -fx-border-width: 0;">
                <content>
                   <StackPane fx:id="viewport" />
                </content>

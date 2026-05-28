@@ -60,6 +60,7 @@
 .section-title {
     -fx-font-weight: bold;
     -fx-font-size: 14px;
+    -fx-text-fill: black;
 }
 .highest-bid-price {
     -fx-font-size: 24px;
@@ -72,6 +73,7 @@
 }
 .text-bold {
     -fx-font-weight: bold;
+    -fx-text-fill: black;
 }
 
 /* Inputs & Form Controls */
