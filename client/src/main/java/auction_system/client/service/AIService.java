@@ -49,11 +49,8 @@ public class AIService {
                         GsonUtil.getGson().toJsonTree(aidto)
                 );
 
-                // Send request via SocketClient
-                SocketClient.getInstance().send(request);
-
-                // Block and wait for response (in background thread to prevent JavaFX UI freezing)
-                Response response = SocketClient.getInstance().receive();
+                // Block and wait for response safely using synchronized sendAndReceive
+                Response response = SocketClient.getInstance().sendAndReceive(request);
 
                 if (response != null && response.getStatus() == Status.SUCCESS) {
                     String reply = (String) response.getData();

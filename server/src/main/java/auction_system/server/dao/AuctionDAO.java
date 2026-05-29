@@ -275,7 +275,7 @@ public class AuctionDAO {
             FROM auctions a
             INNER JOIN items i ON a.item_id = i.id
             LEFT JOIN users u ON a.highest_bidder_id = u.id
-            WHERE a.seller_id = ? AND (a.status = 'OPEN' OR a.status = 'RUNNING')
+            WHERE a.seller_id = ? AND (a.status = 'OPEN' OR a.status = 'RUNNING' OR a.status = 'FINISHED')
             """;
         List<Auction> auctions = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -299,7 +299,7 @@ public class AuctionDAO {
             FROM auctions a
             INNER JOIN items i ON a.item_id = i.id
             LEFT JOIN users u ON a.highest_bidder_id = u.id
-            WHERE a.highest_bidder_id = ? AND (a.status = 'OPEN' OR a.status = 'RUNNING')
+            WHERE a.highest_bidder_id = ? AND (a.status = 'OPEN' OR a.status = 'RUNNING' OR a.status = 'FINISHED')
             """;
         List<Auction> auctions = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {

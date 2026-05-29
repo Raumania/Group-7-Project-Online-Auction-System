@@ -385,11 +385,31 @@ public class AuctionService {
             }
 
             if (auction.getStatus() != AuctionStatus.OPEN &&
-                    auction.getStatus() != AuctionStatus.RUNNING) {
-                throw new RuntimeException("Auction is not in OPEN or RUNNING state");
+                    auction.getStatus() != AuctionStatus.RUNNING &&
+                    auction.getStatus() != AuctionStatus.FINISHED) {
+                throw new RuntimeException("Auction is not in OPEN, RUNNING or FINISHED state");
             }
 
             auction.setStatus(AuctionStatus.CANCELLED);
+
+            // Hoàn lại tiền đóng băng cho người giữ giá cao nhất nếu có
+            if (auction.getHighestBidderId() != null) {
+                User highestBidder = userStore.getUserById(auction.getHighestBidderId());
+                if (highestBidder != null) {
+                    BigDecimal toUnfreeze = auction.getCurrentPrice();
+                    if (toUnfreeze != null && toUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
+                        toUnfreeze = toUnfreeze.min(highestBidder.getFrozenBalance());
+                        if (toUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
+                            highestBidder.unfreezeBalance(toUnfreeze);
+                            UserDAO.getInstance().update(connection, highestBidder);
+                            userStore.updateUser(highestBidder);
+                        }
+                    }
+                }
+            }
+
+            // Hủy tất cả Auto-Bids liên quan và hoàn lại phần tiền chênh lệch (nếu có)
+            AutoBidService.getInstance().cancelAllAutoBidsForAuction(connection, auctionId);
 
             auctionDAO.update(connection, auction);
 
@@ -397,7 +417,19 @@ public class AuctionService {
             
             // Sync with RAM Cache
             auctionStore.updateAuction(auction);
-            eventBus.publishAuctionEdited(auction);
+
+            // Gửi sự kiện CANCELLED cho các client
+            try {
+                auction_system.common.protocol.Response cancelResponse = new auction_system.common.protocol.Response(
+                    auction_system.common.enums.Status.SUCCESS,
+                    auction_system.common.enums.Action.EVENT_AUCTION_CANCELLED,
+                    auction.getId(),
+                    "Phiên đấu giá bị hủy bởi quản trị viên."
+                );
+                auction_system.server.AuctionServer.broadcast(auction_system.server.util.GsonUtil.toJson(cancelResponse));
+            } catch (Exception e) {
+                System.err.println("Failed to broadcast EVENT_AUCTION_CANCELLED: " + e.getMessage());
+            }
 
         } catch (Exception e) {
             rollback(connection);

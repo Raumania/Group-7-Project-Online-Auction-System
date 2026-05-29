@@ -98,6 +98,8 @@ public class SocketClient {
                                 handleBidPlacedEvent(response);
                             } else if (response.getType() == Action.EVENT_USER_BANNED) {
                                 handleUserBannedEvent(response);
+                            } else if (response.getType() == Action.EVENT_AUCTION_CANCELLED) {
+                                handleAuctionCancelledEvent(response);
                             } else if (response.getType() == Action.GET_CURRENT_USER) {
                                 handleGetCurrentUserEvent(response);
                             } else if (response.getType() == Action.PING) {
@@ -285,15 +287,26 @@ public class SocketClient {
     }
 
     private void handleUserBannedEvent(Response response) {
-        System.out.println("Real-time: Account has been BANNED by administrator. Force-logging out...");
-        Platform.runLater(() -> {
-            try {
-                // Clear sessions and stores
-                UserSession.getInstance().logout();
-                AdminUserStore.getInstance().logout();
-                AuctionStore.getInstance().logout();
-                BidTransactionStore.getInstance().logout();
-                SellerAuctionStore.getInstance().logout();
+        try {
+            int bannedUserId = GsonUtil.getGson().toJsonTree(response.getData()).getAsInt();
+            System.out.println("Real-time: Account " + bannedUserId + " has been BANNED by administrator.");
+
+            Platform.runLater(() -> {
+                try {
+                    UserDTO currentUser = UserSession.getInstance().getUser();
+                    if (currentUser != null && currentUser.getId() == bannedUserId) {
+                        System.out.println("Real-time: I have been BANNED! Force-logging out...");
+                        // Clear sessions and stores
+                        UserSession.getInstance().logout();
+                        AdminUserStore.getInstance().logout();
+                        AuctionStore.getInstance().logout();
+                        BidTransactionStore.getInstance().logout();
+                        SellerAuctionStore.getInstance().logout();
+
+                        // Đánh thức và tiêu diệt các luồng ngầm (zombie threads) đang bị kẹt ở lệnh receive()
+                for (int i = 0; i < 5; i++) {
+                    responseQueue.offer(new auction_system.common.protocol.Response(auction_system.common.enums.Status.ERROR, auction_system.common.enums.Action.PING, null, "Force release zombie"));
+                }
                 
                 // Show warning alert dialog
                 javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
@@ -302,27 +315,31 @@ public class SocketClient {
                 alert.setContentText(response.getMessage() != null ? response.getMessage() : "Tài khoản của bạn đã bị khóa do vi phạm điều khoản của sàn.");
                 alert.showAndWait();
                 
-                // Transition to login screen
-                javafx.stage.Window activeWindow = javafx.stage.Window.getWindows().stream()
-                        .filter(javafx.stage.Window::isShowing)
-                        .findFirst()
-                        .orElse(null);
-                
-                if (activeWindow instanceof javafx.stage.Stage stage) {
-                    FXMLLoader loader = new FXMLLoader();
-                    loader.setLocation(getClass().getResource("/fxml/login.fxml"));
-                    Parent root = loader.load();
-                    Scene scene = new Scene(root);
-                    stage.setScene(scene);
-                } else {
+                        // Transition to login screen
+                        javafx.stage.Window activeWindow = javafx.stage.Window.getWindows().stream()
+                                .filter(javafx.stage.Window::isShowing)
+                                .findFirst()
+                                .orElse(null);
+                        
+                        if (activeWindow instanceof javafx.stage.Stage stage) {
+                            FXMLLoader loader = new FXMLLoader();
+                            loader.setLocation(getClass().getResource("/fxml/login.fxml"));
+                            Parent root = loader.load();
+                            Scene scene = new Scene(root);
+                            stage.setScene(scene);
+                        } else {
+                            System.exit(0);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Failed to force-logout banned user: " + e.getMessage());
+                    e.printStackTrace();
                     System.exit(0);
                 }
-            } catch (Exception e) {
-                System.err.println("Failed to force-logout banned user: " + e.getMessage());
-                e.printStackTrace();
-                System.exit(0);
-            }
-        });
+            });
+        } catch (Exception ex) {
+            System.err.println("Failed to parse real-time banned user event: " + ex.getMessage());
+        }
     }
 
     private void handleAuctionCancelledEvent(Response response) {
@@ -411,6 +428,18 @@ public class SocketClient {
         }
         catch(IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    // [HOTFIX] Hàm bọc đồng bộ hóa để sửa lỗi Race Condition
+    // Đảm bảo mỗi luồng gửi Request sẽ độc chiếm và đợi lấy đúng Response của mình
+    public synchronized Response sendAndReceive(Request request) {
+        try {
+            send(request);
+            return receive();
+        } catch (Exception e) {
+            System.err.println("Error during synchronized sendAndReceive: " + e.getMessage());
+            return null;
         }
     }
 

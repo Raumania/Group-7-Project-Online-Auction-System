@@ -306,6 +306,9 @@ public class UserService {
                         }
                     }
 
+                    // Hủy tất cả Auto-Bids liên quan và hoàn lại phần tiền chênh lệch (nếu có)
+                    AutoBidService.getInstance().cancelAllAutoBidsForAuction(connection, auction.getId());
+
                     AuctionDAO.getInstance().update(connection, auction);
                     auction_system.server.store.AuctionStore.getInstance().updateAuction(auction);
 
@@ -402,7 +405,27 @@ public class UserService {
 
                 connection.commit();
 
-                // Bước 4: Cưỡng chế ngắt kết nối TCP của user bị ban
+                // Bước 4: Broadcast sự kiện Ban cho tất cả các client
+                try {
+                    auction_system.common.protocol.Response banResponse = new auction_system.common.protocol.Response(
+                        auction_system.common.enums.Status.SUCCESS,
+                        auction_system.common.enums.Action.EVENT_USER_BANNED,
+                        userId,
+                        "Tài khoản của bạn đã bị khóa do vi phạm điều khoản của sàn."
+                    );
+                    AuctionServer.broadcast(auction_system.server.util.GsonUtil.toJson(banResponse));
+                } catch (Exception e) {
+                    System.err.println("Failed to broadcast EVENT_USER_BANNED: " + e.getMessage());
+                }
+
+                // Chờ 500ms để broadcast kịp gửi tới client trước khi ngắt kết nối
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+
+                // Bước 5: Cưỡng chế ngắt kết nối TCP của user bị ban
                 AuctionServer.disconnectUser(userId);
 
             } catch (Exception e) {

@@ -189,4 +189,35 @@ public class AutoBidService {
         }
         return null;
     }
+
+    public void cancelAllAutoBidsForAuction(Connection connection, int auctionId) throws SQLException {
+        java.util.List<AutoBid> activeBids = autoBidDAO.findActiveByAuctionId(connection, auctionId);
+        if (activeBids.isEmpty()) return;
+
+        Auction auction = auctionService.getAuctionById(auctionId);
+        BigDecimal currentPrice = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : BigDecimal.ZERO;
+        Integer currentHighestBidder = auction.getHighestBidderId();
+
+        for (AutoBid ab : activeBids) {
+            autoBidDAO.disableAutoBid(connection, ab.getUserId(), auctionId);
+
+            BigDecimal amountToUnfreeze;
+            if (currentHighestBidder != null && currentHighestBidder == ab.getUserId()) {
+                amountToUnfreeze = ab.getMaxBid().subtract(currentPrice);
+            } else {
+                amountToUnfreeze = ab.getMaxBid();
+            }
+
+            if (amountToUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
+                User user = userService.getUserById(ab.getUserId());
+                if (user != null) {
+                    BigDecimal newAvail = user.getAvailableBalance().add(amountToUnfreeze);
+                    BigDecimal newFrozen = user.getFrozenBalance().subtract(amountToUnfreeze);
+                    auction_system.server.dao.UserDAO.getInstance().updateBalance(connection, user.getId(), newAvail, newFrozen);
+                    user.unfreezeBalance(amountToUnfreeze);
+                }
+            }
+            autoBidStore.disableAutoBid(ab.getUserId(), auctionId);
+        }
+    }
 }
