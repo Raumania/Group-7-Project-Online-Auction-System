@@ -428,6 +428,7 @@ public class SocketClient {
     // Đóng socket an toàn
     public void disconnect() {
         isRunning = false;
+        responseQueue.clear(); // Xóa sạch hàng đợi để không ảnh hưởng test sau
         if (heartbeatScheduler != null) {
             heartbeatScheduler.shutdownNow();
         }
