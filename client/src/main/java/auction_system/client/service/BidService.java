@@ -34,15 +34,13 @@ public class BidService {
     public Response placeBid(int auctionId, BigDecimal amount, int bidderId) {
         BidDTO bidDTO = new BidDTO(auctionId, amount, bidderId);
         Request request = new Request(Action.PLACE_BID, GsonUtil.getGson().toJsonTree(bidDTO));
-        socketClient.send(request);
-        return socketClient.receive();
+        return socketClient.sendAndReceive(request);
     }
 
     public List<BidTransactionDTO> getBidHistory(int auctionId) {
         BidDTO bidDTO = new BidDTO(auctionId, BigDecimal.ZERO, 0);
         Request request = new Request(Action.GET_BID_HISTORY, GsonUtil.getGson().toJsonTree(bidDTO));
-        socketClient.send(request);
-        Response response = socketClient.receive();
+        Response response = socketClient.sendAndReceive(request);
 
         if (response != null && response.getStatus() == Status.SUCCESS) {
             String jsonData = GsonUtil.toJson(response.getData());
@@ -56,21 +54,19 @@ public class BidService {
     public Response setAutoBid(int userId, int auctionId, BigDecimal maxBid, BigDecimal bidIncrement) {
         AutoBidDTO autoBidDTO = new AutoBidDTO(userId, auctionId, maxBid, bidIncrement);
         Request request = new Request(Action.SET_AUTO_BID, GsonUtil.getGson().toJsonTree(autoBidDTO));
-        socketClient.send(request);
-        return socketClient.receive();
+        return socketClient.sendAndReceive(request);
     }
 
     public Response cancelAutoBid(int userId, int auctionId) {
         AutoBidDTO autoBidDTO = new AutoBidDTO(userId, auctionId, BigDecimal.ZERO, BigDecimal.ZERO);
         Request request = new Request(Action.CANCEL_AUTO_BID, GsonUtil.getGson().toJsonTree(autoBidDTO));
-        socketClient.send(request);
-        return socketClient.receive();
+        return socketClient.sendAndReceive(request);
     }
 
     public Response getAutoBidConfig(int userId, int auctionId) {
         AutoBidDTO autoBidDTO = new AutoBidDTO(userId, auctionId, BigDecimal.ZERO, BigDecimal.ZERO);
         Request request = new Request(Action.GET_AUTO_BID_CONFIG, GsonUtil.getGson().toJsonTree(autoBidDTO));
-        socketClient.send(request);
-        return socketClient.receive();
+        return socketClient.sendAndReceive(request);
     }
 }
+

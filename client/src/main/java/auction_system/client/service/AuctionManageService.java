@@ -30,17 +30,14 @@ public class AuctionManageService {
     //core in below
     public boolean createAuction(AuctionDTO auctionDTO) {
         Request request = new Request(Action.CREATE_AUCTION, GsonUtil.getGson().toJsonTree(auctionDTO));
-        SocketClient.getInstance().send(request);
-        Response response = SocketClient.getInstance().receive();
+        Response response = SocketClient.getInstance().sendAndReceive(request);
 
         return response != null && response.getStatus() == Status.SUCCESS;
     }
 
     public List<AuctionDTO> getAuctionsBySellerId(int sellerId) {
         Request request = new Request(Action.GET_SELLER_ITEMS, GsonUtil.getGson().toJsonTree(sellerId));
-        SocketClient.getInstance().send(request);
-
-        Response response = SocketClient.getInstance().receive();
+        Response response = SocketClient.getInstance().sendAndReceive(request);
 
         if (response != null && response.getStatus() == Status.SUCCESS) {
             String jsonData = GsonUtil.toJson(response.getData());
@@ -58,9 +55,7 @@ public class AuctionManageService {
         }
 
         Request request = new Request(Action.DELETE_AUCTION, GsonUtil.getGson().toJsonTree(auctionDTO.getId()));
-        SocketClient.getInstance().send(request);
-
-        Response response = SocketClient.getInstance().receive();
+        Response response = SocketClient.getInstance().sendAndReceive(request);
 
         return response != null && response.getStatus() == Status.SUCCESS;
     }
@@ -79,10 +74,7 @@ public class AuctionManageService {
 
         // Gửi Request chỉnh sửa lên Server với Enum Action.EDIT_AUCTION
         Request request = new Request(Action.EDIT_AUCTION, GsonUtil.getGson().toJsonTree(auctionDTO));
-        SocketClient.getInstance().send(request);
-
-        // Nhận phản hồi từ Server
-        Response response = SocketClient.getInstance().receive();
+        Response response = SocketClient.getInstance().sendAndReceive(request);
 
         return response != null && response.getStatus() == Status.SUCCESS;
     }
@@ -94,9 +86,7 @@ public class AuctionManageService {
         }
 
         Request request = new Request(Action.CANCEL_AUCTION, GsonUtil.getGson().toJsonTree(auctionDTO.getId()));
-        SocketClient.getInstance().send(request);
-
-        Response response = SocketClient.getInstance().receive();
+        Response response = SocketClient.getInstance().sendAndReceive(request);
 
         return response != null && response.getStatus() == Status.SUCCESS;
     }

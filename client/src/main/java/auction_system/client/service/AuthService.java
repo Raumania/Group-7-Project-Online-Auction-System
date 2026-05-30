@@ -34,8 +34,7 @@ public class AuthService {
     public int checkLogin(UserDTO user) {
         lastErrorMessage = null;
         Request request = new Request(Action.LOGIN, GsonUtil.getGson().toJsonTree(user));
-        SocketClient.getInstance().send(request);
-        Response response = SocketClient.getInstance().receive();
+        Response response = SocketClient.getInstance().sendAndReceive(request);
         if(response != null && response.getStatus() == Status.SUCCESS) {
             //fill full data for user session hehe :>
             UserSession.getInstance().setUser(gson.fromJson(GsonUtil.getGson().toJsonTree(response.getData()),UserDTO.class));
@@ -54,9 +53,9 @@ public class AuthService {
 
     public boolean checkRegister(UserDTO user) {
         Request request = new Request(Action.REGISTER, GsonUtil.getGson().toJsonTree(user));
-        SocketClient.getInstance().send(request);
-        Response response = SocketClient.getInstance().receive();
+        Response response = SocketClient.getInstance().sendAndReceive(request);
         return response.getStatus() == Status.SUCCESS;
     }
 
 }
+

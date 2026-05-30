@@ -30,8 +30,7 @@ public class AuctionListService {
     public void fetchAllAuctions() {
         new Thread(() -> {
             Request request = new Request(Action.GET_ALL_AUCTIONS, null);
-            SocketClient.getInstance().send(request);
-            Response response = SocketClient.getInstance().receive();
+            Response response = SocketClient.getInstance().sendAndReceive(request);
 
             if(response != null && response.getStatus() == Status.SUCCESS) {
                 String jsonData = GsonUtil.toJson(response.getData());
