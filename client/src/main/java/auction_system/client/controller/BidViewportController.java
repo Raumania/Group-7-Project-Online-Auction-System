@@ -15,6 +15,7 @@ import auction_system.common.enums.Status;
 import auction_system.common.protocol.Response;
 import javafx.collections.ListChangeListener;
 import javafx.application.Platform;
+import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -231,8 +232,9 @@ public class BidViewportController implements Initializable {
         }
 
         // Handle countdown timer reactively based on Server authoritative status
-        // Reset the guard so the first server broadcast always re-triggers the timer
+        // Reset tracking fields so the first server broadcast always re-triggers the timer
         lastCountdownStatus = auctionDTO.getStatus();
+        lastEndTime = auctionDTO.getEndTime();
         setupCountdownForStatus();
 
         // Bind TableView directly to BidTransactionStore — auto-updates whenever a new bid event arrives
@@ -299,9 +301,19 @@ public class BidViewportController implements Initializable {
         }
     }
     private AuctionStatus lastCountdownStatus = null;
+    private LocalDateTime lastEndTime = null;
 
     private void refreshAuctionData(AuctionDTO updated) {
         boolean statusChanged = (this.auctionDTO == null || this.auctionDTO.getStatus() != updated.getStatus());
+        // Detect endTime change caused by anti-sniping (+1 min extension)
+        boolean endTimeChanged = (updated.getStatus() == AuctionStatus.RUNNING
+                && updated.getEndTime() != null
+                && !updated.getEndTime().equals(lastEndTime));
+        // Detect that the timer has stopped (countdown hit 0 → "Ending soon...") but the
+        // auction is still RUNNING — anti-sniping may have extended endTime on the server.
+        // In this case we must restart the countdown with whatever endTime the broadcast carries.
+        boolean timerStopped = (updated.getStatus() == AuctionStatus.RUNNING
+                && (timeline == null || timeline.getStatus() != Animation.Status.RUNNING));
         this.auctionDTO = updated;
         
         statusLabel.setText(updated.getStatus().toString());
@@ -322,16 +334,17 @@ public class BidViewportController implements Initializable {
         minIncrementLabel.setText(currencyFormatter.format(increment));
         minIncrementHintLabel.setText("Min increment: " + currencyFormatter.format(increment));
         
-        // Reset timer whenever the status actually changes OR the timer is stuck showing
-        // the wrong label (e.g. "Starting soon..." while the auction is already RUNNING).
-        // This guards against the edge case where statusChanged==false because the
-        // previous Server broadcast already updated this.auctionDTO to RUNNING, but
-        // setupCountdownForStatus() was never called for that transition.
+        // Reset timer when:
+        //  - status actually changed
+        //  - timer label is mismatched (e.g. stuck on "Starting soon..." while RUNNING)
+        //  - endTime changed due to anti-sniping (+1 min)
+        //  - countdown stopped (hit "Ending soon...") but auction is still RUNNING
         boolean timerMismatch = (updated.getStatus() == AuctionStatus.RUNNING
                 && lastCountdownStatus != AuctionStatus.RUNNING);
 
-        if (statusChanged || timerMismatch) {
+        if (statusChanged || timerMismatch || endTimeChanged || timerStopped) {
             lastCountdownStatus = updated.getStatus();
+            lastEndTime = updated.getEndTime();
             setupCountdownForStatus();
         }
 

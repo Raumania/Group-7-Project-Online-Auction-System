@@ -216,7 +216,15 @@ public class AuctionService {
         if (currentStatus == AuctionStatus.OPEN && now.isAfter(auction.getStartTime())) {
             newStatus = AuctionStatus.RUNNING;
         } else if (currentStatus == AuctionStatus.RUNNING && now.isAfter(auction.getEndTime())) {
-            newStatus = AuctionStatus.FINISHED;
+            // Add a 2-second buffer before marking FINISHED to avoid a race condition
+            // with anti-sniping: when a bid is placed in the final 30s, BidService extends
+            // endTime by +1 minute. The Scheduler runs every 500ms and may detect the old
+            // (expired) endTime just before BidService updates the AuctionStore, incorrectly
+            // broadcasting FINISHED while the auction should still be RUNNING.
+            LocalDateTime finishThreshold = auction.getEndTime().plusSeconds(2);
+            if (now.isAfter(finishThreshold)) {
+                newStatus = AuctionStatus.FINISHED;
+            }
         }
 
         if (newStatus != currentStatus) {
