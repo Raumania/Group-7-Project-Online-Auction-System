@@ -389,6 +389,10 @@ public class UserService {
                     AuctionDAO.getInstance().update(connection, auction);
                     auction_system.server.store.AuctionStore.getInstance().updateAuction(auction);
 
+                    // Xóa các bid của user bị ban trong Database và RAM Cache
+                    auction_system.server.dao.BidTransactionDAO.getInstance().deleteByBidderAndAuction(connection, userId, auction.getId());
+                    auction_system.server.store.BidTransactionStore.getInstance().removeBidsByBidderAndAuction(userId, auction.getId());
+
                     // Broadcast cập nhật phiên
                     try {
                         auction_system.common.protocol.Response updateResponse = new auction_system.common.protocol.Response(

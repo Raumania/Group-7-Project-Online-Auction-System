@@ -665,17 +665,21 @@ public class BidViewportController implements Initializable {
                             maxBidField.setDisable(true);
                             incrementField.setDisable(true);
                             
-                            // Update local balance
-                            BigDecimal oldPrice = auctionDTO.getCurrentPrice();
-                            String oldBidder = auctionDTO.getHighestBidderUsername();
-                            BigDecimal toFreeze = maxBid;
-                            if (oldPrice != null && oldBidder != null && oldBidder.equals(currentUser.getUsername())) {
-                                toFreeze = maxBid.subtract(oldPrice);
-                            }
-                            currentUser.setAvailableBalance(currentUser.getAvailableBalance().subtract(toFreeze));
-                            currentUser.setFrozenBalance(currentUser.getFrozenBalance().add(toFreeze));
-                            if (MainAuctionController.getInstance() != null) {
-                                MainAuctionController.getInstance().refreshBalance();
+                            // Update local balance from server response
+                            if (response.getData() != null) {
+                                try {
+                                    auction_system.common.dto.UserDTO updatedUser = auction_system.client.util.GsonUtil.fromJson(
+                                        auction_system.client.util.GsonUtil.toJson(response.getData()), 
+                                        auction_system.common.dto.UserDTO.class
+                                    );
+                                    currentUser.setAvailableBalance(updatedUser.getAvailableBalance());
+                                    currentUser.setFrozenBalance(updatedUser.getFrozenBalance());
+                                    if (auction_system.client.controller.MainAuctionController.getInstance() != null) {
+                                        auction_system.client.controller.MainAuctionController.getInstance().refreshBalance();
+                                    }
+                                } catch (Exception ex) {
+                                    System.err.println("Failed to parse updated user balance: " + ex.getMessage());
+                                }
                             }
                         } else {
                             String errMsg = (response != null && response.getMessage() != null) ? response.getMessage() : "Unknown error";
@@ -720,24 +724,20 @@ public class BidViewportController implements Initializable {
                             bidStatusLabel.setText("Auto bidding disabled successfully.");
                             setStatusStyle("status-success");
 
-                            // Update local balance
-                            BigDecimal oldPrice = auctionDTO.getCurrentPrice();
-                            String oldBidder = auctionDTO.getHighestBidderUsername();
-                            BigDecimal maxBid;
-                            try {
-                                maxBid = new BigDecimal(maxBidField.getText().trim());
-                            } catch (Exception ex) {
-                                maxBid = BigDecimal.ZERO;
-                            }
-                            BigDecimal toUnfreeze = maxBid;
-                            if (oldPrice != null && oldBidder != null && oldBidder.equals(currentUser.getUsername())) {
-                                toUnfreeze = maxBid.subtract(oldPrice);
-                            }
-                            if (toUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
-                                currentUser.setAvailableBalance(currentUser.getAvailableBalance().add(toUnfreeze));
-                                currentUser.setFrozenBalance(currentUser.getFrozenBalance().subtract(toUnfreeze));
-                                if (MainAuctionController.getInstance() != null) {
-                                    MainAuctionController.getInstance().refreshBalance();
+                            // Update local balance from server response
+                            if (response.getData() != null) {
+                                try {
+                                    auction_system.common.dto.UserDTO updatedUser = auction_system.client.util.GsonUtil.fromJson(
+                                        auction_system.client.util.GsonUtil.toJson(response.getData()), 
+                                        auction_system.common.dto.UserDTO.class
+                                    );
+                                    currentUser.setAvailableBalance(updatedUser.getAvailableBalance());
+                                    currentUser.setFrozenBalance(updatedUser.getFrozenBalance());
+                                    if (auction_system.client.controller.MainAuctionController.getInstance() != null) {
+                                        auction_system.client.controller.MainAuctionController.getInstance().refreshBalance();
+                                    }
+                                } catch (Exception ex) {
+                                    System.err.println("Failed to parse updated user balance: " + ex.getMessage());
                                 }
                             }
                         } else {

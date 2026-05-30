@@ -63,4 +63,11 @@ public class BidTransactionStore {
         }
         return list.get(list.size() - 1);
     }
+
+    public synchronized void removeBidsByBidderAndAuction(int bidderId, int auctionId) {
+        CopyOnWriteArrayList<BidTransaction> list = histories.get(auctionId);
+        if (list != null) {
+            list.removeIf(tx -> tx.getBidder().getId() == bidderId);
+        }
+    }
 }

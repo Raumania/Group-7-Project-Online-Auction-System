@@ -281,4 +281,16 @@ public class BidTransactionDAO {
 
         return transaction;
     }
+
+    /*
+        Delete all bids made by a specific user on a specific auction.
+    */
+    public void deleteByBidderAndAuction(Connection connection, int bidderId, int auctionId) throws SQLException {
+        String sql = "DELETE FROM bid_transactions WHERE bidder_id = ? AND auction_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, bidderId);
+            statement.setInt(2, auctionId);
+            statement.executeUpdate();
+        }
+    }
 }
