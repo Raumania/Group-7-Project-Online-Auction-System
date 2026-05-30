@@ -134,14 +134,14 @@ public class BidEngine implements AuctionObserver {
                     continue;
                 }
                 
-                if (ab.getUserId() != leaderId && ab.getMaxBid().compareTo(currentPrice) <= 0) {
-                    System.out.println("[BidEngine] Deactivating auto bid for user: " + ab.getUserId() + " because max bid " + ab.getMaxBid() + " <= currentPrice " + currentPrice);
+                if (ab.getUserId() != leaderId && ab.getMaxBid().compareTo(currentPrice) < 0) {
+                    System.out.println("[BidEngine] Deactivating auto bid for user: " + ab.getUserId() + " because max bid " + ab.getMaxBid() + " < currentPrice " + currentPrice);
                     deactivateAutoBid(connection, ab, leaderId, currentPrice);
                     continue;
                 }
                 
-                if (ab.getUserId() == leaderId && ab.getMaxBid().compareTo(currentPrice) <= 0) {
-                    System.out.println("[BidEngine] Deactivating auto bid for leader: " + ab.getUserId() + " because max bid " + ab.getMaxBid() + " <= currentPrice " + currentPrice);
+                if (ab.getUserId() == leaderId && ab.getMaxBid().compareTo(currentPrice) < 0) {
+                    System.out.println("[BidEngine] Deactivating auto bid for leader: " + ab.getUserId() + " because max bid " + ab.getMaxBid() + " < currentPrice " + currentPrice);
                     deactivateAutoBid(connection, ab, leaderId, currentPrice);
                     continue;
                 }
@@ -169,6 +169,17 @@ public class BidEngine implements AuctionObserver {
                     connection.commit();
                     return;
                 } else {
+                    if (winnerAb.getMaxBid().compareTo(currentPrice) == 0) {
+                        executeBid(connection, auction, winnerAb.getUserId(), currentPrice);
+                        deactivateAutoBid(connection, winnerAb, winnerAb.getUserId(), currentPrice);
+                        connection.commit();
+                        EventBus.getInstance().publish(new BidEvent(
+                            auctionId, winnerAb.getUserId(), leaderId,
+                            currentPrice, currentPrice, LocalDateTime.now()
+                        ));
+                        return;
+                    }
+
                     BigDecimal userIncrement = winnerAb.getBidIncrement();
                     BigDecimal auctionMinIncrement = BidService.getInstance().getBidIncrement(currentPrice);
                     BigDecimal effectiveIncrement = (userIncrement != null && userIncrement.compareTo(auctionMinIncrement) > 0)

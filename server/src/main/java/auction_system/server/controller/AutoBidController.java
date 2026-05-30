@@ -26,13 +26,15 @@ public class AutoBidController implements RequestHandler {
                         dto.getMaxBid(),
                         dto.getBidIncrement()
                 );
-                return new Response(Status.SUCCESS, action, null, "Auto bid set successfully");
+                auction_system.server.model.User user = auction_system.server.service.UserService.getInstance().getUserById(dto.getUserId());
+                return new Response(Status.SUCCESS, action, GsonUtil.getGson().toJsonTree(user.toDTO()), "Auto bid set successfully");
             } else if (action == Action.CANCEL_AUTO_BID) {
                 autoBidService.cancelAutoBid(
                         dto.getUserId(),
                         dto.getAuctionId()
                 );
-                return new Response(Status.SUCCESS, action, null, "Auto bid cancelled successfully");
+                auction_system.server.model.User user = auction_system.server.service.UserService.getInstance().getUserById(dto.getUserId());
+                return new Response(Status.SUCCESS, action, GsonUtil.getGson().toJsonTree(user.toDTO()), "Auto bid cancelled successfully");
             } else if (action == Action.GET_AUTO_BID_CONFIG) {
                 auction_system.server.model.AutoBid ab = autoBidService.getAutoBidConfig(dto.getUserId(), dto.getAuctionId());
                 if (ab != null) {

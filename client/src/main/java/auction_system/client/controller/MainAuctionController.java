@@ -149,7 +149,6 @@ public class MainAuctionController implements Initializable{
         if(alert.showAndWait().get() == ButtonType.OK) {
             //Clear all sessions and data before logout
             UserSession.getInstance().logout();
-            AdminUserStore.getInstance().logout();
             AuctionStore.getInstance().logout();
             BidTransactionStore.getInstance().logout();
             SellerAuctionStore.getInstance().logout();
