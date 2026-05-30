@@ -268,8 +268,11 @@ public class BidViewportController implements Initializable {
         updateBiddingUIState();
 
         // Fetch active AutoBid config for current user and this auction
+        fetchAndApplyAutoBidConfig();
+    }
+    private void fetchAndApplyAutoBidConfig() {
         UserDTO currentUser = UserSession.getInstance().getUser();
-        if (currentUser != null) {
+        if (currentUser != null && auctionDTO != null) {
             new Thread(() -> {
                 try {
                     Response res = bidService.getAutoBidConfig(currentUser.getId(), auctionDTO.getId());
@@ -282,7 +285,11 @@ public class BidViewportController implements Initializable {
                                     autoBidToggle.setSelected(true);
                                     autoBidToggle.setText("Disable Auto Bidding");
                                     maxBidField.setText(abConfig.getMaxBid().toPlainString());
-                                    incrementField.setText(abConfig.getBidIncrement().toPlainString());
+                                    if (abConfig.getBidIncrement() != null) {
+                                        incrementField.setText(abConfig.getBidIncrement().toPlainString());
+                                    } else {
+                                        incrementField.clear();
+                                    }
                                     maxBidField.setDisable(true);
                                     incrementField.setDisable(true);
                                 }
@@ -290,10 +297,14 @@ public class BidViewportController implements Initializable {
                                 e.printStackTrace();
                             }
                         } else {
-                            autoBidToggle.setSelected(false);
-                            autoBidToggle.setText("Enable Auto Bidding");
-                            maxBidField.clear();
-                            incrementField.clear();
+                            if (autoBidToggle.isSelected()) {
+                                autoBidToggle.setSelected(false);
+                                autoBidToggle.setText("Enable Auto Bidding");
+                                maxBidField.clear();
+                                incrementField.clear();
+                                maxBidField.setDisable(false);
+                                incrementField.setDisable(false);
+                            }
                         }
                     });
                 } catch (Exception e) {
@@ -302,6 +313,7 @@ public class BidViewportController implements Initializable {
             }, "fetch-autobid-config-worker").start();
         }
     }
+
     private AuctionStatus lastCountdownStatus = null;
     private LocalDateTime lastEndTime = null;
 
@@ -356,6 +368,11 @@ public class BidViewportController implements Initializable {
 
         // Update UI states
         updateBiddingUIState();
+
+        // If auto bid is supposedly active, re-check to ensure it wasn't deactivated by the server
+        if (autoBidToggle.isSelected()) {
+            fetchAndApplyAutoBidConfig();
+        }
     }
 
     private void setupCountdownForStatus() {

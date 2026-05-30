@@ -161,7 +161,7 @@ public class BidEngine implements AuctionObserver {
                 return Integer.compare(a.getId(), b.getId());
             });
 
-            AutoBid winnerAb = validBids.get(0);
+            AutoBid winnerAb = validBids.getFirst();
             BigDecimal winnerMax = winnerAb.getMaxBid();
 
             // 5. Nếu người thắng đã là highest bidder hiện tại → không cần làm gì thêm

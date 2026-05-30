@@ -37,7 +37,7 @@ public class AutoBidController implements RequestHandler {
                 return new Response(Status.SUCCESS, action, GsonUtil.getGson().toJsonTree(user.toDTO()), "Auto bid cancelled successfully");
             } else if (action == Action.GET_AUTO_BID_CONFIG) {
                 auction_system.server.model.AutoBid ab = autoBidService.getAutoBidConfig(dto.getUserId(), dto.getAuctionId());
-                if (ab != null) {
+                if (ab != null && ab.isActive()) {
                     AutoBidDTO result = new AutoBidDTO(ab.getUserId(), ab.getAuctionId(), ab.getMaxBid(), ab.getBidIncrement());
                     return new Response(Status.SUCCESS, action, GsonUtil.getGson().toJsonTree(result), "Auto bid config retrieved");
                 } else {

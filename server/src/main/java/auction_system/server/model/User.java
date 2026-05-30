@@ -170,7 +170,7 @@ public class User extends Entity {
         this.availableBalance = this.availableBalance.subtract(amount).setScale(4, java.math.RoundingMode.HALF_UP);
     }
 
-    public void freezeBalance(BigDecimal amount) {
+    public synchronized void freezeBalance(BigDecimal amount) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new UserInformationException("Amount must be greater than 0");
         }
