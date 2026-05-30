@@ -27,8 +27,7 @@ public class AutoBidDAO {
                 ON DUPLICATE KEY UPDATE
                     max_bid = VALUES(max_bid),
                     bid_increment = VALUES(bid_increment),
-                    is_active = VALUES(is_active),
-                    created_at = VALUES(created_at)
+                    is_active = VALUES(is_active)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -47,9 +46,33 @@ public class AutoBidDAO {
 
             statement.executeUpdate();
 
+            // Lấy ID của record vừa INSERT hoặc UPDATE
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
-                    autoBid.setId(generatedKeys.getInt(1));
+                    int generatedId = generatedKeys.getInt(1);
+                    if (generatedId > 0) {
+                        // INSERT mới: dùng generated key
+                        autoBid.setId(generatedId);
+                    } else {
+                        // ON DUPLICATE KEY UPDATE: query lại để lấy ID thực
+                        fetchAndSetId(connection, autoBid);
+                    }
+                } else {
+                    fetchAndSetId(connection, autoBid);
+                }
+            }
+        }
+    }
+
+    // Helper: query id theo (user_id, auction_id) khi generated key không khả dụng
+    private void fetchAndSetId(Connection connection, AutoBid autoBid) throws SQLException {
+        String query = "SELECT id FROM auto_bids WHERE user_id = ? AND auction_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setInt(1, autoBid.getUserId());
+            ps.setInt(2, autoBid.getAuctionId());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    autoBid.setId(rs.getInt("id"));
                 }
             }
         }

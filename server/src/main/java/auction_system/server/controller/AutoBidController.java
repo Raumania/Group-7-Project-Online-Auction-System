@@ -48,6 +48,7 @@ public class AutoBidController implements RequestHandler {
             }
 
         } catch (Exception e) {
+            e.printStackTrace();
             return new Response(Status.ERROR, action, null, "Auto bid request failed: " + e.getMessage());
         }
     }

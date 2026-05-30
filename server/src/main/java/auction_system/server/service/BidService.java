@@ -303,13 +303,14 @@ public class BidService {
     }
 
     public BigDecimal getBidIncrement(BigDecimal price) {
-        if (price.compareTo(new BigDecimal("1")) < 0) return new BigDecimal("0.05");
-        else if (price.compareTo(new BigDecimal("5")) < 0) return new BigDecimal("0.25");
-        else if (price.compareTo(new BigDecimal("25")) < 0) return new BigDecimal("0.5");
-        else if (price.compareTo(new BigDecimal("100")) < 0) return new BigDecimal("1");
-        else if (price.compareTo(new BigDecimal("250")) < 0) return new BigDecimal("2.5");
-        else if (price.compareTo(new BigDecimal("500")) < 0) return new BigDecimal("5");
-        else if (price.compareTo(new BigDecimal("1000")) < 0) return new BigDecimal("10");
-        else return new BigDecimal("25");
+        // Không bao giờ trả về 0 — giá 0 áp dụng mức tối thiểu thấp nhất
+        if (price == null || price.compareTo(new BigDecimal("1")) < 0)  return new BigDecimal("0.05");
+        else if (price.compareTo(new BigDecimal("5")) < 0)              return new BigDecimal("0.25");
+        else if (price.compareTo(new BigDecimal("25")) < 0)             return new BigDecimal("0.5");
+        else if (price.compareTo(new BigDecimal("100")) < 0)            return new BigDecimal("1");
+        else if (price.compareTo(new BigDecimal("250")) < 0)            return new BigDecimal("2.5");
+        else if (price.compareTo(new BigDecimal("500")) < 0)            return new BigDecimal("5");
+        else if (price.compareTo(new BigDecimal("1000")) < 0)           return new BigDecimal("10");
+        else                                                             return new BigDecimal("25");
     }
 }

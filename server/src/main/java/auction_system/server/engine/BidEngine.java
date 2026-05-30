@@ -20,8 +20,11 @@ import auction_system.server.store.UserStore;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -95,169 +98,136 @@ public class BidEngine implements AuctionObserver {
             connection = DatabaseConnection.getConnection();
             connection.setAutoCommit(false);
 
-            System.out.println("[BidEngine] Checking if auction " + auctionId + " exists...");
-            try (PreparedStatement ps = connection.prepareStatement("SELECT id, item_id, status FROM auctions WHERE id = ?")) {
-                ps.setInt(1, auctionId);
-                try (java.sql.ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        System.out.println("[BidEngine] Auction exists directly in DB! item_id: " + rs.getInt("item_id") + ", status: " + rs.getString("status"));
-                    } else {
-                        System.out.println("[BidEngine] Auction DOES NOT EXIST in DB directly!");
-                    }
-                }
-            }
-
+            // 1. Lấy thông tin phiên đấu giá, khóa dòng (Pessimistic Locking) để tránh race condition
             Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
             if (auction == null || auction.getStatus() != AuctionStatus.RUNNING) {
-                System.out.println("[BidEngine] processAutoBids aborted. auction=" + (auction != null ? auction.getId() : "null") + ", status=" + (auction != null ? auction.getStatus() : "null"));
                 connection.commit();
                 return;
             }
 
+            // 2. Lấy danh sách AutoBid đang kích hoạt
             List<AutoBid> activeBids = AutoBidStore.getInstance().getActiveAutoBidsByAuctionId(auctionId);
             if (activeBids.isEmpty()) {
-                System.out.println("[BidEngine] processAutoBids aborted. No active bids.");
                 connection.commit();
                 return;
             }
 
-            int leaderId = auction.getHighestBidderId() != null ? auction.getHighestBidderId() : 0;
-            BigDecimal currentPrice = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : BigDecimal.ZERO;
-            System.out.println("[BidEngine] leaderId=" + leaderId + ", currentPrice=" + currentPrice);
+            // Giá hiện tại. Nếu chưa có ai bid thì dùng startingPrice để tính bước kế tiếp
+            BigDecimal currentPrice = (auction.getCurrentPrice() != null)
+                    ? auction.getCurrentPrice()
+                    : auction.getStartingPrice();
 
-            List<AutoBid> validBids = new java.util.ArrayList<>();
+            // Bước giá tối thiểu của sàn tính từ giá hiện tại
+            BigDecimal minIncrement = BidService.getInstance().getBidIncrement(currentPrice);
+
+            // Mức giá kế tiếp tối thiểu cần đạt để trở thành highest bidder
+            // Nếu chưa có ai bid: nextPrice = startingPrice (không cộng thêm increment)
+            // Nếu đã có ai bid:   nextPrice = currentPrice + minIncrement
+            BigDecimal nextMinPrice = (auction.getHighestBidderId() == null)
+                    ? currentPrice
+                    : currentPrice.add(minIncrement);
+
+            // 3. Lọc AutoBids hợp lệ: người dùng hợp lệ VÀ maxBid >= nextMinPrice
+            //    (đủ điều kiện để đặt ít nhất giá kế tiếp tối thiểu)
+            List<AutoBid> validBids = new ArrayList<>();
             for (AutoBid ab : activeBids) {
                 User bidder = userService.getUserById(ab.getUserId());
-                if (bidder == null || !bidder.hasRole(UserRole.BIDDER)) {
-                    System.out.println("[BidEngine] Deactivating auto bid for user: " + ab.getUserId() + " due to missing or invalid bidder.");
-                    deactivateAutoBid(connection, ab, leaderId, currentPrice);
-                    continue;
+                boolean userInvalid = (bidder == null || !bidder.hasRole(UserRole.BIDDER));
+                boolean cannotAffordNextBid = (ab.getMaxBid().compareTo(nextMinPrice) < 0);
+
+                if (userInvalid || cannotAffordNextBid) {
+                    // AutoBid không đủ điều kiện → hủy kích hoạt
+                    deactivateAutoBid(connection, ab, currentHighestBidderId, currentPrice);
+                } else {
+                    validBids.add(ab);
                 }
-                
-                if (ab.getUserId() != leaderId && ab.getMaxBid().compareTo(currentPrice) < 0) {
-                    System.out.println("[BidEngine] Deactivating auto bid for user: " + ab.getUserId() + " because max bid " + ab.getMaxBid() + " < currentPrice " + currentPrice);
-                    deactivateAutoBid(connection, ab, leaderId, currentPrice);
-                    continue;
-                }
-                
-                if (ab.getUserId() == leaderId && ab.getMaxBid().compareTo(currentPrice) < 0) {
-                    System.out.println("[BidEngine] Deactivating auto bid for leader: " + ab.getUserId() + " because max bid " + ab.getMaxBid() + " < currentPrice " + currentPrice);
-                    deactivateAutoBid(connection, ab, leaderId, currentPrice);
-                    continue;
-                }
-                
-                System.out.println("[BidEngine] Valid auto bid found for user: " + ab.getUserId() + " with max bid " + ab.getMaxBid());
-                validBids.add(ab);
             }
 
             if (validBids.isEmpty()) {
-                System.out.println("[BidEngine] No valid auto bids remain.");
                 connection.commit();
                 return;
             }
 
+            // 4. Sắp xếp: MaxBid cao nhất thắng. Tie-break: đặt trước (createdAt) → ID nhỏ hơn
             validBids.sort((a, b) -> {
                 int cmp = b.getMaxBid().compareTo(a.getMaxBid());
                 if (cmp != 0) return cmp;
-                return a.getCreatedAt().compareTo(b.getCreatedAt());
+                LocalDateTime tA = a.getCreatedAt(), tB = b.getCreatedAt();
+                if (tA != null && tB != null) {
+                    int timeCmp = tA.compareTo(tB);
+                    if (timeCmp != 0) return timeCmp;
+                } else if (tA != null) return -1;
+                else if (tB != null) return 1;
+                return Integer.compare(a.getId(), b.getId());
             });
 
             AutoBid winnerAb = validBids.get(0);
-
-            if (validBids.size() == 1) {
-                if (winnerAb.getUserId() == leaderId) {
-                    connection.commit();
-                    return;
-                } else {
-                    if (winnerAb.getMaxBid().compareTo(currentPrice) == 0) {
-                        executeBid(connection, auction, winnerAb.getUserId(), currentPrice);
-                        deactivateAutoBid(connection, winnerAb, winnerAb.getUserId(), currentPrice);
-                        connection.commit();
-                        EventBus.getInstance().publish(new BidEvent(
-                            auctionId, winnerAb.getUserId(), leaderId,
-                            currentPrice, currentPrice, LocalDateTime.now()
-                        ));
-                        return;
-                    }
-
-                    BigDecimal userIncrement = winnerAb.getBidIncrement();
-                    BigDecimal auctionMinIncrement = BidService.getInstance().getBidIncrement(currentPrice);
-                    BigDecimal effectiveIncrement = (userIncrement != null && userIncrement.compareTo(auctionMinIncrement) > 0)
-                        ? userIncrement : auctionMinIncrement;
-
-                    BigDecimal bidWithUserIncrement;
-                    BigDecimal bidWithMinIncrement;
-
-                    if (currentPrice.compareTo(BigDecimal.ZERO) == 0) {
-                        bidWithUserIncrement = auction.getStartingPrice();
-                        bidWithMinIncrement = auction.getStartingPrice();
-                    } else {
-                        bidWithUserIncrement = currentPrice.add(effectiveIncrement);
-                        bidWithMinIncrement = currentPrice.add(auctionMinIncrement);
-                    }
-
-                    BigDecimal finalPrice;
-                    boolean winnerDeactivated = false;
-                    
-                    if (bidWithUserIncrement.compareTo(winnerAb.getMaxBid()) <= 0) {
-                        finalPrice = bidWithUserIncrement;
-                    } else if (bidWithMinIncrement.compareTo(winnerAb.getMaxBid()) <= 0) {
-                        finalPrice = bidWithMinIncrement;
-                        winnerDeactivated = true;
-                    } else {
-                        // Max bid is not enough to beat the competitor with minimum increment
-                        deactivateAutoBid(connection, winnerAb, leaderId, currentPrice);
-                        connection.commit();
-                        return;
-                    }
-
-                    executeBid(connection, auction, winnerAb.getUserId(), finalPrice);
-                    
-                    if (winnerDeactivated) {
-                        deactivateAutoBid(connection, winnerAb, winnerAb.getUserId(), finalPrice);
-                    }
-
-                    connection.commit();
-                    EventBus.getInstance().publish(new BidEvent(
-                        auctionId, winnerAb.getUserId(), leaderId,
-                        finalPrice, currentPrice, LocalDateTime.now()
-                    ));
-                    return;
-                }
-            }
-
-            AutoBid runnerUpAb = validBids.get(1);
-
-            for (int i = 1; i < validBids.size(); i++) {
-                AutoBid loser = validBids.get(i);
-                deactivateAutoBid(connection, loser, leaderId, currentPrice);
-            }
-
-            BigDecimal runnerUpMax = runnerUpAb.getMaxBid();
             BigDecimal winnerMax = winnerAb.getMaxBid();
 
-            BigDecimal userIncrement = winnerAb.getBidIncrement();
-            BigDecimal auctionMinIncrement = BidService.getInstance().getBidIncrement(runnerUpMax);
-            BigDecimal effectiveIncrement = (userIncrement != null && userIncrement.compareTo(auctionMinIncrement) > 0)
-                ? userIncrement : auctionMinIncrement;
+            // 5. Nếu người thắng đã là highest bidder hiện tại → không cần làm gì thêm
+            if (winnerAb.getUserId() == currentHighestBidderId) {
+                connection.commit();
+                return;
+            }
 
-            BigDecimal targetPriceWithUserIncrement = runnerUpMax.add(effectiveIncrement);
-            BigDecimal targetPriceWithMinIncrement = runnerUpMax.add(auctionMinIncrement);
-
+            // 6. Tính giá đặt cuối cùng (finalPrice) theo quy tắc Proxy Bidding
             BigDecimal finalPrice;
             boolean winnerDeactivated = false;
 
-            if (targetPriceWithUserIncrement.compareTo(winnerMax) <= 0) {
-                finalPrice = targetPriceWithUserIncrement;
-            } else if (targetPriceWithMinIncrement.compareTo(winnerMax) <= 0) {
-                finalPrice = targetPriceWithMinIncrement;
-                winnerDeactivated = true;
+            if (validBids.size() == 1) {
+                // --- Tình huống A: Chỉ 1 AutoBid cạnh tranh ---
+                // Điều kiện đã được lọc ở bước 3: winnerMax >= nextMinPrice
+                // → Đặt giá đúng nextMinPrice (giá thấp nhất có thể để thắng)
+
+                BigDecimal userIncrement = winnerAb.getBidIncrement();
+                BigDecimal effectiveIncrement = (userIncrement != null && userIncrement.compareTo(minIncrement) > 0)
+                        ? userIncrement : minIncrement;
+                BigDecimal targetPrice = (auction.getHighestBidderId() == null)
+                        ? currentPrice
+                        : currentPrice.add(effectiveIncrement);
+
+                if (targetPrice.compareTo(winnerMax) <= 0) {
+                    // Đủ tiền theo bước giá hiệu dụng
+                    finalPrice = targetPrice;
+                } else {
+                    // Đủ tiền theo bước giá tối thiểu (đã đảm bảo ở bước lọc)
+                    finalPrice = nextMinPrice;
+                }
+
             } else {
-                // If runnerUpMax < winnerMax < targetPriceWithMinIncrement, the winner still wins but at exactly winnerMax
-                finalPrice = winnerMax;
-                winnerDeactivated = true;
+                // --- Tình huống B: Nhiều AutoBids cạnh tranh ---
+                // Hủy tất cả AutoBids từ người về nhì trở đi (họ thua người dẫn đầu)
+                for (int i = 1; i < validBids.size(); i++) {
+                    deactivateAutoBid(connection, validBids.get(i), currentHighestBidderId, currentPrice);
+                }
+
+                AutoBid runnerUpAb = validBids.get(1);
+                BigDecimal runnerUpMax = runnerUpAb.getMaxBid();
+
+                // Bước giá tính từ mức giá của người về nhì
+                BigDecimal runnerUpIncrement = BidService.getInstance().getBidIncrement(runnerUpMax);
+                BigDecimal userIncrement = winnerAb.getBidIncrement();
+                BigDecimal effectiveIncrement = (userIncrement != null && userIncrement.compareTo(runnerUpIncrement) > 0)
+                        ? userIncrement : runnerUpIncrement;
+
+                // Quy tắc Proxy: finalPrice = min(runnerUpMax + increment, winnerMax)
+                //   → Người thắng chỉ trả vừa đủ để vượt qua người về nhì, không phải toàn bộ MaxBid
+                BigDecimal targetWithEffective = runnerUpMax.add(effectiveIncrement);
+                BigDecimal targetWithMin = runnerUpMax.add(runnerUpIncrement);
+
+                if (targetWithEffective.compareTo(winnerMax) <= 0) {
+                    finalPrice = targetWithEffective;
+                } else if (targetWithMin.compareTo(winnerMax) <= 0) {
+                    finalPrice = targetWithMin;
+                    winnerDeactivated = true; // Đã dùng hết ngân sách
+                } else {
+                    // runnerUpMax >= winnerMax → người thắng all-in bằng MaxBid của mình
+                    finalPrice = winnerMax;
+                    winnerDeactivated = true;
+                }
             }
 
+            // 7. Thực thi bid: ghi DB, cập nhật Store, giải phóng balance người bid cũ
             executeBid(connection, auction, winnerAb.getUserId(), finalPrice);
 
             if (winnerDeactivated) {
@@ -265,9 +235,11 @@ public class BidEngine implements AuctionObserver {
             }
 
             connection.commit();
+
+            // 8. Publish BidEvent để thông báo tới toàn bộ Client qua Socket
             EventBus.getInstance().publish(new BidEvent(
-                auctionId, winnerAb.getUserId(), leaderId,
-                finalPrice, currentPrice, LocalDateTime.now()
+                    auctionId, winnerAb.getUserId(), currentHighestBidderId,
+                    finalPrice, currentPrice, LocalDateTime.now()
             ));
 
         } catch (Exception e) {
@@ -312,7 +284,7 @@ public class BidEngine implements AuctionObserver {
         LocalDateTime endTime = auction.getEndTime();
         LocalDateTime now = LocalDateTime.now();
         if (endTime != null && !now.isAfter(endTime)) {
-            long remainingSeconds = java.time.Duration.between(now, endTime).getSeconds();
+            long remainingSeconds = Duration.between(now, endTime).getSeconds();
             if (remainingSeconds <= 30 && remainingSeconds >= 0) {
                 auctionDAO.antisnippingtime(auction.getId());
                 auction.setEndTime(endTime.plusMinutes(1));

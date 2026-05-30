@@ -13,6 +13,7 @@ import auction_system.server.store.AutoBidStore;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 public class AutoBidService {
     private static AutoBidService instance;
@@ -74,11 +75,14 @@ public class AutoBidService {
         }
 
         // 5. Verify bid validity compared to current price
+        //    maxBid phải đủ để trả ít nhất một bước giá TỐI THIỂU của sàn (không phải bước giá tùy chỉnh)
         BigDecimal nextMinBid;
         if (auction.getCurrentPrice() == null || auction.getCurrentPrice().compareTo(BigDecimal.ZERO) == 0) {
+            // Chưa ai bid: chỉ cần maxBid >= startingPrice
             nextMinBid = auction.getStartingPrice();
         } else {
-            nextMinBid = auction.getCurrentPrice().add(finalIncrement);
+            // Đã có người bid: cần maxBid >= currentPrice + platformMinIncrement
+            nextMinBid = auction.getCurrentPrice().add(platformMinIncrement);
         }
 
         if (maxBid.compareTo(nextMinBid) < 0) {
@@ -179,13 +183,20 @@ public class AutoBidService {
     }
 
     public AutoBid getAutoBidConfig(int userId, int auctionId) {
-        java.util.List<AutoBid> activeBids = autoBidStore.getActiveAutoBidsByAuctionId(auctionId);
+        // Ưu tiên kiểm tra Store (active bids in-memory)
+        List<AutoBid> activeBids = autoBidStore.getActiveAutoBidsByAuctionId(auctionId);
         for (AutoBid ab : activeBids) {
             if (ab.getUserId() == userId) {
                 return ab;
             }
         }
-        return null;
+        // Nếu không có trong Store (có thể đã inactive), kiểm tra thêm trong DB
+        try (java.sql.Connection connection = auction_system.server.dao.DatabaseConnection.getConnection()) {
+            return autoBidDAO.findByUserAndAuction(connection, userId, auctionId);
+        } catch (java.sql.SQLException e) {
+            System.err.println("[AutoBidService] Failed to query DB for AutoBid config: " + e.getMessage());
+            return null;
+        }
     }
 
     public void cancelAllAutoBidsForAuction(Connection connection, int auctionId) throws SQLException {

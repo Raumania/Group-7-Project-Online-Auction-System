@@ -208,6 +208,8 @@ public class BidViewportController implements Initializable {
         BigDecimal increment = getBidIncrement(priceForIncrement);
         minIncrementLabel.setText(currencyFormatter.format(increment));
         minIncrementHintLabel.setText("Min increment: " + currencyFormatter.format(increment));
+        // Hiển thị gợi ý bước giá tối thiểu trong field nếu được để trống
+        incrementField.setPromptText(increment.toPlainString() + " (min)");
 
         // Display highest current bid and bidder
         if (currentPrice != null && currentPrice.compareTo(BigDecimal.ZERO) > 0) {
@@ -333,6 +335,10 @@ public class BidViewportController implements Initializable {
         BigDecimal increment = getBidIncrement(priceForIncrement);
         minIncrementLabel.setText(currencyFormatter.format(increment));
         minIncrementHintLabel.setText("Min increment: " + currencyFormatter.format(increment));
+        // Cập nhật gợi ý bước giá tối thiểu trong field (nếu field chưa bị disable)
+        if (!incrementField.isDisabled()) {
+            incrementField.setPromptText(increment.toPlainString() + " (min)");
+        }
         
         // Reset timer when:
         //  - status actually changed
@@ -640,11 +646,15 @@ public class BidViewportController implements Initializable {
                 return;
             }
 
-            BigDecimal increment = BigDecimal.ZERO;
+            // Nếu người dùng không nhập increment, gửi null — server sẽ tự dùng bước giá tối thiểu của sàn
+            BigDecimal increment = null;
             String incrementText = incrementField.getText();
             if (incrementText != null && !incrementText.trim().isEmpty()) {
                 try {
                     increment = new BigDecimal(incrementText.trim());
+                    if (increment.compareTo(BigDecimal.ZERO) <= 0) {
+                        increment = null; // Trị âm hoặc bằng 0 → xử lý như không nhập
+                    }
                 } catch (NumberFormatException e) {
                     bidStatusLabel.setText("Failed: Invalid Increment amount!");
                     setStatusStyle("status-error");
