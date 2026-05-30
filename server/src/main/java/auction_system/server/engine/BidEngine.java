@@ -288,10 +288,8 @@ public class BidEngine implements AuctionObserver {
             }
 
             if (amountToUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal newAvail = user.getAvailableBalance().add(amountToUnfreeze);
-                BigDecimal newFrozen = user.getFrozenBalance().subtract(amountToUnfreeze);
-                UserDAO.getInstance().updateBalance(conn, user.getId(), newAvail, newFrozen);
                 user.unfreezeBalance(amountToUnfreeze);
+                UserDAO.getInstance().updateBalance(conn, user.getId(), user.getAvailableBalance(), user.getFrozenBalance());
             }
         }
     }
@@ -319,10 +317,8 @@ public class BidEngine implements AuctionObserver {
             if (!prevHasActiveAutoBid) {
                 User prevBidder = UserStore.getInstance().getUserById(previousBidderId);
                 if (prevBidder != null) {
-                    BigDecimal newPrevAvail = prevBidder.getAvailableBalance().add(previousPrice);
-                    BigDecimal newPrevFrozen = prevBidder.getFrozenBalance().subtract(previousPrice);
-                    UserDAO.getInstance().updateBalance(conn, prevBidder.getId(), newPrevAvail, newPrevFrozen);
                     prevBidder.unfreezeBalance(previousPrice);
+                    UserDAO.getInstance().updateBalance(conn, prevBidder.getId(), prevBidder.getAvailableBalance(), prevBidder.getFrozenBalance());
                 }
             }
         }

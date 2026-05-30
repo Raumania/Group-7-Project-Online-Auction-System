@@ -159,9 +159,8 @@ public class BidService {
                 if (!prevHasActiveAutoBid) {
                     previousBidderFromRam = userStore.getUserById(previousBidderId);
                     if (previousBidderFromRam != null) {
-                        BigDecimal newPrevAvailable = previousBidderFromRam.getAvailableBalance().add(previousPrice);
-                        BigDecimal newPrevFrozen = previousBidderFromRam.getFrozenBalance().subtract(previousPrice);
-                        UserDAO.getInstance().updateBalance(connection, previousBidderFromRam.getId(), newPrevAvailable, newPrevFrozen);
+                        previousBidderFromRam.unfreezeBalance(previousPrice);
+                        UserDAO.getInstance().updateBalance(connection, previousBidderId, previousBidderFromRam.getAvailableBalance(), previousBidderFromRam.getFrozenBalance());
                     }
                 }
             }

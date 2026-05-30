@@ -164,10 +164,8 @@ public class AutoBidService {
 
                 if (amountToUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
                     User user = userService.getUserById(userId);
-                    BigDecimal newAvail = user.getAvailableBalance().add(amountToUnfreeze);
-                    BigDecimal newFrozen = user.getFrozenBalance().subtract(amountToUnfreeze);
-                    auction_system.server.dao.UserDAO.getInstance().updateBalance(connection, user.getId(), newAvail, newFrozen);
                     user.unfreezeBalance(amountToUnfreeze);
+                    auction_system.server.dao.UserDAO.getInstance().updateBalance(connection, user.getId(), user.getAvailableBalance(), user.getFrozenBalance());
                 }
 
                 connection.commit();
@@ -211,10 +209,8 @@ public class AutoBidService {
             if (amountToUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
                 User user = userService.getUserById(ab.getUserId());
                 if (user != null) {
-                    BigDecimal newAvail = user.getAvailableBalance().add(amountToUnfreeze);
-                    BigDecimal newFrozen = user.getFrozenBalance().subtract(amountToUnfreeze);
-                    auction_system.server.dao.UserDAO.getInstance().updateBalance(connection, user.getId(), newAvail, newFrozen);
                     user.unfreezeBalance(amountToUnfreeze);
+                    auction_system.server.dao.UserDAO.getInstance().updateBalance(connection, user.getId(), user.getAvailableBalance(), user.getFrozenBalance());
                 }
             }
             autoBidStore.disableAutoBid(ab.getUserId(), auctionId);

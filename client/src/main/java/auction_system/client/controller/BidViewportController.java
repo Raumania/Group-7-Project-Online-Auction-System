@@ -184,6 +184,7 @@ public class BidViewportController implements Initializable {
                 if (updated.getId() == this.auctionDTO.getId()) {
                     Platform.runLater(() -> {
                         refreshAuctionData(updated);
+                        loadBidHistory(); // reload history when auction is updated
                     });
                     break;
                 }

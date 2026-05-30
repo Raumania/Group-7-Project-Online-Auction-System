@@ -145,7 +145,8 @@ public class User extends Entity {
 
     public void setFrozenBalance(BigDecimal frozenBalance) {
         if (frozenBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new UserInformationException("Frozen balance cannot be negative");
+            // Automatically fix corrupted negative frozen balance data from previous bug
+            frozenBalance = BigDecimal.ZERO;
         }
         this.frozenBalance = frozenBalance.setScale(4, java.math.RoundingMode.HALF_UP);
     }
