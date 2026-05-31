@@ -94,12 +94,15 @@ Because this is a Client-Server architecture, you **must** start the Server modu
 ### Running the Application (Global Maven)
 If you have Maven installed globally, open your terminal/command prompt at the root directory of the project and execute:
 
-1.  **Start the Server:**
-    ```bash
+1. **Start the Server:**
+
+```bash
 mvn clean compile exec:java -pl server
 ```
-2.  **Start the Client** *(Open a new terminal window)*:
-    ```bash
+
+2. **Start the Client** *(Open a new terminal window)*:
+
+```bash
 mvn clean compile exec:java -pl client
 ```
 
@@ -109,33 +112,39 @@ If you prefer not to install Maven globally, you can use the built-in Maven Wrap
 #### 🪟 Windows (CMD / PowerShell)
 *Note: Windows uses backslashes (`\`) for directory paths.*
 
-1.  **Start the Server:**
-    ```cmd
-    # In Command Prompt (CMD)
-    mvnw.cmd clean compile exec:java -pl server
-    
-    # In PowerShell
-    .\mvnw.cmd clean compile exec:java -pl server
+1. **Start the Server:**
+
+```cmd
+# In Command Prompt (CMD)
+mvnw.cmd clean compile exec:java -pl server
+
+# In PowerShell
+.\mvnw.cmd clean compile exec:java -pl server
 ```
-2.  **Start the Client:**
-    ```cmd
-    # In Command Prompt (CMD)
-    mvnw.cmd clean compile exec:java -pl client
-    
-    # In PowerShell
-    .\mvnw.cmd clean compile exec:java -pl client
+
+2. **Start the Client:**
+
+```cmd
+# In Command Prompt (CMD)
+mvnw.cmd clean compile exec:java -pl client
+
+# In PowerShell
+.\mvnw.cmd clean compile exec:java -pl client
 ```
 
 #### 🍎 macOS / 🐧 Linux (Ubuntu)
 *Note: macOS and Linux use forward slashes (`/`) for directory paths.*
 
-1.  **Start the Server:**
-    ```bash
-    ./mvnw clean compile exec:java -pl server
+1. **Start the Server:**
+
+```bash
+./mvnw clean compile exec:java -pl server
 ```
-2.  **Start the Client:**
-    ```bash
-    ./mvnw clean compile exec:java -pl client
+
+2. **Start the Client:**
+
+```bash
+./mvnw clean compile exec:java -pl client
 ```
 
 ---

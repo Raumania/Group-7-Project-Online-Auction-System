@@ -16,6 +16,18 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          # 1. Tự động cài đặt ngrok nếu trên EC2 chưa có
+          if ! command -v ngrok &> /dev/null; then
+            echo "Installing ngrok..."
+            curl -s https://ngrok-agent.s3.amazonaws.com/files.bin/key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/ngrok.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/ngrok.gpg] https://ngrok-agent.s3.amazonaws.com/files.bin/html/ stable main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+            sudo apt-get update && sudo apt-get install -y ngrok
+          fi
+
+          # 2. Cấu hình Authtoken cho ngrok từ GitHub Secrets
+          ngrok config add-authtoken "${{ secrets.NGROK_AUTHTOKEN }}"
+
+          # 3. Thực hiện deploy server bằng Docker như cũ
           cd Group-7-Project-Online-Auction-System
           git pull origin main
           sudo docker stop auction-server || true
@@ -23,3 +35,15 @@ jobs:
           sudo docker build -t bidmaster-server .
           sudo docker run -d -p 3636:3636 --name auction-server bidmaster-server
           sudo docker image prune -f
+
+          # 4. Tự động kiểm tra và chạy ngrok ngầm (nếu chưa chạy)
+          if ! pgrep -x "ngrok" > /dev/null; then
+            echo "Starting ngrok tunnel..."
+            nohup ngrok tcp 3636 > ~/ngrok.log 2>&1 &
+            sleep 3
+          fi
+
+          # 5. Lấy địa chỉ IP kết nối của ngrok và in trực tiếp ra log của GitHub Actions
+          echo "=== NGROK TUNNEL ADDRESS ==="
+          curl -s http://localhost:4040/api/tunnels | grep -o 'tcp://[^"]*' || echo "Chưa lấy được địa chỉ. Hãy kiểm tra logs!"
+          echo "============================"

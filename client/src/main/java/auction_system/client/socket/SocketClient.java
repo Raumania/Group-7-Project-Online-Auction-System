@@ -401,15 +401,10 @@ public class SocketClient {
     }
 
     private String readMessage(DataInputStream in) throws IOException {
-        try {
-            int length = in.readInt();
-            byte[] data = new byte[length];
-            in.readFully(data);
-            return new String(data, StandardCharsets.UTF_8);
-        } catch (EOFException e) {
-            isRunning = false;
-            return null;
-        }
+        int length = in.readInt();
+        byte[] data = new byte[length];
+        in.readFully(data);
+        return new String(data, StandardCharsets.UTF_8);
     }
 
     private void writeMessage(DataOutputStream out, String message) throws IOException {
