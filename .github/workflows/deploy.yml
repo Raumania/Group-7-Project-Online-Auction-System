@@ -45,5 +45,10 @@ jobs:
 
           # 5. Lấy địa chỉ IP kết nối của ngrok và in trực tiếp ra log của GitHub Actions
           echo "=== NGROK TUNNEL ADDRESS ==="
-          curl -s http://localhost:4040/api/tunnels | grep -o 'tcp://[^"]*' || echo "Chưa lấy được địa chỉ. Hãy kiểm tra logs!"
+          if curl -s http://localhost:4040/api/tunnels | grep -o 'tcp://[^"]*'; then
+            echo "Successfully retrieved ngrok address."
+          else
+            echo "Chưa lấy được địa chỉ. Chi tiết lỗi từ file ~/ngrok.log:"
+            cat ~/ngrok.log || echo "Không tìm thấy file log ~/ngrok.log"
+          fi
           echo "============================"
