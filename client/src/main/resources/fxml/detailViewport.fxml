@@ -36,11 +36,7 @@
                         <VBox alignment="CENTER" maxHeight="300.0" minHeight="200.0" styleClass="image-preview-area">
                             <children>
                                 <!-- Reduced image size to 240 -->
-                                <ImageView fx:id="itemImageView" fitHeight="240.0" fitWidth="350.0" pickOnBounds="true" preserveRatio="true">
-                                    <image>
-                                        <Image url="" />
-                                    </image>
-                                </ImageView>
+                                <ImageView fx:id="itemImageView" fitHeight="240.0" fitWidth="350.0" pickOnBounds="true" preserveRatio="true" />
                             </children>
                         </VBox>
 
