@@ -10,13 +10,13 @@ public class DatabaseConnection {
 
     // Change URL back to localhost
     private static final String DEV_URL =
-            "jdbc:mysql://localhost:3306/auction_system?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+            "jdbc:mysql://db-aws-test.cbyq8kk8c2tm.ap-southeast-1.rds.amazonaws.com:3306/auction_system?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
     private static final String TEST_URL =
-            "jdbc:mysql://localhost:3306/auction_system?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+            "jdbc:mysql://db-aws-test.cbyq8kk8c2tm.ap-southeast-1.rds.amazonaws.com:3306/auction_system_test?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
 
     // Change the password to match MySQL on your machine
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "NCh200507@";
+    private static final String USERNAME = "admin";
+    private static final String PASSWORD = "chuataidaxiu";
 
     private static boolean testMode = false;
     private static HikariDataSource dataSource;
