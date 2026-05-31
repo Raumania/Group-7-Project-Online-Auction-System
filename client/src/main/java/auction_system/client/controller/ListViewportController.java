@@ -11,6 +11,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.Node;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 
@@ -25,6 +27,7 @@ public class ListViewportController implements Initializable {
     @FXML private FlowPane itemContainer;
     @FXML private ComboBox<String> sortByComboBox;
     @FXML private ComboBox<String> statusComboBox;
+    @FXML private ScrollPane listScrollPane;
 
     private final ObservableList<AuctionDTO> allAuctions = AuctionStore.getInstance().getAuctions();
     // Lưu reference listener để có thể removeListener() khi controller bị destroy (defense in depth)
@@ -80,6 +83,9 @@ public class ListViewportController implements Initializable {
             }
         });
 
+        // Listen to width changes to adjust card widths dynamically (responsive grid)
+        listScrollPane.widthProperty().addListener((obs, oldVal, newVal) -> adjustCardWidths());
+
         // Render dữ liệu có sẵn trong store ngay lập tức
         renderAuctions();
     }
@@ -113,6 +119,19 @@ public class ListViewportController implements Initializable {
             filteredList.removeIf(auction -> auction.getStatus() == AuctionStatus.CANCELLED);
         }
 
+        // Filter by Search Keyword
+        String keyword = "";
+        if (MainAuctionController.getInstance() != null) {
+            keyword = MainAuctionController.getInstance().getSearchKeyword();
+        }
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String finalKeyword = keyword.trim().toLowerCase();
+            filteredList.removeIf(auction -> {
+                if (auction.getName() == null) return true;
+                return !auction.getName().toLowerCase().contains(finalKeyword);
+            });
+        }
+
         // Sort
         if (selectedSort != null) {
             if (selectedSort.equals("Newest")) {
@@ -144,28 +163,40 @@ public class ListViewportController implements Initializable {
                 e.printStackTrace();
             }
         }
+        adjustCardWidths();
     }
 
     public void searchBar(String text) {
-        itemContainer.getChildren().clear();
-        String keyword = (text == null) ? "" : text.trim().toLowerCase();
-        List<AuctionDTO> findauctions=new ArrayList<>(allAuctions);
-        findauctions.removeIf(auction -> auction.getStatus() == AuctionStatus.CANCELLED);
-        for (AuctionDTO auction : findauctions) {
-            String auctionName = auction.getName();
-            if (auctionName == null) continue;
-            if (keyword.isEmpty() || auctionName.toLowerCase().contains(keyword)) {
-                try {
-                    FXMLLoader loader = new FXMLLoader();
-                    loader.setLocation(getClass().getResource("/fxml/itemCard.fxml"));
-                    VBox pane = loader.load();
+        renderAuctions();
+    }
 
-                    ItemCardController itemCardController = loader.getController();
-                    itemCardController.setData(auction);
-                    itemContainer.getChildren().add(pane);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+    private void adjustCardWidths() {
+        if (listScrollPane == null) return;
+        double width = listScrollPane.getWidth();
+        if (width <= 0) return;
+
+        // Subtract 18px for the vertical scrollbar to prevent horizontal overflow and layout feedback loops
+        double scrollbarReserve = 18.0;
+        double leftPadding = 20.0;
+        double rightPadding = 20.0;
+        double hgap = 20.0;
+        double minCardWidth = 210.0;
+
+        double availableWidth = width - scrollbarReserve - leftPadding - rightPadding;
+        if (availableWidth <= 0) return;
+
+        // Calculate how many columns can fit
+        int columns = (int) Math.floor((availableWidth + hgap) / (minCardWidth + hgap));
+        if (columns < 1) columns = 1;
+
+        double cardWidth = (availableWidth - (columns - 1) * hgap) / columns;
+
+        for (Node node : itemContainer.getChildren()) {
+            if (node instanceof VBox) {
+                VBox card = (VBox) node;
+                card.setPrefWidth(cardWidth);
+                card.setMinWidth(cardWidth);
+                card.setMaxWidth(cardWidth);
             }
         }
     }

@@ -105,6 +105,11 @@ public class BidEngine implements AuctionObserver {
                 return;
             }
 
+            // Lấy leader THỰC TẾ từ DB (SELECT FOR UPDATE đảm bảo đây là trạng thái mới nhất).
+            // currentHighestBidderId (tham số) có thể stale do async — thread này có thể được trigger
+            // bởi một event cũ khi C là leader, nhưng lúc chạy B đã thắng rồi.
+            int actualLeaderId = (auction.getHighestBidderId() != null) ? auction.getHighestBidderId() : 0;
+
             // 2. Lấy danh sách AutoBid đang kích hoạt
             List<AutoBid> activeBids = AutoBidStore.getInstance().getActiveAutoBidsByAuctionId(auctionId);
             if (activeBids.isEmpty()) {
@@ -137,7 +142,7 @@ public class BidEngine implements AuctionObserver {
 
                 if (userInvalid || cannotAffordNextBid) {
                     // AutoBid không đủ điều kiện → hủy kích hoạt
-                    deactivateAutoBid(connection, ab, currentHighestBidderId, currentPrice);
+                    deactivateAutoBid(connection, ab, actualLeaderId, currentPrice);
                 } else {
                     validBids.add(ab);
                 }
@@ -164,8 +169,11 @@ public class BidEngine implements AuctionObserver {
             AutoBid winnerAb = validBids.getFirst();
             BigDecimal winnerMax = winnerAb.getMaxBid();
 
-            // 5. Nếu người thắng đã là highest bidder hiện tại → không cần làm gì thêm
-            if (winnerAb.getUserId() == currentHighestBidderId) {
+            // 5. Dùng actualLeaderId (từ DB tươi) thay vì currentHighestBidderId (stale từ event)
+            //    để tránh race condition khi nhiều thread chạy đồng thời.
+            //    Nếu winner đã là leader thực tế VÀ không có cạnh tranh → không cần làm gì.
+            //    Nếu có cạnh tranh (size > 1): vẫn phải cleanup dù winner không đổi.
+            if (winnerAb.getUserId() == actualLeaderId && validBids.size() == 1) {
                 connection.commit();
                 return;
             }
@@ -187,18 +195,20 @@ public class BidEngine implements AuctionObserver {
                         : currentPrice.add(effectiveIncrement);
 
                 if (targetPrice.compareTo(winnerMax) <= 0) {
-                    // Đủ tiền theo bước giá hiệu dụng
+                    // Đủ tiền theo bước giá ưa thích của user
                     finalPrice = targetPrice;
                 } else {
-                    // Đủ tiền theo bước giá tối thiểu (đã đảm bảo ở bước lọc)
+                    // Bước nhảy ưa thích (inc) vượt maxBid → dùng platform min một lần cuối
+                    // User coi như "hết đạn" (chiến lược inc của họ không dùng được nữa) → deactivate
                     finalPrice = nextMinPrice;
+                    winnerDeactivated = true;
                 }
 
             } else {
                 // --- Tình huống B: Nhiều AutoBids cạnh tranh ---
                 // Hủy tất cả AutoBids từ người về nhì trở đi (họ thua người dẫn đầu)
                 for (int i = 1; i < validBids.size(); i++) {
-                    deactivateAutoBid(connection, validBids.get(i), currentHighestBidderId, currentPrice);
+                    deactivateAutoBid(connection, validBids.get(i), actualLeaderId, currentPrice);
                 }
 
                 AutoBid runnerUpAb = validBids.get(1);
@@ -238,7 +248,7 @@ public class BidEngine implements AuctionObserver {
 
             // 8. Publish BidEvent để thông báo tới toàn bộ Client qua Socket
             EventBus.getInstance().publish(new BidEvent(
-                    auctionId, winnerAb.getUserId(), currentHighestBidderId,
+                    auctionId, winnerAb.getUserId(), actualLeaderId,
                     finalPrice, currentPrice, LocalDateTime.now()
             ));
 

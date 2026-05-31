@@ -110,8 +110,24 @@ public class AutoBidDAO {
         return results;
     }
 
+    // Trả về AutoBid bất kể active hay inactive (dùng cho admin/audit)
     public AutoBid findByUserAndAuction(Connection connection, int userId, int auctionId) throws SQLException {
         String sql = "SELECT * FROM auto_bids WHERE user_id = ? AND auction_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, userId);
+            statement.setInt(2, auctionId);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToAutoBid(rs);
+                }
+            }
+        }
+        return null;
+    }
+
+    // Chỉ trả về AutoBid đang active (dùng cho getAutoBidConfig)
+    public AutoBid findActiveByUserAndAuction(Connection connection, int userId, int auctionId) throws SQLException {
+        String sql = "SELECT * FROM auto_bids WHERE user_id = ? AND auction_id = ? AND is_active = 1";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, userId);
             statement.setInt(2, auctionId);

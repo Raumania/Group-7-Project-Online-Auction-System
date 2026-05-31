@@ -33,12 +33,13 @@
          </children>
       </HBox>
       <Label styleClass="section-title" text="⏱ Top Upcoming Auctions" />
-      <ScrollPane fitToWidth="true" styleClass="list-scroll-pane" VBox.vgrow="ALWAYS">
+      <ScrollPane fx:id="listScrollPane" fitToWidth="true" hbarPolicy="NEVER" styleClass="list-scroll-pane" VBox.vgrow="ALWAYS">
          <content>
-            <FlowPane fx:id="itemContainer" alignment="CENTER_LEFT" hgap="20.0" vgap="20.0">
+            <FlowPane fx:id="itemContainer" alignment="TOP_LEFT" hgap="20.0" vgap="20.0">
                <padding>
-                  <Insets left="30.0" top="30.0" />
-               </padding></FlowPane>
+                  <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+               </padding>
+            </FlowPane>
          </content>
          <VBox.margin>
             <Insets />

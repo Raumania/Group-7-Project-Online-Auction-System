@@ -9,6 +9,7 @@ module com.auction_system.server {
     requires langchain4j.core;
     requires langchain4j.open.ai;
     requires javafx.base;
+    requires com.zaxxer.hikari;
 
     opens auction_system.server.model to com.google.gson;
     opens auction_system.server to com.google.gson;

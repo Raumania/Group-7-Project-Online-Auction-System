@@ -52,6 +52,20 @@ public class DetailViewportController {
         }
     }
 
+
+
+    private void updateStatusLabel(Label label, AuctionStatus status) {
+        label.setText(status.toString());
+        label.getStyleClass().removeAll("badge-open", "badge-running", "badge-finished", "badge-paid", "badge-cancelled");
+        switch (status) {
+            case OPEN: label.getStyleClass().add("badge-open"); break;
+            case RUNNING: label.getStyleClass().add("badge-running"); break;
+            case FINISHED: label.getStyleClass().add("badge-finished"); break;
+            case PAID: label.getStyleClass().add("badge-paid"); break;
+            case CANCELLED: label.getStyleClass().add("badge-cancelled"); break;
+        }
+    }
+
     @FXML
     void handleBackToList(ActionEvent event) {
         // Dọn dẹp trước khi rời màn hình
@@ -98,7 +112,7 @@ public class DetailViewportController {
         categoryLabel.setText(String.valueOf(auctionDTO.getType()));
         itemNameLabel.setText(auctionDTO.getName());
         descriptionLabel.setText(auctionDTO.getDescription());
-        statusLabel.setText(auctionDTO.getStatus().toString());
+        updateStatusLabel(statusLabel, auctionDTO.getStatus());
         sellerUsernameLabel.setText(String.valueOf(auctionDTO.getSellerId())); // Assuming we display Seller ID for now
 
         if (auctionDTO.getStartingPrice() != null) {
@@ -139,13 +153,13 @@ public class DetailViewportController {
         // ĐÃ SỬA: So sánh bằng enum
         if (auctionDTO.getStatus() == AuctionStatus.OPEN) {
             setupCountdown(auctionDTO.getStartTime(), () -> {
-                statusLabel.setText(AuctionStatus.RUNNING.toString());
+                updateStatusLabel(statusLabel, AuctionStatus.RUNNING);
                 auctionDTO.setStatus(AuctionStatus.RUNNING); // Cập nhật DTO
                 setupCountdown(auctionDTO.getEndTime(), () -> {
                     hourLabel.setText("00");
                     minLabel.setText("00");
                     secLabel.setText("00");
-                    statusLabel.setText(AuctionStatus.FINISHED.toString());
+                    updateStatusLabel(statusLabel, AuctionStatus.FINISHED);
                 });
             });
         } else if (auctionDTO.getStatus() == AuctionStatus.RUNNING) {
@@ -153,7 +167,7 @@ public class DetailViewportController {
                 hourLabel.setText("00");
                 minLabel.setText("00");
                 secLabel.setText("00");
-                statusLabel.setText(AuctionStatus.FINISHED.toString());
+                updateStatusLabel(statusLabel, AuctionStatus.FINISHED);
             });
         } else {
             hourLabel.setText("00");

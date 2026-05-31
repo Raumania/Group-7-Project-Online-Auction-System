@@ -67,7 +67,7 @@
     -fx-cursor: hand;
 }
 
-.logout-btn {
+.logout-btn, .exit-btn {
     -fx-background-color: transparent;
     -fx-border-color: #3B82F6;
     -fx-border-radius: 8;
@@ -76,16 +76,30 @@
     -fx-cursor: hand;
 }
 
-/* Khi di chuột vào (Hover) */
+/* Khi di chuột vào (Hover) của Logout - Vàng Gold */
 .logout-btn:hover {
+    -fx-background-color: rgba(251, 191, 36, 0.08); /* Nền vàng/gold nhạt */
+    -fx-text-fill: #FBBF24;                      /* Chữ màu vàng gold */
+    -fx-border-color: #FBBF24;                   /* Viền màu vàng gold */
+    -fx-effect: dropshadow(three-pass-box, rgba(251, 191, 36, 0.3), 10, 0, 0, 0); /* Glow vàng nhẹ */
+}
+
+/* Khi nhấn giữ (Pressed) của Logout */
+.logout-btn:armed {
+    -fx-background-color: #FBBF24;
+    -fx-text-fill: #172554;
+}
+
+/* Khi di chuột vào (Hover) của Exit - Đỏ */
+.exit-btn:hover {
     -fx-background-color: rgba(239, 68, 68, 0.1); /* Nền đỏ nhạt */
-    -fx-text-fill: #EF4444;                      /* Chuyển chữ sang màu đỏ tươi */
-    -fx-border-color: #EF4444;                   /* Hiện rõ viền đỏ */
+    -fx-text-fill: #EF4444;                      /* Chữ màu đỏ */
+    -fx-border-color: #EF4444;                   /* Viền màu đỏ */
     -fx-effect: dropshadow(three-pass-box, rgba(239, 68, 68, 0.3), 10, 0, 0, 0); /* Glow đỏ nhẹ */
 }
 
-/* Khi nhấn giữ (Pressed) */
-.logout-btn:armed {
+/* Khi nhấn giữ (Pressed) của Exit */
+.exit-btn:armed {
     -fx-background-color: #EF4444;
     -fx-text-fill: white;
 }

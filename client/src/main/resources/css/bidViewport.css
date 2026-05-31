@@ -17,16 +17,34 @@
     -fx-text-fill: black;
 }
 .status-badge-container {
-    -fx-background-color: #2b78e4;
     -fx-background-radius: 20;
     -fx-padding: 5 15 5 15;
+}
+.badge-open {
+    -fx-background-color: #E3F2FD;
+    -fx-text-fill: #1E88E5;
+}
+.badge-running {
+    -fx-background-color: #E8F5E9;
+    -fx-text-fill: #43A047;
+}
+.badge-finished {
+    -fx-background-color: #FFF3E0;
+    -fx-text-fill: #FB8C00;
+}
+.badge-paid {
+    -fx-background-color: #EDE7F6;
+    -fx-text-fill: #5E35B1;
+}
+.badge-cancelled {
+    -fx-background-color: #FFEBEE;
+    -fx-text-fill: #E53935;
 }
 .status-dot {
     -fx-text-fill: #4cd964;
     -fx-font-size: 14px;
 }
 .status-text {
-    -fx-text-fill: white;
     -fx-font-weight: bold;
 }
 .header-text {

@@ -59,6 +59,9 @@ public class AdminUserManageController implements Initializable {
         btnBan.setDisable(true);
         btnAdd.setDisable(false);
 
+        txtFrozenBalance.setText("0");
+        txtFrozenBalance.setDisable(true);
+
         // Load real database data on load
         handleRefreshTable(null);
     }
@@ -183,7 +186,7 @@ public class AdminUserManageController implements Initializable {
                 }
 
                 txtUsername.setEditable(false);
-                txtFrozenBalance.setEditable(false);
+                txtFrozenBalance.setDisable(true);
                 cbRoles.setDisable(true);
 
                 btnAdd.setDisable(true);
@@ -191,7 +194,7 @@ public class AdminUserManageController implements Initializable {
                 btnBan.setDisable(false);
             } else {
                 txtUsername.setEditable(true);
-                txtFrozenBalance.setEditable(true);
+                txtFrozenBalance.setDisable(true);
                 cbRoles.setDisable(false);
             }
         });
@@ -395,10 +398,10 @@ public class AdminUserManageController implements Initializable {
         txtPassword.clear();
         cbRoles.getSelectionModel().clearSelection();
         txtAvailableBalance.clear();
-        txtFrozenBalance.clear();
+        txtFrozenBalance.setText("0");
         
         txtUsername.setEditable(true);
-        txtFrozenBalance.setEditable(true);
+        txtFrozenBalance.setDisable(true);
         cbRoles.setDisable(false);
         
         userTable.getSelectionModel().clearSelection();

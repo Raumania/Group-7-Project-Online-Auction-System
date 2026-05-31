@@ -54,7 +54,7 @@
                      </children>
                   </VBox>
                   <Button maxWidth="1.7976931348623157E308" onAction="#logoutBtn" styleClass="logout-btn" text="[→ Logout" />
-                  <Button maxWidth="1.7976931348623157E308" onAction="#exitBtn" styleClass="logout-btn" text="⏻ Exit" />
+                  <Button maxWidth="1.7976931348623157E308" onAction="#exitBtn" styleClass="exit-btn" text="⏻ Exit" />
                </children>
             </VBox>
          </content>

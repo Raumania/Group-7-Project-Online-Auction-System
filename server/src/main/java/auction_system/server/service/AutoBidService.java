@@ -190,9 +190,9 @@ public class AutoBidService {
                 return ab;
             }
         }
-        // Nếu không có trong Store (có thể đã inactive), kiểm tra thêm trong DB
+        // Nếu không có trong Store (có thể đã inactive), kiểm tra DB nhưng chỉ lấy record active
         try (java.sql.Connection connection = auction_system.server.dao.DatabaseConnection.getConnection()) {
-            return autoBidDAO.findByUserAndAuction(connection, userId, auctionId);
+            return autoBidDAO.findActiveByUserAndAuction(connection, userId, auctionId);
         } catch (java.sql.SQLException e) {
             System.err.println("[AutoBidService] Failed to query DB for AutoBid config: " + e.getMessage());
             return null;

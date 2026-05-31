@@ -49,6 +49,10 @@ public class MainAuctionController implements Initializable{
         });
     }
 
+    public String getSearchKeyword() {
+        return searchBarTextField != null ? searchBarTextField.getText() : "";
+    }
+
     @FXML private Label availableBalanceLabel;
     @FXML private Label frozenBalanceLabel;
     @FXML private Label totalBalanceLabel;
@@ -56,7 +60,7 @@ public class MainAuctionController implements Initializable{
     @FXML private Label fullnameHeaderLabel;
     @FXML private Label usernameCardLabel;
     @FXML private StackPane viewport;
-    @FXML private TextField searchBarTextfFeld;
+    @FXML private TextField searchBarTextField;
 
     private VBox listViewport;
     private VBox sellerViewport;
@@ -100,6 +104,14 @@ public class MainAuctionController implements Initializable{
             listViewController = listLoader.getController();
             sellerViewController = sellerLoader.getController();
 
+            // Real-time search filter as the user types
+            searchBarTextField.textProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue != null && !newValue.trim().isEmpty()) {
+                    showListViewport();
+                }
+                listViewController.searchBar(newValue);
+            });
+
             viewport.getChildren().setAll(listViewport);
         }
         catch (IOException e) {
@@ -107,10 +119,7 @@ public class MainAuctionController implements Initializable{
         }
     }
 
-    @FXML
-    void searchBtn(ActionEvent event) {
-        listViewController.searchBar(searchBarTextfFeld.getText());
-    }
+
 
     @FXML
     void listViewportBtn(ActionEvent event) throws IOException{

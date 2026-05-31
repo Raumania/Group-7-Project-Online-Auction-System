@@ -109,6 +109,9 @@
                             <mainClass>
                                 com.onlineauctionsystem.onlineauctionsystem/com.onlineauctionsystem.auction_system.HelloApplication
                             </mainClass>
+                            <options>
+                                <option>--enable-native-access=javafx.graphics</option>
+                            </options>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>

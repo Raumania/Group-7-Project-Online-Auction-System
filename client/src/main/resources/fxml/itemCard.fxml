@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Line?>
 
-<VBox alignment="TOP_CENTER" prefWidth="220.0" spacing="10.0" styleClass="auction-card" stylesheets="@../css/itemCard.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.ItemCardController">
+<VBox fx:id="rootCard" alignment="TOP_CENTER" prefWidth="220.0" spacing="10.0" styleClass="auction-card" stylesheets="@../css/itemCard.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="auction_system.client.controller.ItemCardController">
    <children>
 
       <Label fx:id="statusLabel" styleClass="badge-running" text="● RUNNING" />
@@ -24,7 +24,7 @@
          </children>
       </VBox>
 
-      <Label fx:id="itemNameLabel" styleClass="item-name-label" wrapText="true" maxWidth="200.0" textAlignment="CENTER" alignment="CENTER" />
+      <Label fx:id="itemNameLabel" styleClass="item-name-label" wrapText="true" maxWidth="1.7976931348623157E308" textAlignment="CENTER" alignment="CENTER" />
       <Label fx:id="categoryLabel" styleClass="card-tag" text="Electronics" />
       <Label fx:id="currentPriceLabel" styleClass="card-price" text="\$1,000" />
 

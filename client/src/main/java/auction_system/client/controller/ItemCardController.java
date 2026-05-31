@@ -29,6 +29,7 @@ import java.util.Map;
 
 public class ItemCardController {
 
+    @FXML private VBox rootCard;
     @FXML private Label currentPriceLabel;
     @FXML private Label highestBidderUsernameLabel;
     @FXML private Label categoryLabel;
@@ -79,6 +80,9 @@ public class ItemCardController {
     }
 
     public void setData(AuctionDTO auctionDTO) {
+        // Bind image fit width to card width dynamically to prevent overflow
+        itemImageView.fitWidthProperty().bind(rootCard.widthProperty().subtract(30));
+
         // Remove previous listener if this card is being reused
         if (storeListener != null) {
             AuctionStore.getInstance().getAuctions().removeListener(storeListener);
@@ -87,7 +91,7 @@ public class ItemCardController {
         this.auctionDTO = auctionDTO;
         categoryLabel.setText(String.valueOf(auctionDTO.getType()));
         setDynamicName(auctionDTO.getName());
-        statusLabel.setText(auctionDTO.getStatus().toString());
+        updateStatusLabel(statusLabel, auctionDTO.getStatus());
         itemImageView.setImage(ImageService.getInstance().base64ToImage(auctionDTO.getImageBase64()));
         loadCurrentPrice(auctionDTO);
 
@@ -112,7 +116,7 @@ public class ItemCardController {
                             highestBidderUsernameLabel.setText("No bidder yet");
                         }
                         // Update status label
-                        statusLabel.setText(updated.getStatus().toString());
+                        updateStatusLabel(statusLabel, updated.getStatus());
                     });
                     break;
                 }
@@ -136,13 +140,13 @@ public class ItemCardController {
         // ĐÃ SỬA: So sánh bằng enum
         if (auctionDTO.getStatus() == AuctionStatus.OPEN) {
             setupCountdown(auctionDTO.getStartTime(), () -> {
-                statusLabel.setText(AuctionStatus.RUNNING.toString());
+                updateStatusLabel(statusLabel, AuctionStatus.RUNNING);
                 auctionDTO.setStatus(AuctionStatus.RUNNING); // Cập nhật DTO
                 setupCountdown(auctionDTO.getEndTime(), () -> {
                     hourLabel.setText("00");
                     minLabel.setText("00");
                     secLabel.setText("00");
-                    statusLabel.setText(AuctionStatus.FINISHED.toString());
+                    updateStatusLabel(statusLabel, AuctionStatus.FINISHED);
                 });
             });
         } else if (auctionDTO.getStatus() == AuctionStatus.RUNNING) {
@@ -150,7 +154,7 @@ public class ItemCardController {
                 hourLabel.setText("00");
                 minLabel.setText("00");
                 secLabel.setText("00");
-                statusLabel.setText(AuctionStatus.FINISHED.toString());
+                updateStatusLabel(statusLabel, AuctionStatus.FINISHED);
             });
         } else {
             hourLabel.setText("00");
@@ -244,5 +248,17 @@ public class ItemCardController {
 
         itemNameLabel.setText(displayName);
         itemNameLabel.setStyle("-fx-font-size: " + fontSize + ";");
+    }
+
+    private void updateStatusLabel(Label label, AuctionStatus status) {
+        label.setText(status.toString());
+        label.getStyleClass().removeAll("badge-open", "badge-running", "badge-finished", "badge-paid", "badge-cancelled");
+        switch (status) {
+            case OPEN: label.getStyleClass().add("badge-open"); break;
+            case RUNNING: label.getStyleClass().add("badge-running"); break;
+            case FINISHED: label.getStyleClass().add("badge-finished"); break;
+            case PAID: label.getStyleClass().add("badge-paid"); break;
+            case CANCELLED: label.getStyleClass().add("badge-cancelled"); break;
+        }
     }
 }

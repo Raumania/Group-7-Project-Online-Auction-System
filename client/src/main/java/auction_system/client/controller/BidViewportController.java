@@ -30,8 +30,11 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import javafx.scene.chart.LineChart;
@@ -133,6 +136,10 @@ public class BidViewportController implements Initializable {
         });
     }
 
+
+
+
+
     private void setupPriceInput(TextField textField) {
         Pattern validDoubleText = Pattern.compile("^\\d*\\.?\\d{0,2}$");
         UnaryOperator<TextFormatter.Change> filter = change -> {
@@ -196,11 +203,8 @@ public class BidViewportController implements Initializable {
         itemNameLabel.setText(auctionDTO.getName());
         sellerLabel.setText(String.valueOf(auctionDTO.getSellerId()));
         categoryLabel.setText(String.valueOf(auctionDTO.getType()));
-        statusLabel.setText(auctionDTO.getStatus().toString());
-
-        if (auctionDTO.getStartingPrice() != null) {
-            startingPriceLabel.setText(currencyFormatter.format(auctionDTO.getStartingPrice()));
-        }
+        updateStatusLabel(statusLabel, auctionDTO.getStatus());
+        startingPriceLabel.setText(currencyFormatter.format(auctionDTO.getStartingPrice()));
 
         // Dynamically calculate and display minimum increment
         BigDecimal currentPrice = auctionDTO.getCurrentPrice();
@@ -706,20 +710,25 @@ public class BidViewportController implements Initializable {
                             maxBidField.setDisable(true);
                             incrementField.setDisable(true);
                             
-                            // Update local balance from server response
-                            if (response.getData() != null) {
-                                try {
-                                    auction_system.common.dto.UserDTO updatedUser = auction_system.client.util.GsonUtil.fromJson(
-                                        auction_system.client.util.GsonUtil.toJson(response.getData()), 
-                                        auction_system.common.dto.UserDTO.class
-                                    );
-                                    currentUser.setAvailableBalance(updatedUser.getAvailableBalance());
-                                    currentUser.setFrozenBalance(updatedUser.getFrozenBalance());
-                                    if (auction_system.client.controller.MainAuctionController.getInstance() != null) {
-                                        auction_system.client.controller.MainAuctionController.getInstance().refreshBalance();
+                            // Update local balance from server response ONLY IF user is already the highest bidder.
+                            // If they are not the highest bidder, BidEngine will run asynchronously. We must NOT blindly trust this response
+                            // because it contains a temporarily frozen balance that might be unfrozen milliseconds later if they lose.
+                            // If they win, the Socket AuctionEditedEvent will trigger a fresh GET_CURRENT_USER anyway.
+                            if (currentUser.getUsername() != null && currentUser.getUsername().equals(auctionDTO.getHighestBidderUsername())) {
+                                if (response.getData() != null) {
+                                    try {
+                                        auction_system.common.dto.UserDTO updatedUser = auction_system.client.util.GsonUtil.fromJson(
+                                            auction_system.client.util.GsonUtil.toJson(response.getData()), 
+                                            auction_system.common.dto.UserDTO.class
+                                        );
+                                        currentUser.setAvailableBalance(updatedUser.getAvailableBalance());
+                                        currentUser.setFrozenBalance(updatedUser.getFrozenBalance());
+                                        if (auction_system.client.controller.MainAuctionController.getInstance() != null) {
+                                            auction_system.client.controller.MainAuctionController.getInstance().refreshBalance();
+                                        }
+                                    } catch (Exception ex) {
+                                        System.err.println("Failed to parse updated user balance: " + ex.getMessage());
                                     }
-                                } catch (Exception ex) {
-                                    System.err.println("Failed to parse updated user balance: " + ex.getMessage());
                                 }
                             }
                         } else {
@@ -801,13 +810,43 @@ public class BidViewportController implements Initializable {
     }
 
     public static BigDecimal getBidIncrement(BigDecimal price) {
-        if (price.compareTo(new BigDecimal("1")) < 0) return new BigDecimal("0.05");
-        else if (price.compareTo(new BigDecimal("5")) < 0) return new BigDecimal("0.25");
-        else if (price.compareTo(new BigDecimal("25")) < 0) return new BigDecimal("0.5");
-        else if (price.compareTo(new BigDecimal("100")) < 0) return new BigDecimal("1");
-        else if (price.compareTo(new BigDecimal("250")) < 0) return new BigDecimal("2.5");
-        else if (price.compareTo(new BigDecimal("500")) < 0) return new BigDecimal("5");
-        else if (price.compareTo(new BigDecimal("1000")) < 0) return new BigDecimal("10");
-        else return new BigDecimal("25");
+        if (price == null) return BigDecimal.ZERO;
+        if (price.compareTo(new BigDecimal("100.00")) < 0) {
+            return new BigDecimal("5.00");
+        } else if (price.compareTo(new BigDecimal("500.00")) < 0) {
+            return new BigDecimal("10.00");
+        } else if (price.compareTo(new BigDecimal("1000.00")) < 0) {
+            return new BigDecimal("25.00");
+        } else if (price.compareTo(new BigDecimal("5000.00")) < 0) {
+            return new BigDecimal("50.00");
+        } else {
+            return new BigDecimal("100.00");
+        }
+    }
+
+    private void updateStatusLabel(Label label, AuctionStatus status) {
+        label.setText(status.toString());
+        if (label.getParent() instanceof HBox) {
+            HBox container = (HBox) label.getParent();
+            
+            String bgColor;
+            String textColor;
+            switch (status) {
+                case OPEN: bgColor = "#E3F2FD"; textColor = "#1E88E5"; break;
+                case RUNNING: bgColor = "#E8F5E9"; textColor = "#43A047"; break;
+                case FINISHED: bgColor = "#FFF3E0"; textColor = "#FB8C00"; break;
+                case PAID: bgColor = "#EDE7F6"; textColor = "#5E35B1"; break;
+                case CANCELLED: bgColor = "#FFEBEE"; textColor = "#E53935"; break;
+                default: bgColor = "#E8F5E9"; textColor = "#43A047"; break;
+            }
+            
+            container.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 20; -fx-padding: 5 15 5 15;");
+            label.setStyle("-fx-text-fill: " + textColor + "; -fx-font-weight: bold;");
+            
+            if (container.getChildren().size() > 0 && container.getChildren().get(0) instanceof Label) {
+                Label dot = (Label) container.getChildren().get(0);
+                dot.setStyle("-fx-text-fill: " + textColor + "; -fx-font-size: 14px;");
+            }
+        }
     }
 }
