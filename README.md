@@ -152,7 +152,7 @@ mvnw.cmd clean compile exec:java -pl client
 ## 📊 6. Project Materials & Demonstration
 
 * **Project Report (PDF):**
-  📄 👉 [CLICK HERE TO VIEW OR DOWNLOAD THE PDF REPORT](#) 👈
+  📄 👉 [CLICK HERE TO VIEW OR DOWNLOAD THE PDF REPORT](assets/BaoCao_BAITAPLON.pdf) 👈
 
 * **Video Demo:**
   🎥 👉 [CLICK HERE TO WATCH THE DEMO VIDEO](https://www.youtube.com/watch?v=51rDGqMxa3A&t=23s) 👈
