@@ -33,7 +33,7 @@ public class LoginController implements RequestHandler {
 
             if (user != null) {
                 if (user.getStatus() == auction_system.common.enums.UserStatus.BANNED) {
-                    return new Response(Status.ERROR, action, null, "Tài khoản của bạn đã bị khóa do vi phạm điều khoản của sàn.");
+                    return new Response(Status.ERROR, action, null, "Your account has been banned due to violation of platform terms.");
                 }
                 UserDTO responseUser = new UserDTO();
                 responseUser.setId(user.getId());

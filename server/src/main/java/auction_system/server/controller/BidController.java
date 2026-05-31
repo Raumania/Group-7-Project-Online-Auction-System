@@ -14,8 +14,8 @@ import auction_system.server.exception.InvalidBidException;
 import com.google.gson.JsonElement;
 
 /**
- * Xử lý action PLACE_BID.
- * Sử dụng BidService.placeBid() và UserService để lấy đối tượng User có role BIDDER.
+ * Handle action PLACE_BID.
+ * Use BidService.placeBid() and UserService to get User object with BIDDER role.
  */
 public class BidController implements RequestHandler {
 
@@ -26,20 +26,20 @@ public class BidController implements RequestHandler {
     public Response handle(Request request) {
         Action action = request.getAction();
         try {
-            // Parse dữ liệu từ request (hỗ trợ cả Object và JsonElement)
+            // Parse data from request (supports both Object and JsonElement)
             BidDTO bidDTO = parseData(request.getData(), BidDTO.class);
 
-            // Lấy User từ bidderId
+            // Get User from bidderId
             User bidder = userService.getUserById(bidDTO.getBidderId());
 
             /*
-                Trước đây:
+                Previously:
                 if (!(user instanceof Bidder)) ...
                 Bidder bidder = (Bidder) user;
 
-                Bây giờ:
-                Không dùng instanceof nữa.
-                Kiểm tra user có role BIDDER không.
+                Now:
+                No longer use instanceof.
+                Check if user has BIDDER role.
             */
             if (!bidder.hasRole(UserRole.BIDDER)) {
                 return new Response(Status.ERROR, action, null, "Only bidders can place bids");
@@ -51,10 +51,10 @@ public class BidController implements RequestHandler {
                     bidDTO.getAmount()
             );
 
-            // Lấy giao dịch mới nhất để trả về (tuỳ chọn)
+            // Get latest transaction to return (optional)
             var latestBid = bidService.getLatestBid(bidDTO.getAuctionId());
 
-            // Trả về object trực tiếp, không dùng GsonUtil.toJson()
+            // Return object directly, do not use GsonUtil.toJson()
             return new Response(Status.SUCCESS, action, latestBid, "Bid placed successfully");
 
         } catch (InvalidBidException e) {
@@ -64,7 +64,7 @@ public class BidController implements RequestHandler {
         }
     }
 
-    // Helper method chuyển Object/JsonElement thành đối tượng T
+    // Helper method to convert Object/JsonElement to object T
     private <T> T parseData(Object dataObj, Class<T> clazz) {
         if (dataObj instanceof JsonElement) {
             return GsonUtil.fromJson((JsonElement) dataObj, clazz);

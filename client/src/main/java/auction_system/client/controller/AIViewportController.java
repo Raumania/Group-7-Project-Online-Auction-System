@@ -65,7 +65,7 @@ public class AIViewportController {
         String userText = chatInput.getText().trim();
         if (userText.isEmpty() && selectedFile == null) return;
         
-        // Lưu lại selectedFile vào biến cục bộ trước khi xóa
+        // Save selectedFile to local variable before clearing
         File fileToSend = selectedFile;
         appendUserMessage(userText, fileToSend);
 
@@ -73,15 +73,15 @@ public class AIViewportController {
         chatInput.setDisable(true);
         if (sendButton != null) sendButton.setDisable(true);
 
-        // Hiển thị trạng thái AI đang suy nghĩ (Không dùng hiệu ứng nhả chữ cho dòng này)
-        HBox loadingBox = appendAIMessage("🤖 AI đang suy nghĩ...", false);
+        // Show AI thinking status (Do not use typewriter effect for this line)
+        HBox loadingBox = appendAIMessage("🤖 AI is thinking...", false);
 
-        // Gọi AIService để gửi dữ liệu lên Server và nhận kết quả
+        // Call AIService to send data to Server and receive result
         auction_system.client.service.AIService.getInstance().sendChatRequest(userText, fileToSend, reply -> {
             Platform.runLater(() -> {
-                // Xóa bong bóng trạng thái đang suy nghĩ
+                // Remove thinking status bubble
                 messageContainer.getChildren().remove(loadingBox);
-                // Thêm tin nhắn trả về từ AI với hiệu ứng nhả chữ (true)
+                // Add AI response message with typewriter effect (true)
                 appendAIMessage(reply, true);
                 
                 // Re-enable input
@@ -91,7 +91,7 @@ public class AIViewportController {
             });
         });
 
-        // Sau đó xóa hết file và chatInput đi để cho user gửi dữ liệu mới
+        // Then clear file and chatInput to allow user to send new data
         chatInput.clear();
         selectedFile = null;
         imageStatusLabel.setVisible(false);
@@ -155,14 +155,14 @@ public class AIViewportController {
         final int length = fullText.length();
         Timeline timeline = new Timeline();
 
-        // Nhả 1 ký tự sau mỗi 15 milliseconds
+        // Reveal 1 character every 15 milliseconds
         for (int i = 0; i <= length; i++) {
             final int index = i;
             KeyFrame keyFrame = new KeyFrame(
                 Duration.millis(index * 15),
                 event -> {
                     label.setText(fullText.substring(0, index));
-                    // Ép thanh cuộn luôn bám theo đáy sau khi layout cập nhật thêm ký tự mới
+                    // Force scrollbar to always stick to bottom after layout updates with new character
                     Platform.runLater(() -> chatScrollPane.setVvalue(1.0));
                 }
             );

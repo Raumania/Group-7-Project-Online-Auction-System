@@ -50,7 +50,7 @@ public class AuctionManageService {
 
     public boolean deleteAuction(AuctionDTO auctionDTO) {
         if (auctionDTO == null || auctionDTO.getStatus() != AuctionStatus.OPEN) {
-            System.out.println("Không thể xóa: Phiên đấu giá không tồn tại hoặc trạng thái không phải là OPEN!");
+            System.out.println("Cannot delete: Auction does not exist or status is not OPEN!");
             return false;
         }
 
@@ -61,18 +61,18 @@ public class AuctionManageService {
     }
 
     /**
-     * Chỉnh sửa thông tin phiên đấu giá với điều kiện trạng thái phải là OPEN
-     * @param auctionDTO Đối tượng phiên đấu giá chứa thông tin mới kèm ID cũ
-     * @return true nếu sửa thành công, false nếu thất bại
+     * Edit auction information with the condition that status must be OPEN
+     * @param auctionDTO Auction object containing new info with old ID
+     * @return true if edit succeeds, false if fails
      */
     public boolean editAuction(AuctionDTO auctionDTO) {
-        // Kiểm tra điều kiện phía Client: Chỉ được sửa khi trạng thái là "OPEN"
+        // Check client-side condition: Can only edit when status is "OPEN"
         if (auctionDTO == null || auctionDTO.getStatus() != AuctionStatus.OPEN) {
-            System.out.println("Không thể chỉnh sửa: Phiên đấu giá không ở trạng thái OPEN!");
+            System.out.println("Cannot edit: Auction is not in OPEN status!");
             return false;
         }
 
-        // Gửi Request chỉnh sửa lên Server với Enum Action.EDIT_AUCTION
+        // Send edit Request to Server with Enum Action.EDIT_AUCTION
         Request request = new Request(Action.EDIT_AUCTION, GsonUtil.getGson().toJsonTree(auctionDTO));
         Response response = SocketClient.getInstance().sendAndReceive(request);
 
@@ -81,7 +81,7 @@ public class AuctionManageService {
 
     public boolean cancelAuction(AuctionDTO auctionDTO) {
         if (auctionDTO == null || (auctionDTO.getStatus() != AuctionStatus.OPEN && auctionDTO.getStatus() != AuctionStatus.RUNNING)) {
-            System.out.println("Không thể hủy: Phiên đấu giá không ở trạng thái OPEN hoặc RUNNING!");
+            System.out.println("Cannot cancel: Auction is not in OPEN or RUNNING status!");
             return false;
         }
 

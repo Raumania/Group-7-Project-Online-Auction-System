@@ -186,10 +186,10 @@ public class User extends Entity {
             throw new UserInformationException("Amount must be greater than 0");
         }
         
-        // Hoàn lại tiền vào availableBalance để user không bị mất tiền (do bug cũ làm sai lệch DB)
+        // Refund money to availableBalance so user doesn't lose money (due to old bug messing up DB)
         this.availableBalance = this.availableBalance.add(amount).setScale(4, java.math.RoundingMode.HALF_UP);
         
-        // Chỉ trừ frozenBalance tối đa bằng số nó đang có để tránh bị âm
+        // Only subtract frozenBalance up to its current amount to avoid negative values
         if (this.frozenBalance.compareTo(amount) < 0) {
             this.frozenBalance = BigDecimal.ZERO;
         } else {

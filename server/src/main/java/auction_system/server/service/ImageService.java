@@ -15,19 +15,19 @@ public class ImageService {
     private static final String IMAGE_FOLDER;
 
     static {
-        // Lấy đường dẫn tuyệt đối của thư mục chứa file .class của server
-        // để đảm bảo thư mục data/images luôn được tạo đúng chỗ
-        // bất kể working directory là gì (hữu ích sau khi refactor multi-module)
+        // Get absolute path of the directory containing server's .class file
+        // to ensure data/images directory is always created in the right place
+        // regardless of the working directory (useful after multi-module refactor)
         String baseDir;
         try {
             Path jarPath = Path.of(
                 ImageService.class.getProtectionDomain().getCodeSource().getLocation().toURI()
             );
-            // Lùi 1 cấp so với target/classes hoặc target/*.jar
+            // Go back 1 level from target/classes or target/*.jar
             Path projectRoot = jarPath.getParent().getParent();
             baseDir = projectRoot.resolve("data/images").toString();
         } catch (URISyntaxException e) {
-            // Fallback: dùng user.dir (working directory hiện tại)
+            // Fallback: use user.dir (current working directory)
             baseDir = System.getProperty("user.dir") + "/data/images";
         }
         IMAGE_FOLDER = baseDir;
@@ -48,12 +48,12 @@ public class ImageService {
             return null;
         }
         try {
-            // Thử đường dẫn tuyệt đối trước
+            // Try absolute path first
             Path path = Path.of(imagePath);
             if (!path.isAbsolute()) {
-                // IMAGE_FOLDER là server/data/images, getParent() là server/data, getParent().getParent() là server
-                // Nếu là relative path (lưu từ DB dưới dạng data/images/auction_X.png),
-                // ta cần ghép với thư mục root của server (server/projectRoot)
+                // IMAGE_FOLDER is server/data/images, getParent() is server/data, getParent().getParent() is server
+                // If it is a relative path (saved in DB as data/images/auction_X.png),
+                // we need to resolve it with the server's root directory (server/projectRoot)
                 path = Path.of(IMAGE_FOLDER).getParent().getParent().resolve(imagePath);
             }
             if (Files.exists(path)) {
@@ -86,8 +86,8 @@ public class ImageService {
 
             Files.write(imagePath, imageBytes);
 
-            // Trả về relative path (data/images/auction_18.png) thay vì absolute path
-            // để tránh lỗi "Data too long for column 'path'" khi đường dẫn tuyệt đối quá dài
+            // Return relative path (data/images/auction_18.png) instead of absolute path
+            // to avoid "Data too long for column 'path'" error when absolute path is too long
             return "data/images/" + safeFileName;
 
         } catch (Exception e) {
@@ -100,7 +100,7 @@ public class ImageService {
             int newId = ImageCounterStore.getInstance().getNextId();
             return "auction_" + newId + ".png";
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi sinh ID ảnh từ Store", e);
+            throw new RuntimeException("Error generating image ID from Store", e);
         }
     }
 

@@ -98,42 +98,42 @@ public class BidEngine implements AuctionObserver {
             connection = DatabaseConnection.getConnection();
             connection.setAutoCommit(false);
 
-            // 1. Lấy thông tin phiên đấu giá, khóa dòng (Pessimistic Locking) để tránh race condition
+            // 1. Get auction info, lock row (Pessimistic Locking) to avoid race condition
             Auction auction = auctionDAO.findByIdForUpdate(connection, auctionId);
             if (auction == null || auction.getStatus() != AuctionStatus.RUNNING) {
                 connection.commit();
                 return;
             }
 
-            // Lấy leader THỰC TẾ từ DB (SELECT FOR UPDATE đảm bảo đây là trạng thái mới nhất).
-            // currentHighestBidderId (tham số) có thể stale do async — thread này có thể được trigger
-            // bởi một event cũ khi C là leader, nhưng lúc chạy B đã thắng rồi.
+            // Get ACTUAL leader from DB (SELECT FOR UPDATE ensures this is the latest state).
+            // currentHighestBidderId (parameter) could be stale due to async — this thread could be triggered
+            // by an old event when C is leader, but at runtime B has already won.
             int actualLeaderId = (auction.getHighestBidderId() != null) ? auction.getHighestBidderId() : 0;
 
-            // 2. Lấy danh sách AutoBid đang kích hoạt
+            // 2. Get the list of active AutoBids
             List<AutoBid> activeBids = AutoBidStore.getInstance().getActiveAutoBidsByAuctionId(auctionId);
             if (activeBids.isEmpty()) {
                 connection.commit();
                 return;
             }
 
-            // Giá hiện tại. Nếu chưa có ai bid thì dùng startingPrice để tính bước kế tiếp
+            // Current price. If no one has bid, use startingPrice to calculate the next step
             BigDecimal currentPrice = (auction.getCurrentPrice() != null)
                     ? auction.getCurrentPrice()
                     : auction.getStartingPrice();
 
-            // Bước giá tối thiểu của sàn tính từ giá hiện tại
+            // Minimum bid increment from the current price
             BigDecimal minIncrement = BidService.getInstance().getBidIncrement(currentPrice);
 
-            // Mức giá kế tiếp tối thiểu cần đạt để trở thành highest bidder
-            // Nếu chưa có ai bid: nextPrice = startingPrice (không cộng thêm increment)
-            // Nếu đã có ai bid:   nextPrice = currentPrice + minIncrement
+            // Next minimum price required to become the highest bidder
+            // If no one has bid: nextPrice = startingPrice (no increment added)
+            // If someone has bid:   nextPrice = currentPrice + minIncrement
             BigDecimal nextMinPrice = (auction.getHighestBidderId() == null)
                     ? currentPrice
                     : currentPrice.add(minIncrement);
 
-            // 3. Lọc AutoBids hợp lệ: người dùng hợp lệ VÀ maxBid >= nextMinPrice
-            //    (đủ điều kiện để đặt ít nhất giá kế tiếp tối thiểu)
+            // 3. Filter valid AutoBids: valid user AND maxBid >= nextMinPrice
+            //    (eligible to place at least the next minimum price)
             List<AutoBid> validBids = new ArrayList<>();
             for (AutoBid ab : activeBids) {
                 User bidder = userService.getUserById(ab.getUserId());
@@ -141,7 +141,7 @@ public class BidEngine implements AuctionObserver {
                 boolean cannotAffordNextBid = (ab.getMaxBid().compareTo(nextMinPrice) < 0);
 
                 if (userInvalid || cannotAffordNextBid) {
-                    // AutoBid không đủ điều kiện → hủy kích hoạt
+                    // AutoBid ineligible -> deactivate
                     deactivateAutoBid(connection, ab, actualLeaderId, currentPrice);
                 } else {
                     validBids.add(ab);
@@ -153,7 +153,7 @@ public class BidEngine implements AuctionObserver {
                 return;
             }
 
-            // 4. Sắp xếp: MaxBid cao nhất thắng. Tie-break: đặt trước (createdAt) → ID nhỏ hơn
+            // 4. Sort: Highest MaxBid wins. Tie-break: earlier (createdAt) -> smaller ID
             validBids.sort((a, b) -> {
                 int cmp = b.getMaxBid().compareTo(a.getMaxBid());
                 if (cmp != 0) return cmp;
@@ -169,23 +169,23 @@ public class BidEngine implements AuctionObserver {
             AutoBid winnerAb = validBids.getFirst();
             BigDecimal winnerMax = winnerAb.getMaxBid();
 
-            // 5. Dùng actualLeaderId (từ DB tươi) thay vì currentHighestBidderId (stale từ event)
-            //    để tránh race condition khi nhiều thread chạy đồng thời.
-            //    Nếu winner đã là leader thực tế VÀ không có cạnh tranh → không cần làm gì.
-            //    Nếu có cạnh tranh (size > 1): vẫn phải cleanup dù winner không đổi.
+            // 5. Use actualLeaderId (fresh from DB) instead of currentHighestBidderId (stale from event)
+            //    to avoid race condition when multiple threads run concurrently.
+            //    If winner is already the actual leader AND no competition -> do nothing.
+            //    If there is competition (size > 1): still need to cleanup even if winner is unchanged.
             if (winnerAb.getUserId() == actualLeaderId && validBids.size() == 1) {
                 connection.commit();
                 return;
             }
 
-            // 6. Tính giá đặt cuối cùng (finalPrice) theo quy tắc Proxy Bidding
+            // 6. Calculate final bid price (finalPrice) according to Proxy Bidding rules
             BigDecimal finalPrice;
             boolean winnerDeactivated = false;
 
             if (validBids.size() == 1) {
-                // --- Tình huống A: Chỉ 1 AutoBid cạnh tranh ---
-                // Điều kiện đã được lọc ở bước 3: winnerMax >= nextMinPrice
-                // → Đặt giá đúng nextMinPrice (giá thấp nhất có thể để thắng)
+                // --- Situation A: Only 1 competing AutoBid ---
+                // Condition already filtered in step 3: winnerMax >= nextMinPrice
+                // -> Set price exactly to nextMinPrice (lowest possible price to win)
 
                 BigDecimal userIncrement = winnerAb.getBidIncrement();
                 BigDecimal effectiveIncrement = (userIncrement != null && userIncrement.compareTo(minIncrement) > 0)
@@ -195,18 +195,18 @@ public class BidEngine implements AuctionObserver {
                         : currentPrice.add(effectiveIncrement);
 
                 if (targetPrice.compareTo(winnerMax) <= 0) {
-                    // Đủ tiền theo bước giá ưa thích của user
+                    // Sufficient funds according to user's preferred bid increment
                     finalPrice = targetPrice;
                 } else {
-                    // Bước nhảy ưa thích (inc) vượt maxBid → dùng platform min một lần cuối
-                    // User coi như "hết đạn" (chiến lược inc của họ không dùng được nữa) → deactivate
+                    // Preferred increment (inc) exceeds maxBid -> use platform min one last time
+                    // User is considered "out of ammo" (their inc strategy is no longer usable) -> deactivate
                     finalPrice = nextMinPrice;
                     winnerDeactivated = true;
                 }
 
             } else {
-                // --- Tình huống B: Nhiều AutoBids cạnh tranh ---
-                // Hủy tất cả AutoBids từ người về nhì trở đi (họ thua người dẫn đầu)
+                // --- Situation B: Multiple competing AutoBids ---
+                // Cancel all AutoBids from the runner-up onwards (they lost to the leader)
                 for (int i = 1; i < validBids.size(); i++) {
                     deactivateAutoBid(connection, validBids.get(i), actualLeaderId, currentPrice);
                 }
@@ -214,14 +214,14 @@ public class BidEngine implements AuctionObserver {
                 AutoBid runnerUpAb = validBids.get(1);
                 BigDecimal runnerUpMax = runnerUpAb.getMaxBid();
 
-                // Bước giá tính từ mức giá của người về nhì
+                // Bid increment calculated from the runner-up's price
                 BigDecimal runnerUpIncrement = BidService.getInstance().getBidIncrement(runnerUpMax);
                 BigDecimal userIncrement = winnerAb.getBidIncrement();
                 BigDecimal effectiveIncrement = (userIncrement != null && userIncrement.compareTo(runnerUpIncrement) > 0)
                         ? userIncrement : runnerUpIncrement;
 
-                // Quy tắc Proxy: finalPrice = min(runnerUpMax + increment, winnerMax)
-                //   → Người thắng chỉ trả vừa đủ để vượt qua người về nhì, không phải toàn bộ MaxBid
+                // Proxy Rule: finalPrice = min(runnerUpMax + increment, winnerMax)
+                //   -> Winner only pays just enough to beat the runner-up, not the full MaxBid
                 BigDecimal targetWithEffective = runnerUpMax.add(effectiveIncrement);
                 BigDecimal targetWithMin = runnerUpMax.add(runnerUpIncrement);
 
@@ -229,15 +229,15 @@ public class BidEngine implements AuctionObserver {
                     finalPrice = targetWithEffective;
                 } else if (targetWithMin.compareTo(winnerMax) <= 0) {
                     finalPrice = targetWithMin;
-                    winnerDeactivated = true; // Đã dùng hết ngân sách
+                    winnerDeactivated = true; // Budget exhausted
                 } else {
-                    // runnerUpMax >= winnerMax → người thắng all-in bằng MaxBid của mình
+                    // runnerUpMax >= winnerMax -> winner goes all-in with their MaxBid
                     finalPrice = winnerMax;
                     winnerDeactivated = true;
                 }
             }
 
-            // 7. Thực thi bid: ghi DB, cập nhật Store, giải phóng balance người bid cũ
+            // 7. Execute bid: write to DB, update Store, unfreeze balance of previous bidder
             executeBid(connection, auction, winnerAb.getUserId(), finalPrice);
 
             if (winnerDeactivated) {
@@ -246,7 +246,7 @@ public class BidEngine implements AuctionObserver {
 
             connection.commit();
 
-            // 8. Publish BidEvent để thông báo tới toàn bộ Client qua Socket
+            // 8. Publish BidEvent to notify all Clients via Socket
             EventBus.getInstance().publish(new BidEvent(
                     auctionId, winnerAb.getUserId(), actualLeaderId,
                     finalPrice, currentPrice, LocalDateTime.now()

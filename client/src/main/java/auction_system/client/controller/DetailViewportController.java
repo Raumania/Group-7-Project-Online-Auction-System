@@ -42,8 +42,8 @@ public class DetailViewportController {
     private AuctionDTO auctionDTO;
 
     /**
-     * Dọn dẹp tài nguyên trước khi chuyển màn hình:
-     * Stop timeline đếm ngược để tránh CPU chạy ngầm (Timeline Leak).
+     * Clean up resources before switching screens:
+     * Stop countdown timeline to avoid background CPU usage (Timeline Leak).
      */
     private void cleanup() {
         if (timeline != null) {
@@ -68,15 +68,15 @@ public class DetailViewportController {
 
     @FXML
     void handleBackToList(ActionEvent event) {
-        // Dọn dẹp trước khi rời màn hình
+        // Clean up before leaving screen
         cleanup();
 
-        // Tái sử dụng listViewport instance đã có trong MainAuctionController
-        // KHÔNG load lại listViewport.fxml mới — đó là nguyên nhân gây Listener Accumulation!
+        // Reuse existing listViewport instance in MainAuctionController
+        // DO NOT reload a new listViewport.fxml — that causes Listener Accumulation!
         if (MainAuctionController.getInstance() != null) {
             MainAuctionController.getInstance().showListViewport();
         } else {
-            // Fallback: nếu MainAuctionController chưa ready (trường hợp hiếm)
+            // Fallback: if MainAuctionController is not ready (rare case)
             try {
                 javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader();
                 loader.setLocation(getClass().getResource("/fxml/listViewport.fxml"));
@@ -90,7 +90,7 @@ public class DetailViewportController {
 
     @FXML
     void handleJoinRoom(ActionEvent event) {
-        // Dọn dẹp trước khi rời màn hình
+        // Clean up before leaving screen
         cleanup();
 
         try {
@@ -142,19 +142,19 @@ public class DetailViewportController {
             timeline.stop();
         }
 
-        // Tự động dọn dẹp Timeline khi view bị gỡ khỏi scene graph (ví dụ: người dùng bấm nút chuyển trang ở Sidebar)
-        // Điều này ngăn chặn lỗi rò rỉ bộ nhớ (Memory Leak) và CPU chạy ngầm vô hạn.
+        // Auto-clean up Timeline when view is removed from scene graph (e.g. user clicks Sidebar navigation)
+        // This prevents memory leaks and infinite background CPU usage.
         itemImageView.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene == null) {
                 cleanup();
             }
         });
 
-        // ĐÃ SỬA: So sánh bằng enum
+        // FIXED: Compare using enum
         if (auctionDTO.getStatus() == AuctionStatus.OPEN) {
             setupCountdown(auctionDTO.getStartTime(), () -> {
                 updateStatusLabel(statusLabel, AuctionStatus.RUNNING);
-                auctionDTO.setStatus(AuctionStatus.RUNNING); // Cập nhật DTO
+                auctionDTO.setStatus(AuctionStatus.RUNNING); // Update DTO
                 setupCountdown(auctionDTO.getEndTime(), () -> {
                     hourLabel.setText("00");
                     minLabel.setText("00");

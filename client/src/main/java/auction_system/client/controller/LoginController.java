@@ -1,7 +1,7 @@
 package auction_system.client.controller;
 
 import auction_system.client.service.AuthService;
-import auction_system.client.service.AuctionListService; // <-- THÊM IMPORT
+import auction_system.client.service.AuctionListService; // <-- ADD IMPORT
 import auction_system.common.dto.UserDTO;
 import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
@@ -68,23 +68,23 @@ public class LoginController implements javafx.fxml.Initializable {
     void loginBtnAction(ActionEvent event) {
         UserDTO user = new UserDTO(LoginUsernameTextField.getText(), LoginPasswordTextField.getText());
         if (user.getUsername().isEmpty() || user.getPassword().isEmpty()) {
-            LoginStatusLabel.setText("Vui lòng nhập đầy đủ thông tin!");
+            LoginStatusLabel.setText("Please fill in all information!");
             return;
         }
 
-        // Disable nút và hiển thị trạng thái chờ để tránh double-click
+        // Disable button and show loading status to avoid double-click
         Button loginBtn = (Button) ((javafx.scene.Node) event.getSource());
         loginBtn.setDisable(true);
-        LoginStatusLabel.setText("Đang đăng nhập...");
+        LoginStatusLabel.setText("Logging in...");
 
-        // Thực hiện network I/O trên background thread để không block JavaFX UI thread
+        // Perform network I/O on background thread to avoid blocking JavaFX UI thread
         new Thread(() -> {
             int varCheck = AuthService.getInstance().checkLogin(user);
 
             Platform.runLater(() -> {
                 loginBtn.setDisable(false);
                 if (varCheck == 1) {
-                    // BẮT ĐẦU TẢI DỮ LIỆU NGAY SAU KHI ĐĂNG NHẬP THÀNH CÔNG
+                    // START LOADING DATA IMMEDIATELY AFTER SUCCESSFUL LOGIN
                     AuctionListService.getInstance().fetchAllAuctions();
                     try {
                         FXMLLoader loader = new FXMLLoader();
@@ -113,7 +113,7 @@ public class LoginController implements javafx.fxml.Initializable {
                     if (errorMsg != null && !errorMsg.isEmpty()) {
                         LoginStatusLabel.setText(errorMsg);
                     } else {
-                        LoginStatusLabel.setText("Sai tài khoản hoặc mật khẩu!");
+                        LoginStatusLabel.setText("Incorrect username or password!");
                     }
                 }
             });
@@ -127,22 +127,22 @@ public class LoginController implements javafx.fxml.Initializable {
         String password = registerPasswordTextField.getText();
         String confirmPassword = registerConfirmPasswordTextField.getText();
         if (fullname.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
-            RegisterStatusLabel.setText("Vui lòng nhập đầy đủ thông tin!");
+            RegisterStatusLabel.setText("Please fill in all information!");
             return;
         }
         if (!password.equals(confirmPassword)) {
-            RegisterStatusLabel.setText("Mật khẩu không khớp!");
+            RegisterStatusLabel.setText("Passwords do not match!");
             return;
         }
 
-        // Disable nút và hiển thị trạng thái chờ
+        // Disable button and show loading status
         registerBtn.setDisable(true);
         RegisterStatusLabel.setTextFill(Color.BLACK);
-        RegisterStatusLabel.setText("Đang đăng ký...");
+        RegisterStatusLabel.setText("Registering...");
 
         UserDTO user = new UserDTO(fullname, username, password);
 
-        // Thực hiện network I/O trên background thread
+        // Perform network I/O on background thread
         new Thread(() -> {
             boolean success = AuthService.getInstance().checkRegister(user);
 
@@ -150,7 +150,7 @@ public class LoginController implements javafx.fxml.Initializable {
                 registerBtn.setDisable(false);
                 if (success) {
                     RegisterStatusLabel.setTextFill(Color.GREEN);
-                    RegisterStatusLabel.setText("Đăng ký thành công, quay lại trang đăng nhập sau 3s!");
+                    RegisterStatusLabel.setText("Registration successful, returning to login page in 3s!");
                     PauseTransition delay = new PauseTransition(Duration.seconds(3));
                     delay.setOnFinished(e -> {
                         switchForm(event);
@@ -158,7 +158,7 @@ public class LoginController implements javafx.fxml.Initializable {
                     delay.play();
                 } else {
                     RegisterStatusLabel.setTextFill(Color.RED);
-                    RegisterStatusLabel.setText("Tài khoản đã tồn tại!");
+                    RegisterStatusLabel.setText("Account already exists!");
                 }
             });
         }, "register-worker").start();

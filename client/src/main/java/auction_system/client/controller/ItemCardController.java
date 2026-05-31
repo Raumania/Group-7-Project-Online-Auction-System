@@ -48,7 +48,7 @@ public class ItemCardController {
 
     @FXML
     public void detailViewportBtn(ActionEvent event) {
-        // Dọn dẹp timeline và listener trước khi chuyển màn hình
+        // Clean up timeline and listener before switching screens
         cleanup();
 
         try {
@@ -64,9 +64,9 @@ public class ItemCardController {
     }
 
     /**
-     * Dọn dẹp tài nguyên để tránh Memory Leak:
-     * - Stop timeline đếm ngược (tránh CPU chạy ngầm vô hạn)
-     * - Remove storeListener khỏi AuctionStore (tránh Listener Accumulation)
+     * Clean up resources to prevent Memory Leak:
+     * - Stop countdown timeline (prevent infinite background CPU usage)
+     * - Remove storeListener from AuctionStore (prevent Listener Accumulation)
      */
     private void cleanup() {
         if (timeline != null) {
@@ -124,11 +124,11 @@ public class ItemCardController {
         };
         AuctionStore.getInstance().getAuctions().addListener(storeListener);
 
-        // ✅ Tự động cleanup khi card bị xóa khỏi scene graph (dù navigate theo cách nào).
-        // sceneProperty thay đổi từ non-null → null khi node bị remove khỏi cây UI.
+        // ✅ Auto-cleanup when card is removed from scene graph (regardless of navigation method).
+        // sceneProperty changes from non-null -> null when node is removed from UI tree.
         itemImageView.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene == null) {
-                // Card vừa bị gỡ khỏi scene — dọn dẹp ngay
+                // Card was just removed from scene — clean up immediately
                 cleanup();
             }
         });
@@ -137,11 +137,11 @@ public class ItemCardController {
             timeline.stop();
         }
 
-        // ĐÃ SỬA: So sánh bằng enum
+        // FIXED: Compare using enum
         if (auctionDTO.getStatus() == AuctionStatus.OPEN) {
             setupCountdown(auctionDTO.getStartTime(), () -> {
                 updateStatusLabel(statusLabel, AuctionStatus.RUNNING);
-                auctionDTO.setStatus(AuctionStatus.RUNNING); // Cập nhật DTO
+                auctionDTO.setStatus(AuctionStatus.RUNNING); // Update DTO
                 setupCountdown(auctionDTO.getEndTime(), () -> {
                     hourLabel.setText("00");
                     minLabel.setText("00");
@@ -214,11 +214,11 @@ public class ItemCardController {
     }
 
     /**
-     * Đặt tên sản phẩm với font-size tự động theo độ dài:
-     *  ≤ 15 ký tự  → 15px (to, rõ)
-     *  16–25 ký tự → 13px (vừa)
-     *  26–40 ký tự → 11px (nhỏ, vẫn đọc được)
-     *  > 40 ký tự  → 10px + cắt bớt với "..." để không vỡ card
+     * Set product name with auto font-size based on length:
+     *  <= 15 chars  -> 15px (large, clear)
+     *  16-25 chars  -> 13px (medium)
+     *  26-40 chars  -> 11px (small, readable)
+     *  > 40 chars   -> 10px + truncate with "..." to prevent card breakage
      */
     private void setDynamicName(String name) {
         if (name == null || name.isBlank()) {
@@ -241,7 +241,7 @@ public class ItemCardController {
             displayName = name;
             fontSize = "11px";
         } else {
-            // Cắt tối đa 40 ký tự + "..."
+            // Cut max 40 chars + "..."
             displayName = name.substring(0, 40) + "...";
             fontSize = "10px";
         }

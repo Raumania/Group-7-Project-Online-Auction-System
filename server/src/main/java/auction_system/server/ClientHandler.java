@@ -81,21 +81,21 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         AuctionServer.addActiveClient(this);
-        // SỬA: Đồng bộ dùng DataInputStream và DataOutputStream như Client
+        // FIX: Synchronize using DataInputStream and DataOutputStream like Client
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
              DataOutputStream output = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()))) {
 
             this.out = output;
-            // Dùng vòng lặp vô hạn, readUTF() sẽ quăng lỗi EOFException khi Client đóng kết nối
+            // Use infinite loop, readUTF() will throw EOFException when Client disconnects
             while (true) {
                 String line;
 
                 try {
-                    // SỬA: Đọc bằng readUTF() để khớp với out.writeUTF() của Client
+                    // FIX: Read using readUTF() to match out.writeUTF() of Client
                     //line = in.readUTF();
                     line=readMessage(in);
                 } catch (EOFException e) {
-                    // Client ngắt kết nối
+                    // Client disconnected
                     System.out.println("Client disconnected.");
                     break;
                 }
@@ -177,7 +177,7 @@ public class ClientHandler implements Runnable {
                 writeMessage(out, message);
             } catch (IOException e) {
                 System.err.println("Failed to send message to client: " + e.getMessage());
-                // Loại bỏ client đã ngắt mạng khỏi danh sách hoạt động và đóng socket
+                // Remove disconnected client from active list and close socket
                 AuctionServer.removeActiveClient(this);
                 try {
                     socket.close();
@@ -192,7 +192,7 @@ public class ClientHandler implements Runnable {
         return userId;
     }
 
-    // Helper ẩn chuỗi Base64 dài khi in log để dễ debug ở phía Server
+    // Helper to mask long Base64 strings when logging for easier debugging on Server side
     public static String maskImageBase64(String json) {
         if (json == null) return null;
         if (json.length() > 2000) {

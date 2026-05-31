@@ -52,9 +52,9 @@ public class BidService {
     }
 
     /*
-        Cập nhật status dựa theo thời gian.
-        Hàm này chỉ sửa object auction trong RAM.
-        Sau đó hàm gọi bên ngoài phải auctionDAO.update(...) để lưu xuống DB.
+        Update status based on time.
+        This function only modifies auction object in RAM.
+        Then the caller function must use auctionDAO.update(...) to save to DB.
     */
     private void updateStatusInternal(Auction auction) {
         if (auction.getStatus() == AuctionStatus.OPEN ||
@@ -73,16 +73,16 @@ public class BidService {
     }
     
     /*
-        Đặt bid cho một auction.
+        Place bid for an auction.
 
-        Cần transaction vì:
+        Transaction is needed because:
         - insert bid transaction
         - update current_price
         - update highest_bidder_id
 
-        Cần SELECT FOR UPDATE vì:
-        - nhiều bidder có thể đặt giá cùng lúc
-        - phải khóa dòng auction trước khi kiểm tra giá
+        SELECT FOR UPDATE is needed because:
+        - multiple bidders can place bid at the same time
+        - must lock auction row before checking price
     */
     public void placeBid(int auctionId, User bidder, BigDecimal amount) throws SQLException {
         Connection connection = null;
@@ -108,7 +108,7 @@ public class BidService {
             }
 
             if (previousBidderId != null && previousBidderId.intValue() == bidder.getId()) {
-                throw new InvalidBidException("Bạn đang là người đấu giá cao nhất");
+                throw new InvalidBidException("You are already the highest bidder");
             }
 
             if (!bidder.hasRole(UserRole.BIDDER)) {
@@ -119,7 +119,7 @@ public class BidService {
             boolean bidderHasActiveAutoBid = activeAutoBids.stream()
                     .anyMatch(ab -> ab.getUserId() == bidder.getId());
             if (bidderHasActiveAutoBid) {
-                throw new InvalidBidException("Bạn đang có Auto-Bid hoạt động, không thể đặt giá thủ công");
+                throw new InvalidBidException("You have an active Auto-Bid, cannot place bid manually");
             }
 
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -177,19 +177,19 @@ public class BidService {
             long X = 30;
             long remainingSeconds = Duration.between(now, endTime).getSeconds();
 
-            // Nếu thời gian còn lại <= X giây
+            // If remaining time <= X seconds
             if (remainingSeconds <= X && remainingSeconds >= 0) {
                 // Also update in-memory object time!
                 auction.setEndTime(endTime.plusMinutes(1));
             }
 
-            System.out.println("đặt giá thành công");
+            System.out.println("Bid placed successfully");
 
             BidTransaction latestTransaction = new BidTransaction(bidder, amount);
             bidTransactionDAO.save(connection, auctionId, latestTransaction);
             auction.setCurrentPrice(amount);
             auction.setHighestBidderId(bidder.getId());
-            auction.setHighestBidderUsername(bidder.getUsername()); // Đảm bảo broadcast có tên bidder
+            auction.setHighestBidderUsername(bidder.getUsername()); // Ensure broadcast has bidder name
             auctionDAO.update(connection, auction);
             connection.commit();
 
@@ -223,7 +223,7 @@ public class BidService {
     }
 
     /*
-        Lấy lịch sử bid của một auction.
+        Get bid history of an auction.
     */
     public List<BidTransaction> getHistoryBid(int auctionId) {
         findAuctionOrThrow(auctionId);
@@ -231,7 +231,7 @@ public class BidService {
     }
 
     /*
-        Lấy bid mới nhất của một auction.
+        Get latest bid of an auction.
     */
     public BidTransaction getLatestBid(int auctionId) {
         findAuctionOrThrow(auctionId);
@@ -246,7 +246,7 @@ public class BidService {
     }
 
     /*
-        Lấy người đang giữ giá cao nhất.
+        Get the highest bidder.
     */
     public User getHighestBidder(int auctionId) {
         Auction auction = findAuctionOrThrow(auctionId);
@@ -259,7 +259,7 @@ public class BidService {
     }
 
     /*
-        Lấy giá hiện tại của auction.
+        Get current price of the auction.
     */
     public BigDecimal getCurrentPrice(int auctionId) {
         Auction auction = findAuctionOrThrow(auctionId);
@@ -302,7 +302,7 @@ public class BidService {
     }
 
     public BigDecimal getBidIncrement(BigDecimal price) {
-        // Không bao giờ trả về 0 — giá 0 áp dụng mức tối thiểu thấp nhất
+        // Never return 0 - price 0 applies the lowest minimum increment
         if (price == null || price.compareTo(new BigDecimal("1")) < 0)  return new BigDecimal("0.05");
         else if (price.compareTo(new BigDecimal("5")) < 0)              return new BigDecimal("0.25");
         else if (price.compareTo(new BigDecimal("25")) < 0)             return new BigDecimal("0.5");

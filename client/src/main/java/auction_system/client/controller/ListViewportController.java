@@ -30,7 +30,7 @@ public class ListViewportController implements Initializable {
     @FXML private ScrollPane listScrollPane;
 
     private final ObservableList<AuctionDTO> allAuctions = AuctionStore.getInstance().getAuctions();
-    // Lưu reference listener để có thể removeListener() khi controller bị destroy (defense in depth)
+    // Save reference listener to be able to removeListener() when controller is destroyed (defense in depth)
     private ListChangeListener<AuctionDTO> auctionStoreListener;
 
     @FXML
@@ -58,23 +58,23 @@ public class ListViewportController implements Initializable {
         sortByComboBox.setItems(sortByOptions);
         sortByComboBox.getSelectionModel().selectFirst();
 
-        // Đăng ký listener để tự động render lại khi dữ liệu trong store thay đổi
+        // Register listener to automatically re-render when data in store changes
         auctionStoreListener = c -> renderAuctions();
         allAuctions.addListener(auctionStoreListener);
 
-        // ✅ Auto-cleanup + Auto-reconnect khi controller vào/ra khỏi scene.
-        // - Khi rời scene (newScene == null): xóa listener để tránh memory leak.
-        // - Khi vào lại scene (newScene != null): đăng ký lại listener VÀ render lại
-        //   để hiển thị những auction mới được thêm trong lúc đang ở tab khác.
+        // ✅ Auto-cleanup + Auto-reconnect when controller enters/exits scene.
+        // - When leaving scene (newScene == null): remove listener to prevent memory leak.
+        // - When re-entering scene (newScene != null): re-register listener AND re-render
+        //   to display new auctions added while on another tab.
         categoryComboBox.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene == null) {
-                // Rời scene → xóa listener
+                // Leave scene -> remove listener
                 if (auctionStoreListener != null) {
                     allAuctions.removeListener(auctionStoreListener);
                     auctionStoreListener = null;
                 }
             } else {
-                // Vào lại scene → đăng ký lại listener + render lại để cập nhật data mới
+                // Re-enter scene -> re-register listener + re-render to update with new data
                 if (auctionStoreListener == null) {
                     auctionStoreListener = c -> renderAuctions();
                     allAuctions.addListener(auctionStoreListener);
@@ -86,7 +86,7 @@ public class ListViewportController implements Initializable {
         // Listen to width changes to adjust card widths dynamically (responsive grid)
         listScrollPane.widthProperty().addListener((obs, oldVal, newVal) -> adjustCardWidths());
 
-        // Render dữ liệu có sẵn trong store ngay lập tức
+        // Render existing data in store immediately
         renderAuctions();
     }
 

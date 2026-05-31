@@ -48,10 +48,10 @@ public class BidHistoryController implements RequestHandler {
             for (BidTransaction tx : history) {
                 User bidder = tx.getBidder();
 
-                // Kiểm tra status từ Store (luôn mới nhất, không bị stale)
+                // Check status from Store (always latest, not stale)
                 User storeUser = userStore.getUserById(bidder.getId());
                 if (storeUser != null && storeUser.getStatus() == UserStatus.BANNED) {
-                    continue; // Ẩn bid của tài khoản bị ban
+                    continue; // Hide bids of banned accounts
                 }
 
                 UserDTO bidderDTO = new UserDTO(bidder.getId(), bidder.getFullname(), bidder.getUsername(), bidder.getRoles(), bidder.getAvailableBalance(), bidder.getFrozenBalance());

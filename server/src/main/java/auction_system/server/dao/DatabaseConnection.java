@@ -8,13 +8,13 @@ import java.sql.SQLException;
 
 public class DatabaseConnection {
 
-    // Đổi lại URL thành của localhost
+    // Change URL back to localhost
     private static final String DEV_URL =
             "jdbc:mysql://localhost:3306/auction_system?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
     private static final String TEST_URL =
             "jdbc:mysql://localhost:3306/auction_system?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
 
-    // Sửa mật khẩu tương ứng với MySQL trên máy bạn
+    // Change the password to match MySQL on your machine
     private static final String USERNAME = "root";
     private static final String PASSWORD = "123456";
 
@@ -33,7 +33,7 @@ public class DatabaseConnection {
 
     public static void setTestMode(boolean mode) {
         testMode = mode;
-        // Nếu testMode thay đổi ở runtime, cần đóng pool cũ để tạo lại pool mới với URL tương ứng
+        // If testMode changes at runtime, close the old pool to recreate a new pool with the corresponding URL
         if (dataSource != null) {
             dataSource.close();
             dataSource = null;
@@ -47,13 +47,13 @@ public class DatabaseConnection {
             config.setUsername(USERNAME);
             config.setPassword(PASSWORD);
             
-            // Cấu hình Connection Pool với tối đa 20 connection như yêu cầu
+            // Configure Connection Pool with a maximum of 20 connections as requested
             config.setMaximumPoolSize(20);
             config.setMinimumIdle(5);
             config.setIdleTimeout(30000);
             config.setConnectionTimeout(20000);
 
-            // Một số tuỳ chọn tối ưu thêm của HikariCP cho MySQL
+            // Some additional HikariCP optimization options for MySQL
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");

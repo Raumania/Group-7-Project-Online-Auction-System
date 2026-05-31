@@ -119,7 +119,7 @@ public class BidViewportController implements Initializable {
             return new SimpleStringProperty("");
         });
 
-        // Chống Memory Leak: Tự động dọn dẹp khi View bị tháo khỏi Scene
+        // Prevent Memory Leak: Auto-clean up when View is removed from Scene
         historyTable.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene == null) {
                 if (timeline != null) {
@@ -212,7 +212,7 @@ public class BidViewportController implements Initializable {
         BigDecimal increment = getBidIncrement(priceForIncrement);
         minIncrementLabel.setText(currencyFormatter.format(increment));
         minIncrementHintLabel.setText("Min increment: " + currencyFormatter.format(increment));
-        // Hiển thị gợi ý bước giá tối thiểu trong field nếu được để trống
+        // Display hint for minimum increment in field if left empty
         incrementField.setPromptText(increment.toPlainString() + " (min)");
 
         // Display highest current bid and bidder
@@ -351,7 +351,7 @@ public class BidViewportController implements Initializable {
         BigDecimal increment = getBidIncrement(priceForIncrement);
         minIncrementLabel.setText(currencyFormatter.format(increment));
         minIncrementHintLabel.setText("Min increment: " + currencyFormatter.format(increment));
-        // Cập nhật gợi ý bước giá tối thiểu trong field (nếu field chưa bị disable)
+        // Update hint for minimum increment in field (if field is not disabled)
         if (!incrementField.isDisabled()) {
             incrementField.setPromptText(increment.toPlainString() + " (min)");
         }
@@ -437,7 +437,7 @@ public class BidViewportController implements Initializable {
             return;
         }
 
-        // Cập nhật giao diện lập tức để tránh delay 1 giây hiển thị chữ cũ
+        // Update UI immediately to prevent 1-second delay showing old text
         Map<String, Long> initialRemaining = TimeUtil.getTimeRemaining(targetTime);
         long initialHours = initialRemaining.get("hours");
         long initialMinutes = initialRemaining.get("minutes");
@@ -667,14 +667,14 @@ public class BidViewportController implements Initializable {
                 return;
             }
 
-            // Nếu người dùng không nhập increment, gửi null — server sẽ tự dùng bước giá tối thiểu của sàn
+            // If user doesn't enter increment, send null - server will use default minimum increment
             BigDecimal increment = null;
             String incrementText = incrementField.getText();
             if (incrementText != null && !incrementText.trim().isEmpty()) {
                 try {
                     increment = new BigDecimal(incrementText.trim());
                     if (increment.compareTo(BigDecimal.ZERO) <= 0) {
-                        increment = null; // Trị âm hoặc bằng 0 → xử lý như không nhập
+                        increment = null; // Negative or zero -> treat as empty
                     }
                 } catch (NumberFormatException e) {
                     bidStatusLabel.setText("Failed: Invalid Increment amount!");

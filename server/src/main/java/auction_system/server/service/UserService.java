@@ -89,8 +89,8 @@ public class UserService {
     }
 
     /*
-        Tìm user theo id.
-        Đọc từ Store (RAM) - không chọc DB.
+        Find user by id.
+        Read from Store (RAM) - do not touch DB.
     */
     public User getUserById(int id) {
         User user = userStore.getUserById(id);
@@ -103,8 +103,8 @@ public class UserService {
     }
 
     /*
-        Tìm user theo username.
-        Đọc từ Store (RAM).
+        Find user by username.
+        Read from Store (RAM).
     */
     public User getUserByUsername(String username) {
         User user = userStore.getUserByUsername(username);
@@ -151,8 +151,8 @@ public class UserService {
     }
 
     /*
-        Đăng nhập.
-        Đọc từ Store.
+        Login.
+        Read from Store.
     */
     public User login(String username, String password) {
         User user = userStore.getUserByUsername(username);
@@ -171,14 +171,14 @@ public class UserService {
     }
 
     /*
-        Lấy tất cả user từ Store.
+        Get all users from Store.
     */
     public List<User> getAllUsers() {
         return userStore.getAllUsers();
     }
 
     /*
-        Xóa user.
+        Delete user.
     */
     public void removeUser(int id) {
         boolean removed = userDAO.deleteById(id);
@@ -192,7 +192,7 @@ public class UserService {
     }
 
     /*
-        Nạp tiền - đọc từ Store, ghi cả Store + DB.
+        Deposit - read from Store, write to both Store + DB.
     */
     public void deposit(int userId, BigDecimal amount) {
         User user = getUserById(userId);
@@ -210,7 +210,7 @@ public class UserService {
     }
 
     /*
-        Rút tiền - đọc từ Store, ghi cả Store + DB.
+        Withdraw - read from Store, write to both Store + DB.
     */
     public void withdraw(int userId, BigDecimal amount) {
         User user = getUserById(userId);
@@ -228,8 +228,8 @@ public class UserService {
     }
 
     /*
-        Cập nhật thông tin user (fullname, username, roles, balance).
-        Đọc từ Store, ghi cả Store + DB.
+        Update user information (fullname, username, roles, balance).
+        Read from Store, write to both Store + DB.
     */
     public void updateUser(User updatedUser) {
         User user = getUserById(updatedUser.getId());
@@ -244,8 +244,8 @@ public class UserService {
     }
 
     /*
-        Tạo user mới từ Admin panel.
-        Khác registerUser: không hash lại password vì admin tự set.
+        Create new user from Admin panel.
+        Different from registerUser: do not re-hash password because admin sets it.
     */
     public User createUser(User newUser) {
         User existingUser = userStore.getUserByUsername(newUser.getUsername());
@@ -261,64 +261,64 @@ public class UserService {
 
     /*
         Ban user:
-        Flow: ĐỌC từ Store → ghi cả Store + DB (trong transaction).
-        Xử lý:
-          1. Đặt status BANNED
-          2. Hủy phiên đấu giá do user đó tạo (seller) → hoàn tiền đóng băng cho highest bidder
-          3. Hủy vị trí highest bidder trong các phiên user đang dẫn đầu → tìm người thay thế
-          4. Ngắt kết nối TCP của user bị ban
+        Flow: READ from Store -> write to both Store + DB (in transaction).
+        Process:
+          1. Set status to BANNED
+          2. Cancel auctions created by the user (seller) -> refund frozen money to highest bidder
+          3. Cancel highest bidder position in auctions the user is leading -> find replacement
+          4. Disconnect TCP of banned user
     */
     public void banUser(int userId) {
-        // 1. ĐỌC từ Store (nhanh)
+        // 1. READ from Store (fast)
         User user = getUserById(userId);
 
-        // 2. Ghi: mở Transaction để đảm bảo atomic trong DB
+        // 2. Write: open Transaction to ensure atomic in DB
         try (Connection connection = DatabaseConnection.getConnection()) {
             connection.setAutoCommit(false);
             try {
                 System.out.println("[BAN] Starting ban for userId=" + userId + ", frozenBalance=" + user.getFrozenBalance());
 
-                // Cập nhật trạng thái BANNED → ghi DB + Store
+                // Update status to BANNED -> write DB + Store
                 user.setStatus(auction_system.common.enums.UserStatus.BANNED);
                 userDAO.update(connection, user);
                 userStore.updateUser(user);
                 System.out.println("[BAN] User status set to BANNED in DB+Store");
 
-                // --- Bước 2: Phiên đấu giá do user bị ban tạo ra (Seller role) ---
+                // --- Step 2: Auctions created by banned user (Seller role) ---
                 List<Auction> activeAuctionsBySeller = AuctionDAO.getInstance().findActiveAuctionsBySeller(connection, userId);
                 for (Auction auction : activeAuctionsBySeller) {
                     auction.setStatus(auction_system.common.enums.AuctionStatus.CANCELLED);
 
-                    // Hoàn lại tiền đóng băng cho người giữ giá cao nhất (đọc từ Store)
+                    // Refund frozen money to highest bidder (read from Store)
                     if (auction.getHighestBidderId() != null) {
                         User highestBidder = userStore.getUserById(auction.getHighestBidderId());
                         if (highestBidder != null) {
                             BigDecimal toUnfreeze = auction.getCurrentPrice();
-                            // Guard: chỉ unfreeze tối đa bằng frozenBalance thực tế trong Store
+                            // Guard: only unfreeze up to actual frozenBalance in Store
                             if (toUnfreeze != null && toUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
                                 toUnfreeze = toUnfreeze.min(highestBidder.getFrozenBalance());
                                 if (toUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
                                     highestBidder.unfreezeBalance(toUnfreeze);
-                                    userDAO.update(connection, highestBidder); // Ghi DB
-                                    userStore.updateUser(highestBidder);       // Ghi Store
+                                    userDAO.update(connection, highestBidder); // Write DB
+                                    userStore.updateUser(highestBidder);       // Write Store
                                 }
                             }
                         }
                     }
 
-                    // Hủy tất cả Auto-Bids liên quan và hoàn lại phần tiền chênh lệch (nếu có)
+                    // Cancel all related Auto-Bids and refund the difference (if any)
                     AutoBidService.getInstance().cancelAllAutoBidsForAuction(connection, auction.getId());
 
                     AuctionDAO.getInstance().update(connection, auction);
                     auction_system.server.store.AuctionStore.getInstance().updateAuction(auction);
 
-                    // Broadcast hủy phiên
+                    // Broadcast auction cancellation
                     try {
                         auction_system.common.protocol.Response cancelResponse = new auction_system.common.protocol.Response(
                             auction_system.common.enums.Status.SUCCESS,
                             auction_system.common.enums.Action.EVENT_AUCTION_CANCELLED,
                             auction.getId(),
-                            "Phiên đấu giá bị hủy do tài khoản người bán bị khóa."
+                            "Auction cancelled because seller account was banned."
                         );
                         AuctionServer.broadcast(auction_system.server.util.GsonUtil.toJson(cancelResponse));
                     } catch (Exception e) {
@@ -326,12 +326,12 @@ public class UserService {
                     }
                 }
 
-                // --- Bước 3: Phiên đấu giá mà user bị ban đang giữ giá cao nhất (Bidder role) ---
+                // --- Step 3: Auctions where banned user is highest bidder (Bidder role) ---
                 List<Auction> activeAuctionsByHighestBidder = AuctionDAO.getInstance().findActiveAuctionsByHighestBidder(connection, userId);
                 System.out.println("[BAN] Auctions where user is highest bidder: " + activeAuctionsByHighestBidder.size());
                 for (Auction auction : activeAuctionsByHighestBidder) {
                     System.out.println("[BAN] Processing auction id=" + auction.getId() + ", currentPrice=" + auction.getCurrentPrice());
-                    // Tìm người giữ giá cao thứ 2 hợp lệ từ lịch sử thầu
+                    // Find valid 2nd highest bidder from bid history
                     List<BidTransaction> bids = BidTransactionDAO.getInstance().findByAuctionId(connection, auction.getId());
 
                     BidTransaction newHighestBid = null;
@@ -341,19 +341,19 @@ public class UserService {
                         BidTransaction bid = bids.get(i);
                         User bidder = bid.getBidder();
 
-                        if (bidder.getId() == userId) continue; // bỏ qua chính user bị ban
+                        if (bidder.getId() == userId) continue; // skip the banned user
 
-                        // Đọc từ Store để lấy trạng thái mới nhất
+                        // Read from Store to get the latest status
                         User storeBidder = userStore.getUserById(bidder.getId());
                         if (storeBidder == null || storeBidder.getStatus() == auction_system.common.enums.UserStatus.BANNED) {
                             continue;
                         }
 
-                        // Kiểm tra đủ available balance để đóng băng
+                        // Check for sufficient available balance to freeze
                         if (storeBidder.getAvailableBalance().compareTo(bid.getAmount()) >= 0) {
                             storeBidder.freezeBalance(bid.getAmount());
-                            userDAO.update(connection, storeBidder); // Ghi DB
-                            userStore.updateUser(storeBidder);       // Ghi Store
+                            userDAO.update(connection, storeBidder); // Write DB
+                            userStore.updateUser(storeBidder);       // Write Store
 
                             newHighestBid = bid;
                             newBidderUser = storeBidder;
@@ -361,21 +361,21 @@ public class UserService {
                         }
                     }
 
-                    // Giải phóng tiền đóng băng của user bị ban tại phiên này
-                    // Guard: min(currentPrice, frozenBalance) để không bao giờ bị "Not enough frozen"
+                    // Unfreeze money of banned user in this auction
+                    // Guard: min(currentPrice, frozenBalance) to never get "Not enough frozen"
                     BigDecimal toUnfreeze = auction.getCurrentPrice();
                     System.out.println("[BAN] toUnfreeze=" + toUnfreeze + ", user.frozenBalance=" + user.getFrozenBalance());
                     if (toUnfreeze != null && toUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
                         toUnfreeze = toUnfreeze.min(user.getFrozenBalance());
                         if (toUnfreeze.compareTo(BigDecimal.ZERO) > 0) {
                             user.unfreezeBalance(toUnfreeze);
-                            userDAO.update(connection, user); // Ghi DB
-                            userStore.updateUser(user);       // Ghi Store
+                            userDAO.update(connection, user); // Write DB
+                            userStore.updateUser(user);       // Write Store
                             System.out.println("[BAN] Unfroze " + toUnfreeze + " from banned user. New frozen=" + user.getFrozenBalance());
                         }
                     }
 
-                    // Cập nhật phiên với người giữ giá mới (hoặc về giá khởi điểm)
+                    // Update auction with new highest bidder (or reset to starting price)
                     if (newHighestBid != null && newBidderUser != null) {
                         auction.setHighestBidderId(newBidderUser.getId());
                         auction.setHighestBidderUsername(newBidderUser.getUsername());
@@ -389,17 +389,17 @@ public class UserService {
                     AuctionDAO.getInstance().update(connection, auction);
                     auction_system.server.store.AuctionStore.getInstance().updateAuction(auction);
 
-                    // Xóa các bid của user bị ban trong Database và RAM Cache
+                    // Delete bids of banned user in Database and RAM Cache
                     auction_system.server.dao.BidTransactionDAO.getInstance().deleteByBidderAndAuction(connection, userId, auction.getId());
                     auction_system.server.store.BidTransactionStore.getInstance().removeBidsByBidderAndAuction(userId, auction.getId());
 
-                    // Broadcast cập nhật phiên
+                    // Broadcast auction update
                     try {
                         auction_system.common.protocol.Response updateResponse = new auction_system.common.protocol.Response(
                             auction_system.common.enums.Status.SUCCESS,
                             auction_system.common.enums.Action.EVENT_AUCTION_EDITED,
                             auction,
-                            "Thông tin phiên đấu giá được cập nhật sau khi thầu cũ bị hủy."
+                            "Auction info updated after previous bid was cancelled."
                         );
                         AuctionServer.broadcast(auction_system.server.util.GsonUtil.toJson(updateResponse));
                     } catch (Exception e) {
@@ -409,27 +409,27 @@ public class UserService {
 
                 connection.commit();
 
-                // Bước 4: Broadcast sự kiện Ban cho tất cả các client
+                // Step 4: Broadcast Ban event to all clients
                 try {
                     auction_system.common.protocol.Response banResponse = new auction_system.common.protocol.Response(
                         auction_system.common.enums.Status.SUCCESS,
                         auction_system.common.enums.Action.EVENT_USER_BANNED,
                         userId,
-                        "Tài khoản của bạn đã bị khóa do vi phạm điều khoản của sàn."
+                        "Your account has been banned due to violation of platform terms."
                     );
                     AuctionServer.broadcast(auction_system.server.util.GsonUtil.toJson(banResponse));
                 } catch (Exception e) {
                     System.err.println("Failed to broadcast EVENT_USER_BANNED: " + e.getMessage());
                 }
 
-                // Chờ 500ms để broadcast kịp gửi tới client trước khi ngắt kết nối
+                // Wait 500ms for broadcast to reach client before disconnecting
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
 
-                // Bước 5: Cưỡng chế ngắt kết nối TCP của user bị ban
+                // Step 5: Force disconnect TCP of banned user
                 AuctionServer.disconnectUser(userId);
 
             } catch (Exception e) {

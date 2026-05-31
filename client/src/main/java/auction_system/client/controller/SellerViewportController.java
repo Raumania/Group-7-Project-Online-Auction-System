@@ -81,7 +81,7 @@ public class SellerViewportController implements Initializable {
         setupTable();
         setupTableSelectionListener();
 
-        // Ban đầu form trống: Cho phép Add, mờ Edit và Delete
+        // Initially empty form: Allow Add, disable Edit and Delete
         btnEdit.setDisable(true);
         btnDelete.setDisable(true);
         btnAdd.setDisable(false);
@@ -90,7 +90,7 @@ public class SellerViewportController implements Initializable {
     }
 
     private void setupInputValidations() {
-        // 1. Giới hạn nhập số thực cho giá khởi điểm
+        // 1. Limit input to real numbers for starting price
         Pattern validDoubleText = Pattern.compile("^\\d*\\.?\\d{0,2}$");
         UnaryOperator<TextFormatter.Change> priceFilter = change -> {
             String newText = change.getControlNewText();
@@ -101,7 +101,7 @@ public class SellerViewportController implements Initializable {
         };
         txtStartPrice.setTextFormatter(new TextFormatter<>(priceFilter));
 
-        // 2. Giới hạn độ dài tên sản phẩm (tối đa 100 ký tự)
+        // 2. Limit product name length (max 100 characters)
         UnaryOperator<TextFormatter.Change> nameFilter = change -> {
             if (change.getControlNewText().length() <= 100) {
                 return change;
@@ -110,7 +110,7 @@ public class SellerViewportController implements Initializable {
         };
         txtProductName.setTextFormatter(new TextFormatter<>(nameFilter));
 
-        // 3. Giới hạn độ dài mô tả sản phẩm (tối đa 5000 ký tự)
+        // 3. Limit product description length (max 5000 characters)
         UnaryOperator<TextFormatter.Change> descFilter = change -> {
             if (change.getControlNewText().length() <= 5000) {
                 return change;
@@ -187,13 +187,13 @@ public class SellerViewportController implements Initializable {
         productTable.setItems(sellerAuctions);
         FilteredList  filteredData= new FilteredList<>(sellerAuctions, b -> true);
 
-        // 2. Bọc FilteredList vào SortedList để giữ tính năng sắp xếp cột
+        // 2. Wrap FilteredList in SortedList to keep column sorting feature
         SortedList<AuctionDTO> sortedData = new SortedList<>(filteredData);
 
-        // 3. Liên kết SortedList với TableView của bạn
+        // 3. Bind SortedList to your TableView
         sortedData.comparatorProperty().bind(productTable.comparatorProperty());
 
-        // 4. Set data vào bảng (thay vì productTable.setItems(sellerAuctions);)
+        // 4. Set data into table (instead of productTable.setItems(sellerAuctions);)
         productTable.setItems(sortedData);
     }
 
@@ -228,90 +228,90 @@ public class SellerViewportController implements Initializable {
         LocalDateTime now = LocalDateTime.now();
 
         if (name.isEmpty()) {
-            showError("Tên sản phẩm không được để trống!");
+            showError("Product name cannot be empty!");
             return;
         }
         if (name.length() > 100) {
-            showError("Tên sản phẩm không được vượt quá 100 ký tự!");
+            showError("Product name cannot exceed 100 characters!");
             return;
         }
         if (description.length() > 5000) {
-            showError("Mô tả sản phẩm không được vượt quá 5000 ký tự!");
+            showError("Product description cannot exceed 5000 characters!");
             return;
         }
 
         if (type == null || type.trim().isEmpty()) {
-            showError("Vui lòng chọn danh mục cho sản phẩm!");
+            showError("Please select a category for the product!");
             return;
         }
 
         if (startPriceStr.isEmpty()) {
-            showError("Vui lòng nhập giá khởi điểm!");
+            showError("Please enter the starting price!");
             return;
         }
         BigDecimal price;
         try {
             price = new BigDecimal(startPriceStr);
             if (price.compareTo(BigDecimal.ZERO) <= 0) {
-                showError("Giá khởi điểm phải lớn hơn 0!");
+                showError("Starting price must be greater than 0!");
                 return;
             }
         } catch (NumberFormatException e) {
-            showError("Giá khởi điểm phải là một số hợp lệ!");
+            showError("Starting price must be a valid number!");
             return;
         }
 
         if (startTime == null) {
-            showError("Vui lòng chọn ngày bắt đầu đấu giá!");
+            showError("Please select the auction start date!");
             return;
         }
 
         if (endTime == null) {
-            showError("Vui lòng chọn ngày kết thúc đấu giá!");
+            showError("Please select the auction end date!");
             return;
         }
 
         if (endTime.isBefore(now)) {
-            showError("Thời gian kết thúc không được nhỏ hơn thời gian hiện tại!");
+            showError("End time cannot be earlier than the current time!");
             return;
         }
 
         if (!endTime.isAfter(startTime)) {
-            showError("Thời gian kết thúc phải diễn ra sau thời gian bắt đầu!");
+            showError("End time must be after the start time!");
             return;
         }
 
         if (selectedImageFile == null) {
-            showError("Vui lòng tải lên ảnh sản phẩm!");
+            showError("Please upload a product image!");
             return;
         }
 
         AuctionDTO auctionDTO = new AuctionDTO(name, description, ItemType.valueOf(type.toUpperCase()), sellerId, price, startTime, endTime, ImageService.getInstance().fileToBase64(selectedImageFile));
 
-        // Disable nút để tránh double-submit
+        // Disable button to prevent double-submit
         btnAdd.setDisable(true);
 
-        // Thực hiện network I/O trên background thread
-        // LƯU Ý: Không gọi SellerAuctionStore.addAuction() thủ công ở đây.
-        // Server sẽ broadcast EVENT_NEW_AUCTION_ADDED → SocketClient.handleNewAuctionEvent()
-        // → tự động add vào cả AuctionStore lẫn SellerAuctionStore.
-        // Gọi thủ công sẽ gây duplicate và refreshTable() gây race condition trên responseQueue.
+        // Perform network I/O on background thread
+        // NOTE: Do not call SellerAuctionStore.addAuction() manually here.
+        // Server will broadcast EVENT_NEW_AUCTION_ADDED -> SocketClient.handleNewAuctionEvent()
+        // -> automatically add to both AuctionStore and SellerAuctionStore.
+        // Calling manually will cause duplicate and refreshTable() causes race condition on responseQueue.
         new Thread(() -> {
             boolean success = AuctionManageService.getInstance().createAuction(auctionDTO);
 
             javafx.application.Platform.runLater(() -> {
                 btnAdd.setDisable(false);
                 if (success) {
-                    // Không cần add thủ công hay gọi refreshTable() —
-                    // broadcast từ server đã cập nhật cả AuctionStore và SellerAuctionStore.
+                    // No need to add manually or call refreshTable() -
+                    // broadcast from server has updated both AuctionStore and SellerAuctionStore.
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Thông báo");
+                    alert.setTitle("Notification");
                     alert.setHeaderText(null);
-                    alert.setContentText("Tạo phiên đấu giá thành công!");
+                    alert.setContentText("Auction created successfully!");
                     alert.showAndWait();
                     refreshAddProduct(null);
                 } else {
-                    showError("Có lỗi trong quá trình khởi tạo đấu giá");
+                    showError("An error occurred during auction initialization");
                 }
             });
         }, "seller-add-auction-worker").start();
@@ -321,7 +321,7 @@ public class SellerViewportController implements Initializable {
         String keyword = (text == null) ? "" : text.trim().toLowerCase();
 
         filteredData.setPredicate(auction -> {
-            // Nếu ô tìm kiếm trống, hiển thị lại toàn bộ dữ liệu
+            // If search box is empty, display all data again
             if (keyword.isEmpty()) {
                 return true;
             }
@@ -335,7 +335,7 @@ public class SellerViewportController implements Initializable {
     }
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Lỗi nhập liệu");
+        alert.setTitle("Input Error");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
@@ -357,17 +357,17 @@ public class SellerViewportController implements Initializable {
         imageVbox.setVisible(true);
         selectedImageFile = null;
 
-        // --- RESET TRẠNG THÁI FORM VÀ TRẠNG THÁI NÚT ---
-        productTable.getSelectionModel().clearSelection(); // Bỏ highlight dòng đang chọn trên bảng
-        btnAdd.setDisable(false);                          // Mở lại nút Add
-        btnEdit.setDisable(true);                          // Làm mờ nút Edit
-        btnDelete.setDisable(true);                        // Làm mờ nút Delete
+        // --- RESET FORM AND BUTTON STATES ---
+        productTable.getSelectionModel().clearSelection(); // Remove highlight of selected row in table
+        btnAdd.setDisable(false);                          // Enable Add button
+        btnEdit.setDisable(true);                          // Disable Edit button
+        btnDelete.setDisable(true);                        // Disable Delete button
     }
 
     @FXML
     void handleSelectImage(MouseEvent event) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Chọn ảnh sản phẩm");
+        fileChooser.setTitle("Select product image");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
 
         Stage stage = (Stage) productImageView.getScene().getWindow();
@@ -376,7 +376,7 @@ public class SellerViewportController implements Initializable {
         if (file != null) {
             long MAX_SIZE = 5 * 1024 * 1024; // 5MB
             if (file.length() > MAX_SIZE) {
-                showError("Kích thước ảnh không được vượt quá 5MB. Vui lòng chọn ảnh khác!");
+                showError("Image size cannot exceed 5MB. Please choose another image!");
                 return;
             }
             this.selectedImageFile = file;
@@ -390,12 +390,12 @@ public class SellerViewportController implements Initializable {
         AuctionDTO selectedAuction = productTable.getSelectionModel().getSelectedItem();
 
         if (selectedAuction == null) {
-            showError("Vui lòng chọn phiên đấu giá cần chỉnh sửa!");
+            showError("Please select the auction to edit!");
             return;
         }
 
         if (selectedAuction.getStatus() != AuctionStatus.OPEN) {
-            showError("Chỉ có thể chỉnh sửa phiên đấu giá đang ở trạng thái OPEN!");
+            showError("Only auctions in OPEN status can be edited!");
             return;
         }
 
@@ -408,59 +408,59 @@ public class SellerViewportController implements Initializable {
         LocalDateTime now = LocalDateTime.now();
 
         if (name.isEmpty()) {
-            showError("Tên sản phẩm không được để trống!");
+            showError("Product name cannot be empty!");
             return;
         }
         if (name.length() > 100) {
-            showError("Tên sản phẩm không được vượt quá 100 ký tự!");
+            showError("Product name cannot exceed 100 characters!");
             return;
         }
         if (description.length() > 5000) {
-            showError("Mô tả sản phẩm không được vượt quá 5000 ký tự!");
+            showError("Product description cannot exceed 5000 characters!");
             return;
         }
         if (type == null || type.trim().isEmpty()) {
-            showError("Vui lòng chọn danh mục cho sản phẩm!");
+            showError("Please select a category for the product!");
             return;
         }
         if (startPriceStr.isEmpty()) {
-            showError("Vui lòng nhập giá khởi điểm!");
+            showError("Please enter the starting price!");
             return;
         }
         BigDecimal price;
         try {
             price = new BigDecimal(startPriceStr);
             if (price.compareTo(BigDecimal.ZERO) <= 0) {
-                showError("Giá khởi điểm phải lớn hơn 0!");
+                showError("Starting price must be greater than 0!");
                 return;
             }
         } catch (NumberFormatException e) {
-            showError("Giá khởi điểm phải là một số hợp lệ!");
+            showError("Starting price must be a valid number!");
             return;
         }
         if (startTime == null) {
-            showError("Vui lòng chọn ngày bắt đầu đấu giá!");
+            showError("Please select the auction start date!");
             return;
         }
         if (endTime == null) {
-            showError("Vui lòng chọn ngày kết thúc đấu giá!");
+            showError("Please select the auction end date!");
             return;
         }
 
         if (endTime.isBefore(now)) {
-            showError("Thời gian kết thúc không được nhỏ hơn thời gian hiện tại!");
+            showError("End time cannot be earlier than the current time!");
             return;
         }
 
         if (!endTime.isAfter(startTime)) {
-            showError("Thời gian kết thúc phải diễn ra sau thời gian bắt đầu!");
+            showError("End time must be after the start time!");
             return;
         }
 
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmAlert.setTitle("Xác nhận chỉnh sửa");
+        confirmAlert.setTitle("Confirm Edit");
         confirmAlert.setHeaderText(null);
-        confirmAlert.setContentText("Bạn có chắc chắn muốn thay đổi thông tin phiên đấu giá này không?");
+        confirmAlert.setContentText("Are you sure you want to change this auction's information?");
 
         if (confirmAlert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
 
@@ -474,10 +474,10 @@ public class SellerViewportController implements Initializable {
                 selectedAuction.setImageBase64(ImageService.getInstance().fileToBase64(selectedImageFile));
             }
 
-            // Disable nút để tránh double-submit
+            // Disable button to prevent double-submit
             btnEdit.setDisable(true);
 
-            // Thực hiện network I/O trên background thread
+            // Perform network I/O on background thread
             AuctionDTO auctionToEdit = selectedAuction;
             new Thread(() -> {
                 boolean isEdited = AuctionManageService.getInstance().editAuction(auctionToEdit);
@@ -487,14 +487,14 @@ public class SellerViewportController implements Initializable {
                     if (isEdited) {
                         SellerAuctionStore.getInstance().updateAuction(auctionToEdit);
                         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                        alert.setTitle("Thông báo");
+                        alert.setTitle("Notification");
                         alert.setHeaderText(null);
-                        alert.setContentText("Cập nhật thông tin phiên đấu giá thành công!");
+                        alert.setContentText("Auction information updated successfully!");
                         alert.showAndWait();
                         productTable.refresh();
                         refreshAddProduct(null);
                     } else {
-                        showError("Cập nhật phiên đấu giá thất bại từ hệ thống!");
+                        showError("Failed to update auction from system!");
                     }
                 });
             }, "seller-edit-auction-worker").start();
@@ -506,25 +506,25 @@ public class SellerViewportController implements Initializable {
         AuctionDTO selectedAuction = productTable.getSelectionModel().getSelectedItem();
 
         if (selectedAuction == null) {
-            showError("Vui lòng chọn phiên đấu giá cần xóa!");
+            showError("Please select the auction to delete!");
             return;
         }
 
         if (selectedAuction.getStatus() != AuctionStatus.OPEN) {
-            showError("Chỉ có thể xóa phiên đấu giá đang ở trạng thái OPEN!");
+            showError("Only auctions in OPEN status can be deleted!");
             return;
         }
 
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmAlert.setTitle("Xác nhận xóa");
+        confirmAlert.setTitle("Confirm Delete");
         confirmAlert.setHeaderText(null);
-        confirmAlert.setContentText("Bạn có chắc chắn muốn xóa phiên đấu giá \"" + selectedAuction.getName() + "\" không?");
+        confirmAlert.setContentText("Are you sure you want to delete the auction \"" + selectedAuction.getName() + "\"?");
 
         if (confirmAlert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-            // Disable nút để tránh double-click
+            // Disable button to prevent double-click
             btnDelete.setDisable(true);
 
-            // Thực hiện network I/O trên background thread
+            // Perform network I/O on background thread
             AuctionDTO auctionToDelete = selectedAuction;
             new Thread(() -> {
                 boolean isDeleted = AuctionManageService.getInstance().deleteAuction(auctionToDelete);
@@ -535,14 +535,14 @@ public class SellerViewportController implements Initializable {
                         SellerAuctionStore.getInstance().removeAuction(auctionToDelete.getId());
 
                         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                        alert.setTitle("Thông báo");
+                        alert.setTitle("Notification");
                         alert.setHeaderText(null);
-                        alert.setContentText("Xóa phiên đấu giá thành công!");
+                        alert.setContentText("Auction deleted successfully!");
                         alert.showAndWait();
 
                         refreshAddProduct(null);
                     } else {
-                        showError("Xóa phiên đấu giá thất bại từ hệ thống!");
+                        showError("Failed to delete auction from system!");
                     }
                 });
             }, "seller-delete-auction-worker").start();
@@ -554,28 +554,28 @@ public class SellerViewportController implements Initializable {
     void refreshTable(ActionEvent event) {
         try {
             int currentSellerId = UserSession.getInstance().getUser().getId();
-            // Thực hiện tải dữ liệu trên background thread
+            // Perform data loading on background thread
             new Thread(() -> {
                 try {
                     List<AuctionDTO> auctions = AuctionManageService.getInstance().getAuctionsBySellerId(currentSellerId);
                     javafx.application.Platform.runLater(() -> {
                         SellerAuctionStore.getInstance().setAuctions(auctions);
-                        System.out.println("Đã tải " + sellerAuctions.size() + " phiên đấu giá cho Seller ID: " + currentSellerId);
+                        System.out.println("Loaded " + sellerAuctions.size() + " auctions for Seller ID: " + currentSellerId);
                     });
                 } catch (Exception e) {
-                    javafx.application.Platform.runLater(() -> showError("Không thể tải danh sách sản phẩm từ máy chủ!"));
+                    javafx.application.Platform.runLater(() -> showError("Failed to load product list from server!"));
                 }
             }, "seller-refresh-table-worker").start();
         } catch (Exception e) {
             e.printStackTrace();
-            showError("Không thể tải danh sách sản phẩm từ máy chủ!");
+            showError("Failed to load product list from server!");
         }
     }
 
     /**
-     * Tính lại trạng thái các nút dựa theo status thực tế của auction được truyền vào.
-     * Tách ra thành method riêng để có thể gọi lại từ nhiều nơi (selection listener
-     * và store change listener) đảm bảo luôn đồng bộ.
+     * Recalculate button states based on the actual status of the passed auction.
+     * Extracted into a separate method so it can be called from multiple places (selection listener
+     * and store change listener) to always ensure synchronization.
      */
     private void updateButtonStates(AuctionDTO auction) {
         if (auction == null) {
@@ -591,7 +591,7 @@ public class SellerViewportController implements Initializable {
     }
 
     private void setupTableSelectionListener() {
-        // Listener 1: Khi user click chọn dòng khác trên bảng
+        // Listener 1: When user clicks to select a different row on the table
         productTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 txtProductName.setText(newSelection.getName());
@@ -623,7 +623,7 @@ public class SellerViewportController implements Initializable {
                     spinEndMinute.getValueFactory().setValue(newSelection.getEndTime().getMinute());
                 }
 
-                // Đổ ảnh sản phẩm vào ô click to upload
+                // Fill product image into click to upload box
                 selectedImageFile = null;
                 if (newSelection.getImageBase64() != null && !newSelection.getImageBase64().trim().isEmpty()) {
                     Image image = ImageService.getInstance().base64ToImage(newSelection.getImageBase64());
@@ -643,8 +643,8 @@ public class SellerViewportController implements Initializable {
             }
         });
 
-        // Listener 2: Khi store được cập nhật từ server push (ví dụ OPEN → RUNNING)
-        // Phát hiện nếu item đang được chọn bị thay đổi trạng thái → cập nhật nút ngay lập tức
+        // Listener 2: When store is updated from server push (e.g. OPEN -> RUNNING)
+        // Detect if the currently selected item has changed status -> update buttons immediately
         sellerAuctions.addListener((ListChangeListener<AuctionDTO>) change -> {
             AuctionDTO currentlySelected = productTable.getSelectionModel().getSelectedItem();
             if (currentlySelected == null) return;
@@ -653,7 +653,7 @@ public class SellerViewportController implements Initializable {
                 if (change.wasReplaced() || change.wasAdded()) {
                     for (AuctionDTO updated : change.getAddedSubList()) {
                         if (updated.getId() == currentlySelected.getId()) {
-                            // Item đang được chọn vừa bị cập nhật từ server → tính lại trạng thái nút
+                            // The currently selected item was just updated from server -> recalculate button states
                             updateButtonStates(updated);
                             return;
                         }

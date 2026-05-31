@@ -46,15 +46,15 @@ public class AutoBidDAO {
 
             statement.executeUpdate();
 
-            // Lấy ID của record vừa INSERT hoặc UPDATE
+            // Get ID of recently INSERT or UPDATE record
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     int generatedId = generatedKeys.getInt(1);
                     if (generatedId > 0) {
-                        // INSERT mới: dùng generated key
+                        // New INSERT: use generated key
                         autoBid.setId(generatedId);
                     } else {
-                        // ON DUPLICATE KEY UPDATE: query lại để lấy ID thực
+                        // ON DUPLICATE KEY UPDATE: requery to get actual ID
                         fetchAndSetId(connection, autoBid);
                     }
                 } else {
@@ -64,7 +64,7 @@ public class AutoBidDAO {
         }
     }
 
-    // Helper: query id theo (user_id, auction_id) khi generated key không khả dụng
+    // Helper: query id by (user_id, auction_id) when generated key is not available
     private void fetchAndSetId(Connection connection, AutoBid autoBid) throws SQLException {
         String query = "SELECT id FROM auto_bids WHERE user_id = ? AND auction_id = ?";
         try (PreparedStatement ps = connection.prepareStatement(query)) {
@@ -110,7 +110,7 @@ public class AutoBidDAO {
         return results;
     }
 
-    // Trả về AutoBid bất kể active hay inactive (dùng cho admin/audit)
+    // Return AutoBid regardless of active or inactive (used for admin/audit)
     public AutoBid findByUserAndAuction(Connection connection, int userId, int auctionId) throws SQLException {
         String sql = "SELECT * FROM auto_bids WHERE user_id = ? AND auction_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -125,7 +125,7 @@ public class AutoBidDAO {
         return null;
     }
 
-    // Chỉ trả về AutoBid đang active (dùng cho getAutoBidConfig)
+    // Only return currently active AutoBid (used for getAutoBidConfig)
     public AutoBid findActiveByUserAndAuction(Connection connection, int userId, int auctionId) throws SQLException {
         String sql = "SELECT * FROM auto_bids WHERE user_id = ? AND auction_id = ? AND is_active = 1";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {

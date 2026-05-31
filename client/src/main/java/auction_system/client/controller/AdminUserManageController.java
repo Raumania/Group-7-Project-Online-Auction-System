@@ -210,7 +210,7 @@ public class AdminUserManageController implements Initializable {
         String roleSelection = cbRoles.getValue();
 
         if (fullname.isEmpty() || username.isEmpty() || password.isEmpty() || availableBalanceStr.isEmpty() || frozenBalanceStr.isEmpty() || roleSelection == null) {
-            showError("Vui lòng điền đầy đủ thông tin!");
+            showError("Please fill in all information!");
             return;
         }
 
@@ -220,7 +220,7 @@ public class AdminUserManageController implements Initializable {
             availableBalance = new BigDecimal(availableBalanceStr);
             frozenBalance = new BigDecimal(frozenBalanceStr);
         } catch (NumberFormatException e) {
-            showError("Available Balance và Frozen Balance phải là một số hợp lệ!");
+            showError("Available Balance and Frozen Balance must be valid numbers!");
             return;
         }
 
@@ -240,11 +240,11 @@ public class AdminUserManageController implements Initializable {
             javafx.application.Platform.runLater(() -> {
                 if (success) {
                     AdminUserStore.getInstance().addUser(newUser);
-                    showInfo("Thêm người dùng mới thành công!");
+                    showInfo("New user added successfully!");
                     handleResetForm(null);
                     handleRefreshTable(null);
                 } else {
-                    showError("Có lỗi xảy ra khi thêm người dùng mới từ hệ thống!");
+                    showError("An error occurred while adding a new user from the system!");
                 }
             });
         }).start();
@@ -254,7 +254,7 @@ public class AdminUserManageController implements Initializable {
     void handleEdit(ActionEvent event) {
         UserDTO selectedUser = userTable.getSelectionModel().getSelectedItem();
         if (selectedUser == null) {
-            showError("Vui lòng chọn người dùng cần chỉnh sửa!");
+            showError("Please select the user to edit!");
             return;
         }
 
@@ -265,7 +265,7 @@ public class AdminUserManageController implements Initializable {
         String roleSelection = cbRoles.getValue();
 
         if (fullname.isEmpty() || username.isEmpty() || availableBalanceStr.isEmpty() || frozenBalanceStr.isEmpty() || roleSelection == null) {
-            showError("Vui lòng điền đầy đủ thông tin!");
+            showError("Please fill in all information!");
             return;
         }
 
@@ -275,7 +275,7 @@ public class AdminUserManageController implements Initializable {
             availableBalance = new BigDecimal(availableBalanceStr);
             frozenBalance = new BigDecimal(frozenBalanceStr);
         } catch (NumberFormatException e) {
-            showError("Available Balance và Frozen Balance phải là một số hợp lệ!");
+            showError("Available Balance and Frozen Balance must be valid numbers!");
             return;
         }
 
@@ -288,9 +288,9 @@ public class AdminUserManageController implements Initializable {
         }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Xác nhận cập nhật");
+        confirm.setTitle("Confirm Update");
         confirm.setHeaderText(null);
-        confirm.setContentText("Bạn có chắc muốn cập nhật thông tin người dùng này?");
+        confirm.setContentText("Are you sure you want to update this user's information?");
         
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
@@ -307,10 +307,10 @@ public class AdminUserManageController implements Initializable {
                 selectedUser.setPassword(null);
             }
 
-            // Disable nút để tránh double-submit
+            // Disable button to prevent double-submit
             btnEdit.setDisable(true);
 
-            // Thực hiện network I/O trên background thread
+            // Perform network I/O on background thread
             UserDTO userToEdit = selectedUser;
             new Thread(() -> {
                 boolean success = AdminUserService.getInstance().updateUser(userToEdit);
@@ -320,10 +320,10 @@ public class AdminUserManageController implements Initializable {
                     if (success) {
                         AdminUserStore.getInstance().updateUser(userToEdit);
                         userTable.refresh();
-                        showInfo("Cập nhật thông tin người dùng thành công!");
+                        showInfo("User information updated successfully!");
                         handleResetForm(null);
                     } else {
-                        showError("Cập nhật thông tin thất bại từ hệ thống!");
+                        showError("Failed to update information from system!");
                     }
                 });
             }, "admin-edit-user-worker").start();
@@ -334,26 +334,26 @@ public class AdminUserManageController implements Initializable {
     void handleBan(ActionEvent event) {
         UserDTO selectedUser = userTable.getSelectionModel().getSelectedItem();
         if (selectedUser == null) {
-            showError("Vui lòng chọn người dùng cần khóa!");
+            showError("Please select the user to ban!");
             return;
         }
 
         if (selectedUser.getStatus() == auction_system.common.enums.UserStatus.BANNED) {
-            showError("Người dùng này đã bị khóa tài khoản từ trước!");
+            showError("This user's account has already been banned!");
             return;
         }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Xác nhận khóa tài khoản");
+        confirm.setTitle("Confirm Account Ban");
         confirm.setHeaderText(null);
-        confirm.setContentText("Bạn có chắc chắn muốn khóa tài khoản '" + selectedUser.getUsername() + "' không?");
+        confirm.setContentText("Are you sure you want to ban the account '" + selectedUser.getUsername() + "'?");
 
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Disable nút để tránh double-click
+            // Disable button to prevent double-click
             btnBan.setDisable(true);
 
-            // Thực hiện network I/O trên background thread
+            // Perform network I/O on background thread
             UserDTO userToBan = selectedUser;
             new Thread(() -> {
                 boolean success = AdminUserService.getInstance().banUser(userToBan.getId());
@@ -364,10 +364,10 @@ public class AdminUserManageController implements Initializable {
                         userToBan.setStatus(auction_system.common.enums.UserStatus.BANNED);
                         AdminUserStore.getInstance().updateUser(userToBan);
                         userTable.refresh();
-                        showInfo("Khóa tài khoản người dùng thành công!");
+                        showInfo("User account banned successfully!");
                         handleResetForm(null);
                     } else {
-                        showError("Khóa tài khoản người dùng thất bại!");
+                        showError("Failed to ban user account!");
                     }
                 });
             }, "admin-ban-user-worker").start();
@@ -376,7 +376,7 @@ public class AdminUserManageController implements Initializable {
 
     @FXML
     void handleRefreshTable(ActionEvent event) {
-        // Thực hiện tải dữ liệu trên background thread
+        // Perform data loading on background thread
         new Thread(() -> {
             try {
                 List<UserDTO> dbUsers = AdminUserService.getInstance().getAllUsers();
@@ -386,7 +386,7 @@ public class AdminUserManageController implements Initializable {
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                javafx.application.Platform.runLater(() -> showError("Không thể tải danh sách người dùng từ máy chủ!"));
+                javafx.application.Platform.runLater(() -> showError("Failed to load user list from server!"));
             }
         }, "admin-refresh-users-worker").start();
     }
@@ -412,7 +412,7 @@ public class AdminUserManageController implements Initializable {
 
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Lỗi");
+        alert.setTitle("Error");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
@@ -420,7 +420,7 @@ public class AdminUserManageController implements Initializable {
 
     private void showInfo(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Thông báo");
+        alert.setTitle("Notification");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();

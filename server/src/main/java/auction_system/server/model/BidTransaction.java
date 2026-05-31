@@ -26,8 +26,8 @@ public class BidTransaction extends Entity {
         }
 
         /*
-            Không dùng instanceof Bidder nữa.
-            Kiểm tra bằng role.
+            No longer using instanceof Bidder.
+            Check using role.
         */
         if (!bidder.hasRole(UserRole.BIDDER)) {
             throw new AuthorizationException("Bidder must have BIDDER role");
@@ -41,7 +41,7 @@ public class BidTransaction extends Entity {
         this.amount = amount != null ? amount.setScale(4, java.math.RoundingMode.HALF_UP) : null;
 
         /*
-            Thời điểm đặt bid hiện tại.
+            Current bid time.
         */
         this.biddingtime = LocalDateTime.now();
     }
@@ -59,10 +59,10 @@ public class BidTransaction extends Entity {
     }
 
     /*
-        Setter này cần cho DAO.
+        This setter is needed for DAO.
 
-        Khi lấy bid transaction từ database ra,
-        object Java phải giữ lại bidTime cũ trong database.
+        When retrieving bid transaction from database,
+        Java object must keep the old bidTime from the database.
     */
     public void setBidTime(LocalDateTime bidTime) {
         this.biddingtime = bidTime;

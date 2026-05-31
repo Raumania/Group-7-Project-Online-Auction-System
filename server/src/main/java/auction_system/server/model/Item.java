@@ -6,8 +6,8 @@ import auction_system.common.enums.ItemType;
 import java.time.LocalDateTime;
 
 /**
- * Lớp trừu tượng đại diện cho một sản phẩm đấu giá chung.
- * Chỉ chứa dữ liệu, không chứa logic validate (kiểm tra rỗng, kiểm tra thời gian).
+ * Abstract class representing a general auction item.
+ * Contains data only, no validation logic (null check, time check).
  */
 public abstract class Item extends Entity {
     protected String name;
@@ -52,7 +52,7 @@ public abstract class Item extends Entity {
     }
 
     // =========================================
-    // GETTERS & SETTERS (Đã bổ sung đầy đủ)
+    // GETTERS & SETTERS (Fully supplemented)
     // =========================================
 
     public String getName() {

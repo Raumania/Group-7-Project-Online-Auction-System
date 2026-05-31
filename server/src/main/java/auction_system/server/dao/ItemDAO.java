@@ -75,7 +75,7 @@ public class ItemDAO {
         }
     }
 
-    // ... Các hàm find không thay đổi ...
+    // ... find methods remain unchanged ...
     public Item findById(int id) {
         String sql = """
                 SELECT

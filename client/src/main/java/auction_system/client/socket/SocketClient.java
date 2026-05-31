@@ -50,7 +50,7 @@ public class SocketClient {
     private boolean isRunning = false;
     private java.util.concurrent.ScheduledExecutorService heartbeatScheduler;
 
-    // Hàng đợi an toàn đa luồng chứa các phản hồi đồng bộ (Login, Bid, v.v.)
+    // Thread-safe queue containing synchronous responses (Login, Bid, etc.)
     private final BlockingQueue<Response> responseQueue = new LinkedBlockingQueue<>();
 
     public void connect(String URL, int PORT) {
@@ -62,11 +62,11 @@ public class SocketClient {
             in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
             out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
             
-            // Bắt đầu luồng lắng nghe ngầm khi kết nối thành công
+            // Start background listening thread upon successful connection
             isRunning = true;
             startReaderThread();
             
-            // Khởi động heartbeat gửi ping định kỳ
+            // Start heartbeat to send periodic pings
             startHeartbeat();
         }
         catch(IOException e) {
@@ -74,7 +74,7 @@ public class SocketClient {
         }
     }
 
-    // Luồng chạy ngầm liên tục đọc dữ liệu từ Server
+    // Background thread continuously reading data from Server
     private void startReaderThread() {
         Thread readerThread = new Thread(() -> {
             try {
@@ -87,7 +87,7 @@ public class SocketClient {
                         Response response = GsonUtil.fromJson(json, Response.class);
                         
                         if (response != null) {
-                            // Kiểm tra các sự kiện bất đồng bộ đẩy từ Server (Push Notifications)
+                            // Check asynchronous events pushed from Server (Push Notifications)
                             if (response.getType() == Action.EVENT_NEW_AUCTION_ADDED) {
                                 handleNewAuctionEvent(response);
                             } else if (response.getType() == Action.EVENT_AUCTION_EDITED) {
@@ -103,10 +103,10 @@ public class SocketClient {
                             } else if (response.getType() == Action.GET_CURRENT_USER) {
                                 handleGetCurrentUserEvent(response);
                             } else if (response.getType() == Action.PING) {
-                                // Phản hồi PING/PONG giữ kết nối (heartbeat), chỉ cần log và bỏ qua
+                                // PING/PONG response keeping connection alive (heartbeat), just log and ignore
                                 System.out.println("Heartbeat: received PONG from server");
                             } else {
-                                // Nếu là phản hồi bình thường của Request, đưa vào hàng đợi để phương thức receive() lấy ra
+                                // If it is a normal Request response, put it in the queue for the receive() method to retrieve
                                 responseQueue.put(response);
                             }
                         }
@@ -125,17 +125,17 @@ public class SocketClient {
                 }
             } catch (IOException e) {
                 System.out.println("Socket connection closed or read error: " + e.getMessage());
-                // Chống đứt mạng (Network Chaos): Báo lỗi và văng ra màn hình đăng nhập
-                if (isRunning) { // Chỉ báo lỗi nếu không phải do cố ý tắt app
+                // Prevent network drop (Network Chaos): Report error and kick back to login screen
+                if (isRunning) { // Only report error if not intentionally closing app
                     Platform.runLater(() -> {
                         Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.setTitle("Mất kết nối");
-                        alert.setHeaderText("Mất kết nối đến Server");
-                        alert.setContentText("Đường truyền mạng bị đứt hoặc Server đã đóng. Vui lòng kiểm tra lại mạng!");
+                        alert.setTitle("Connection Lost");
+                        alert.setHeaderText("Lost connection to Server");
+                        alert.setContentText("Network connection interrupted or Server closed. Please check your network!");
                         alert.showAndWait();
                         
                         try {
-                            // Chuyển về màn hình đăng nhập
+                            // Return to login screen
                             Parent root = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
                             auction_system.client.util.ViewSingleton.getInstance().getViewport().getScene().setRoot(root);
                         } catch (Exception ex) {
@@ -148,7 +148,7 @@ public class SocketClient {
                 System.out.println("Reader thread stopped.");
             }
         });
-        readerThread.setDaemon(true); // Để luồng tự giải phóng khi ứng dụng JavaFX tắt
+        readerThread.setDaemon(true); // Let thread self-release when JavaFX app closes
         readerThread.start();
     }
 
@@ -174,14 +174,14 @@ public class SocketClient {
         }, 30, 30, java.util.concurrent.TimeUnit.SECONDS);
     }
 
-    // Xử lý sự kiện thêm đấu giá mới theo thời gian thực
+    // Handle real-time new auction event
     private void handleNewAuctionEvent(Response response) {
         try {
             String jsonData = GsonUtil.toJson(response.getData());
             AuctionDTO newAuction = GsonUtil.fromJson(jsonData, AuctionDTO.class);
             if (newAuction != null) {
                 System.out.println("Real-time: Adding new auction ID: " + newAuction.getId());
-                // Cập nhật UI an toàn trên luồng JavaFX
+                // Safely update UI on JavaFX thread
                 Platform.runLater(() -> {
                     AuctionStore.getInstance().addAuction(newAuction);
                     if (UserSession.getInstance().getUser() != null && newAuction.getSellerId() == UserSession.getInstance().getUser().getId()) {
@@ -194,7 +194,7 @@ public class SocketClient {
         }
     }
 
-    // Xử lý sự kiện chỉnh sửa đấu giá theo thời gian thực
+    // Handle real-time auction edited event
     private void handleAuctionEditedEvent(Response response) {
         try {
             String jsonData = GsonUtil.toJson(response.getData());
@@ -203,7 +203,7 @@ public class SocketClient {
                 System.out.println("Real-time: Updating edited auction ID: " + updatedAuction.getId());
                 final int auctionId = updatedAuction.getId();
 
-                // Cập nhật Store và tính toán số dư trên luồng JavaFX
+                // Update Store and calculate balance on JavaFX thread
                 Platform.runLater(() -> {
                     UserDTO currentUser = UserSession.getInstance().getUser();
                     if (currentUser != null && currentUser.getUsername() != null) {
@@ -226,8 +226,8 @@ public class SocketClient {
                             boolean wasHighest = myUsername.equals(oldBidder);
                             boolean isHighest = myUsername.equals(newBidder);
 
-                            // Nếu user liên quan đến sự thay đổi giá thầu, thay vì tự tính toán sai lệch (đặc biệt là với AutoBid),
-                            // ta yêu cầu server gửi lại balance mới nhất để chính xác 100%.
+                            // If user is related to bid price change, instead of calculating discrepancies (especially with AutoBid),
+                            // we request server to resend the latest balance for 100% accuracy.
                             if (wasHighest || isHighest) {
                                 Request syncReq = new Request(Action.GET_CURRENT_USER, null);
                                 send(syncReq);
@@ -240,7 +240,7 @@ public class SocketClient {
                 });
 
                 // Re-fetch bid history trên background thread (không block JavaFX thread)
-                // Đảm bảo bids của user bị ban biến mất khỏi bảng ngay khi có update
+                // Ensure bids of banned users disappear from the table immediately upon update
                 new Thread(() -> {
                     try {
                         List<BidTransactionDTO> freshHistory = BidService.getInstance().getBidHistory(auctionId);
@@ -271,7 +271,7 @@ public class SocketClient {
         }
     }
 
-    // Xử lý sự kiện xóa đấu giá theo thời gian thực
+    // Handle real-time auction deleted event
     private void handleAuctionDeletedEvent(Response response) {
         try {
             int deletedAuctionId = GsonUtil.getGson().toJsonTree(response.getData()).getAsInt();
@@ -303,16 +303,16 @@ public class SocketClient {
                         BidTransactionStore.getInstance().logout();
                         SellerAuctionStore.getInstance().logout();
 
-                        // Đánh thức và tiêu diệt các luồng ngầm (zombie threads) đang bị kẹt ở lệnh receive()
+                        // Wake up and kill background threads (zombie threads) stuck at receive() command
                 for (int i = 0; i < 5; i++) {
                     responseQueue.offer(new auction_system.common.protocol.Response(auction_system.common.enums.Status.ERROR, auction_system.common.enums.Action.PING, null, "Force release zombie"));
                 }
                 
                 // Show warning alert dialog
                 javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
-                alert.setTitle("Tài khoản bị khóa");
-                alert.setHeaderText("Thông báo từ quản trị viên");
-                alert.setContentText(response.getMessage() != null ? response.getMessage() : "Tài khoản của bạn đã bị khóa do vi phạm điều khoản của sàn.");
+                alert.setTitle("Account Banned");
+                alert.setHeaderText("Notification from Administrator");
+                alert.setContentText(response.getMessage() != null ? response.getMessage() : "Your account has been banned due to violation of platform terms.");
                 alert.showAndWait();
                 
                         // Transition to login screen
@@ -352,7 +352,7 @@ public class SocketClient {
                 // Find the auction in store and update its status to CANCELLED
                 for (AuctionDTO auction : AuctionStore.getInstance().getAuctions()) {
                     if (auction.getId() == cancelledAuctionId) {
-                        // Nếu ta là người thầu cao nhất của đấu giá bị hủy
+                        // If we are the highest bidder of the cancelled auction
                         if (currentUser != null && currentUser.getUsername() != null && currentUser.getUsername().equals(auction.getHighestBidderUsername())) {
                             Request syncReq = new Request(Action.GET_CURRENT_USER, null);
                             send(syncReq);
@@ -422,7 +422,7 @@ public class SocketClient {
     public synchronized void send(Request request) {
         try {
             String json = GsonUtil.toJson(request);
-            // Gửi qua output stream chính đã được flush
+            // Send via the main flushed output stream
             writeMessage(out, json);
             System.out.println("Sent request: " + maskImageBase64(json));
         }
@@ -431,8 +431,8 @@ public class SocketClient {
         }
     }
 
-    // [HOTFIX] Hàm bọc đồng bộ hóa để sửa lỗi Race Condition
-    // Đảm bảo mỗi luồng gửi Request sẽ độc chiếm và đợi lấy đúng Response của mình
+    // [HOTFIX] Synchronization wrapper method to fix Race Condition
+    // Ensure each thread sending Request will exclusively wait and get its correct Response
     public synchronized Response sendAndReceive(Request request) {
         try {
             send(request);
@@ -443,10 +443,10 @@ public class SocketClient {
         }
     }
 
-    // receive() giờ đây lấy gói tin từ hàng đợi BlockingQueue, không còn bị nghẽn hay lẫn lộn dữ liệu
+    // receive() now gets packets from BlockingQueue, no longer blocked or mixed data
     public Response receive() {
         try {
-            return responseQueue.take(); // Chờ và lấy Response từ Reader Thread đưa vào
+            return responseQueue.take(); // Wait and get Response put in by Reader Thread
         }
         catch (InterruptedException e) {
             e.printStackTrace();
@@ -454,10 +454,10 @@ public class SocketClient {
         }
     }
 
-    // Đóng socket an toàn
+    // Safely close socket
     public void disconnect() {
         isRunning = false;
-        responseQueue.clear(); // Xóa sạch hàng đợi để không ảnh hưởng test sau
+        responseQueue.clear(); // Clear queue to avoid affecting subsequent tests
         if (heartbeatScheduler != null) {
             heartbeatScheduler.shutdownNow();
         }
@@ -471,7 +471,7 @@ public class SocketClient {
         }
     }
 
-    // Helper ẩn chuỗi Base64 dài khi in log để dễ debug
+    // Helper to hide long Base64 strings when logging for easier debugging
     private String maskImageBase64(String json) {
         if (json == null) return null;
         if (json.length() > 2000) {

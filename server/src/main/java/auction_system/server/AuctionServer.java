@@ -15,7 +15,7 @@ import java.util.Set;
 
 public class AuctionServer {
     //Observer Pattern
-    // Danh sách toàn bộ các client đang kết nối hoạt động
+    // List of all active connected clients
     private static final Set<ClientHandler> activeClients = ConcurrentHashMap.newKeySet();
 
     public static void addActiveClient(ClientHandler client) {
@@ -40,7 +40,7 @@ public class AuctionServer {
                         auction_system.common.enums.Status.ERROR,
                         auction_system.common.enums.Action.EVENT_USER_BANNED,
                         null,
-                        "Tài khoản của bạn đã bị khóa do vi phạm điều khoản của sàn."
+                        "Your account has been banned due to violation of platform terms."
                     );
                     client.send(auction_system.server.util.GsonUtil.toJson(response));
                     System.out.println("AuctionServer: Sent EVENT_USER_BANNED to user " + userId + ". Force-closing socket.");
@@ -52,24 +52,24 @@ public class AuctionServer {
     }
     //end of Observer Pattern
 
-    // Socket server dùng để lắng nghe kết nối từ client
+    // Socket server used to listen for connections from clients
     private ServerSocket serverSocket;
 
-    // Thread pool để xử lý nhiều client cùng lúc
+    // Thread pool to handle multiple clients at the same time
     private ExecutorService threadPool;
 
-    // Biến kiểm soát server có đang chạy hay không
+    // Variable to control whether the server is running
     private volatile boolean running;
 
-    // Port server lắng nghe
+    // Server listening port
     private static final int PORT = 3636;
 
-    // Số lượng thread tối đa xử lý client đồng thời
+    // Maximum number of threads handling clients concurrently
     private static final int POOL_SIZE = 20;
 
     public void start() throws IOException {
 
-        // Khởi chạy EventBus và đăng ký ClientNotificationObserver
+        // Initialize EventBus and register ClientNotificationObserver
         EventBus.getInstance();
         EventBus.registerObserver(new ClientNotificationObserver());
         auction_system.server.engine.BidEngine.getInstance();
@@ -82,36 +82,36 @@ public class AuctionServer {
         auction_system.server.store.BidTransactionStore.getInstance().init();
         auction_system.server.store.ImageCounterStore.getInstance().init();
 
-        // Khởi chạy AuctionScheduler
+        // Initialize AuctionScheduler
         AuctionScheduler.getInstance().start();
 
-        // Mở server socket tại port
+        // Open server socket at port
         serverSocket = new ServerSocket(PORT);
 
-        // Tạo thread pool cố định (20 thread)
+        // Create fixed thread pool (20 threads)
         threadPool = Executors.newFixedThreadPool(POOL_SIZE);
 
         running = true;
 
         System.out.println("Auction Server started on port " + PORT + " with pool size " + POOL_SIZE);
 
-        // Tạo 1 luồng riêng chỉ để accept client
+        // Create a separate thread just to accept clients
         new Thread(() -> {
             while (running) {
                 try {
-                    // Chờ client kết nối (blocking)
+                    // Wait for client connection (blocking)
                     Socket clientSocket = serverSocket.accept();
 
                     System.out.println("New client connected: " + clientSocket.getInetAddress());
 
-                    // Tạo handler để xử lý client này
+                    // Create handler to process this client
                     ClientHandler handler = new ClientHandler(clientSocket);
 
-                    // Đưa vào thread pool xử lý
+                    // Submit to thread pool for processing
                     threadPool.submit(handler);
 
                 } catch (IOException e) {
-                    // Nếu server vẫn đang chạy mà lỗi → in lỗi
+                    // If server is still running and error occurs -> print error
                     if (running) {
                         e.printStackTrace();
                     }
@@ -122,14 +122,14 @@ public class AuctionServer {
 
     public void stop() {
 
-        // Dừng vòng lặp accept
+        // Stop accept loop
         running = false;
 
-        // Dừng AuctionScheduler
+        // Stop AuctionScheduler
         auction_system.server.observer.AuctionScheduler.getInstance().shutdown();
 
         try {
-            // Đóng server socket
+            // Close server socket
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
@@ -139,14 +139,14 @@ public class AuctionServer {
 
         if (threadPool != null) {
 
-            // Không nhận task mới nữa
+            // No longer accept new tasks
             threadPool.shutdown();
 
             try {
-                // Chờ thread chạy xong (tối đa 5s)
+                // Wait for threads to finish (max 5s)
                 if (!threadPool.awaitTermination(5, TimeUnit.SECONDS)) {
 
-                    // Nếu chưa xong → kill luôn
+                    // If not finished -> kill
                     threadPool.shutdownNow();
                 }
             } catch (InterruptedException e) {
@@ -165,7 +165,7 @@ public class AuctionServer {
 
 //            System.out.println("Press Enter to stop server...");
 //
-//            // Chờ người dùng bấm Enter để tắt server
+//            // Wait for user to press Enter to stop server
 //            System.in.read();
 //
 //            server.stop();

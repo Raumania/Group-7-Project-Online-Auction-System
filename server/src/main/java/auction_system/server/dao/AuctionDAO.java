@@ -80,21 +80,21 @@ public class AuctionDAO {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
 
-            // Gán auctionid vào dấu hỏi chấm (?)
+            // Assign auctionid to question mark (?)
             selectStmt.setInt(1, auctionid);
 
             try (ResultSet rs = selectStmt.executeQuery()) {
                 if (rs.next()) {
-                    // Lấy thời gian dưới dạng Timestamp từ SQL
+                    // Get time as Timestamp from SQL
                     Timestamp dbEndTime = rs.getTimestamp("ending_time");
                     if (dbEndTime != null) {
-                        // Chuyển đổi Timestamp thành LocalDateTime và trả về
+                        // Convert Timestamp to LocalDateTime and return
                         return dbEndTime.toLocalDateTime();
                     }
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Lỗi khi lấy thời gian kết thúc của đấu giá: " + e.getMessage());
+            System.err.println("Error when getting auction end time: " + e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -275,8 +275,8 @@ public class AuctionDAO {
     }
 
     /*
-        Update bình thường.
-        Không dùng transaction bên ngoài.
+        Normal update.
+        Do not use external transaction.
     */
     public void update(Auction auction) {
         try (Connection connection = DatabaseConnection.getConnection()) {
@@ -287,12 +287,12 @@ public class AuctionDAO {
     }
 
     /*
-        Update dùng chung connection.
-        Dùng trong transaction ở Service.
+        Update using shared connection.
+        Used in transaction at Service.
     */
     public void update(Connection connection, Auction auction) throws SQLException {
-        // Nếu highest_bidder_id có giá trị nhưng username bị null (dữ liệu cũ bị thiếu),
-        // tra cứu username từ DB để tránh ghi NULL đè lên dữ liệu đúng đang có.
+        // If highest_bidder_id has a value but username is null (old data is missing),
+        // lookup username from DB to avoid overwriting existing correct data with NULL.
         if (auction.getHighestBidderId() != null && auction.getHighestBidderUsername() == null) {
             try {
                 String lookupSql = "SELECT username FROM users WHERE id = ?";
@@ -305,7 +305,7 @@ public class AuctionDAO {
                     }
                 }
             } catch (SQLException ignored) {
-                // Không block update chính nếu lookup phụ lỗi
+                // Do not block main update if secondary lookup fails
             }
         }
 

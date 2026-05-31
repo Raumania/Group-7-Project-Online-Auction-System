@@ -87,7 +87,6 @@ public class Auction extends Entity{
     public String getDescription() {
         return description;
     }
-
     public void setDescription(String description) {
         this.description = description;
     }

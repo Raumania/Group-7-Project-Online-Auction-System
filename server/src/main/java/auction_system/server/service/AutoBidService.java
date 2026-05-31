@@ -75,13 +75,13 @@ public class AutoBidService {
         }
 
         // 5. Verify bid validity compared to current price
-        //    maxBid phải đủ để trả ít nhất một bước giá TỐI THIỂU của sàn (không phải bước giá tùy chỉnh)
+        //    maxBid must be enough to pay at least one MINIMUM platform bid increment (not custom bid increment)
         BigDecimal nextMinBid;
         if (auction.getCurrentPrice() == null || auction.getCurrentPrice().compareTo(BigDecimal.ZERO) == 0) {
-            // Chưa ai bid: chỉ cần maxBid >= startingPrice
+            // No one has bid: just need maxBid >= startingPrice
             nextMinBid = auction.getStartingPrice();
         } else {
-            // Đã có người bid: cần maxBid >= currentPrice + platformMinIncrement
+            // Someone has bid: need maxBid >= currentPrice + platformMinIncrement
             nextMinBid = auction.getCurrentPrice().add(platformMinIncrement);
         }
 
@@ -183,14 +183,14 @@ public class AutoBidService {
     }
 
     public AutoBid getAutoBidConfig(int userId, int auctionId) {
-        // Ưu tiên kiểm tra Store (active bids in-memory)
+        // Prioritize checking Store (active bids in-memory)
         List<AutoBid> activeBids = autoBidStore.getActiveAutoBidsByAuctionId(auctionId);
         for (AutoBid ab : activeBids) {
             if (ab.getUserId() == userId) {
                 return ab;
             }
         }
-        // Nếu không có trong Store (có thể đã inactive), kiểm tra DB nhưng chỉ lấy record active
+        // If not in Store (might be inactive), check DB but only get active records
         try (java.sql.Connection connection = auction_system.server.dao.DatabaseConnection.getConnection()) {
             return autoBidDAO.findActiveByUserAndAuction(connection, userId, auctionId);
         } catch (java.sql.SQLException e) {

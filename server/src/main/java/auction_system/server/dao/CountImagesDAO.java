@@ -8,14 +8,14 @@ import java.sql.SQLException;
 public class CountImagesDAO {
 
     public int generateNextImageId(Connection connection) throws SQLException {
-        // Không tự quản lý transaction ở đây — để outer transaction (AuctionService) quản lý
+        // Do not manage transactions here - let the outer transaction (AuctionService) manage it
         String updateQuery = "UPDATE image_counter SET current_count = current_count + 1";
         String selectQuery = "SELECT current_count FROM image_counter";
 
         try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
             int affectedRows = updateStmt.executeUpdate();
             if (affectedRows == 0) {
-                throw new SQLException("Không thể cập nhật biến đếm. Bảng image_counter có thể đang trống.");
+                throw new SQLException("Cannot update counter. The image_counter table might be empty.");
             }
         }
 
@@ -26,6 +26,6 @@ public class CountImagesDAO {
             }
         }
 
-        throw new SQLException("Không thể đọc giá trị image_counter sau khi update.");
+        throw new SQLException("Cannot read image_counter value after update.");
     }
 }

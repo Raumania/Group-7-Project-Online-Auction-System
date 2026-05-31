@@ -47,7 +47,7 @@ public class ImageService {
             return new Image(bis);
 
         } catch (IllegalArgumentException e) {
-            System.err.println("Chuỗi Base64 không hợp lệ: " + e.getMessage());
+            System.err.println("Invalid Base64 string: " + e.getMessage());
             return null;
         }
     }

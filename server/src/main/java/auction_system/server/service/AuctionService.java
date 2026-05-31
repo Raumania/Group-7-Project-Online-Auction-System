@@ -49,15 +49,15 @@ public class AuctionService {
 
         try {
             connection = DatabaseConnection.getConnection();
-            connection.setAutoCommit(false); // Bắt đầu transaction
+            connection.setAutoCommit(false); // Begin transaction
 
             validateItemData(auction);
 
-            // 1. Tạo Item trước và lấy ID của nó
+            // 1. Create Item first and get its ID
             int itemId = itemDAO.save(connection, auction);
             auction.setItemId(itemId); 
 
-            // 2. Xác định trạng thái Auction
+            // 2. Determine Auction status
             LocalDateTime now = LocalDateTime.now();
             if (now.isAfter(auction.getStartTime()) && now.isBefore(auction.getEndTime())) {
                 auction.setStatus(AuctionStatus.RUNNING);
@@ -67,14 +67,14 @@ public class AuctionService {
                 auction.setStatus(AuctionStatus.OPEN);
             }
 
-            // 3. Lưu ảnh (nếu có)
+            // 3. Save image (if any)
             String imagePathToSave = null;
             String imageBase64 = auction.getImageBase64();
             if (imageBase64 != null && !imageBase64.isBlank()) {
                 imagePathToSave = imageService.saveBase64Image(connection, imageBase64);
             }
 
-            // 4. Tạo Auction với item_id và image path
+            // 4. Create Auction with item_id and image path
             int auctionId = auctionDAO.save(connection, auction, itemId, imagePathToSave);
             auction.setId(auctionId);
             auction.setImagePath(imagePathToSave); // PRESERVE PATH IN RAM CACHE
@@ -116,8 +116,8 @@ public class AuctionService {
 
             int itemId = auction.getItemId();
 
-            // Do đã có ON DELETE CASCADE, về lý thuyết chỉ cần xóa item là auction sẽ bị xóa theo.
-            // Tuy nhiên, xóa cả 2 để logic tường minh hơn.
+            // Because of ON DELETE CASCADE, theoretically deleting item will also delete auction.
+            // However, delete both for more explicit logic.
             auctionDAO.delete(connection, auctionId);
             itemDAO.delete(connection, itemId); 
 
@@ -127,7 +127,7 @@ public class AuctionService {
             auctionStore.removeAuction(auctionId);
             eventBus.publishAuctionDeleted(auctionId);
 
-            // Xóa ảnh vật lý khỏi ổ đĩa sau khi xóa thành công trong Database
+            // Delete physical image from disk after successfully deleting from Database
             if (auction.getImagePath() != null) {
                 imageService.deleteImage(auction.getImagePath());
             }
@@ -162,17 +162,17 @@ public class AuctionService {
                 throw new RuntimeException("Cannot edit auction after bidding started");
             }
 
-            // Gán itemId từ auction cũ sang auction mới để đảm bảo không bị mất
+            // Assign itemId from old auction to new auction to ensure it is not lost
             auction.setItemId(oldAuction.getItemId());
 
-            // Lưu ảnh mới (nếu được thay đổi) và xóa ảnh cũ
+            // Save new image (if changed) and delete old image
             String newImageBase64 = auction.getImageBase64();
             String oldImageBase64 = oldAuction.getImageBase64();
             String imagePathToSave = oldAuction.getImagePath();
             String imagePathToDelete = null;
 
             if (newImageBase64 != null && !newImageBase64.isBlank() && !newImageBase64.equals(oldImageBase64)) {
-                // Có ảnh mới và ảnh mới khác ảnh cũ
+                // New image exists and is different from old image
                 imagePathToSave = imageService.saveBase64Image(connection, newImageBase64);
                 imagePathToDelete = oldAuction.getImagePath();
             }
@@ -194,7 +194,7 @@ public class AuctionService {
 
             eventBus.publishAuctionEdited(auction);
 
-            // Xóa ảnh cũ khỏi ổ đĩa sau khi cập nhật thành công trong Database
+            // Delete old image from disk after successfully updating in Database
             if (imagePathToDelete != null) {
                 imageService.deleteImage(imagePathToDelete);
             }
@@ -352,9 +352,9 @@ public class AuctionService {
                 winnerFromRam = userStore.getUserById(highestBidderId);
                 sellerFromRam = userStore.getUserById(sellerId);
                 
-                // Tiền vẫn được đóng băng (frozen_balance) của winner
-                // Tạm thời chưa chuyển tiền (available_balance) cho seller.
-                // Tính năng xác nhận chuyển tiền sẽ được thực hiện sau.
+                // Money is still frozen (frozen_balance) for winner
+                // Temporarily not transferred to seller's available_balance.
+                // Money transfer confirmation feature will be implemented later.
             }
 
             auction.setStatus(AuctionStatus.FINISHED);
@@ -400,7 +400,7 @@ public class AuctionService {
 
             auction.setStatus(AuctionStatus.CANCELLED);
 
-            // Hoàn lại tiền đóng băng cho người giữ giá cao nhất nếu có
+            // Refund frozen money to the highest bidder if any
             if (auction.getHighestBidderId() != null) {
                 User highestBidder = userStore.getUserById(auction.getHighestBidderId());
                 if (highestBidder != null) {
@@ -416,7 +416,7 @@ public class AuctionService {
                 }
             }
 
-            // Hủy tất cả Auto-Bids liên quan và hoàn lại phần tiền chênh lệch (nếu có)
+            // Cancel all related Auto-Bids and refund the difference (if any)
             AutoBidService.getInstance().cancelAllAutoBidsForAuction(connection, auctionId);
 
             auctionDAO.update(connection, auction);
@@ -426,13 +426,13 @@ public class AuctionService {
             // Sync with RAM Cache
             auctionStore.updateAuction(auction);
 
-            // Gửi sự kiện CANCELLED cho các client
+            // Send CANCELLED event to clients
             try {
                 auction_system.common.protocol.Response cancelResponse = new auction_system.common.protocol.Response(
                     auction_system.common.enums.Status.SUCCESS,
                     auction_system.common.enums.Action.EVENT_AUCTION_CANCELLED,
                     auction.getId(),
-                    "Phiên đấu giá bị hủy bởi quản trị viên."
+                    "Auction was cancelled by admin."
                 );
                 auction_system.server.AuctionServer.broadcast(auction_system.server.util.GsonUtil.toJson(cancelResponse));
             } catch (Exception e) {

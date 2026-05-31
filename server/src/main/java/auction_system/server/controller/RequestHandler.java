@@ -4,19 +4,19 @@ import auction_system.common.protocol.Request;
 import auction_system.common.protocol.Response;
 
 /**
- * Interface định nghĩa chuẩn xử lý request cho server.
- * Mỗi controller (LoginController, AuctionController, ...) sẽ implement interface này.
+ * Interface defining request handling standard for server.
+ * Each controller (LoginController, AuctionController, ...) will implement this interface.
  *
- * Mục đích:
- * - Cho phép ClientHandler gọi xử lý một cách thống nhất.
- * - Dễ dàng thay đổi hoặc thêm mới các handler mà không ảnh hưởng đến phần đọc socket.
+ * Purpose:
+ * - Allow ClientHandler to call processing uniformly.
+ * - Easily change or add new handlers without affecting socket reading part.
  */
 public interface RequestHandler {
 
     /**
-     * Xử lý một request và trả về response.
-     * @param request đối tượng Request đã được parse từ JSON (chứa action và data)
-     * @return Response object sẽ được chuyển thành JSON gửi về client
+     * Process a request and return response.
+     * @param request Request object parsed from JSON (contains action and data)
+     * @return Response object will be converted to JSON and sent to client
      */
     Response handle(Request request);
 }
