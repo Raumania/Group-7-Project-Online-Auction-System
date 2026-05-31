@@ -810,18 +810,14 @@ public class BidViewportController implements Initializable {
     }
 
     public static BigDecimal getBidIncrement(BigDecimal price) {
-        if (price == null) return BigDecimal.ZERO;
-        if (price.compareTo(new BigDecimal("100.00")) < 0) {
-            return new BigDecimal("5.00");
-        } else if (price.compareTo(new BigDecimal("500.00")) < 0) {
-            return new BigDecimal("10.00");
-        } else if (price.compareTo(new BigDecimal("1000.00")) < 0) {
-            return new BigDecimal("25.00");
-        } else if (price.compareTo(new BigDecimal("5000.00")) < 0) {
-            return new BigDecimal("50.00");
-        } else {
-            return new BigDecimal("100.00");
-        }
+        if (price == null || price.compareTo(new BigDecimal("1")) < 0)  return new BigDecimal("0.05");
+        else if (price.compareTo(new BigDecimal("5")) < 0)              return new BigDecimal("0.25");
+        else if (price.compareTo(new BigDecimal("25")) < 0)             return new BigDecimal("0.5");
+        else if (price.compareTo(new BigDecimal("100")) < 0)            return new BigDecimal("1");
+        else if (price.compareTo(new BigDecimal("250")) < 0)            return new BigDecimal("2.5");
+        else if (price.compareTo(new BigDecimal("500")) < 0)            return new BigDecimal("5");
+        else if (price.compareTo(new BigDecimal("1000")) < 0)           return new BigDecimal("10");
+        else                                                             return new BigDecimal("25");
     }
 
     private void updateStatusLabel(Label label, AuctionStatus status) {
