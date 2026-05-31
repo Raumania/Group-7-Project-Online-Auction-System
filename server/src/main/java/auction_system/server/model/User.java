@@ -123,7 +123,7 @@ public class User extends Entity {
 
     public void setPassword(String password) {
         if (password != null && password.trim().isEmpty()) {
-            throw new UserInformationException("Password cannot be empty");
+            throw new UserInformationException("Password cannot be null or empty");
         }
         this.password = password;
     }

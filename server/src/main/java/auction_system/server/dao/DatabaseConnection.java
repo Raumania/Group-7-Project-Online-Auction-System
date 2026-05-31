@@ -16,7 +16,7 @@ public class DatabaseConnection {
 
     // Change the password to match MySQL on your machine
     private static final String USERNAME = "root";
-    private static final String PASSWORD = "123456";
+    private static final String PASSWORD = "NCh200507@";
 
     private static boolean testMode = false;
     private static HikariDataSource dataSource;

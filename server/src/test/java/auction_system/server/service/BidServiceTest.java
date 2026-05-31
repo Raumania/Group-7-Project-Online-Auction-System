@@ -498,7 +498,7 @@ class BidServiceTest {
             var exception = assertThrows(InvalidBidException.class, () ->
                     bidService.placeBid(auction.getId(), bidder1, new BigDecimal("110"))
             );
-            assertEquals("Bạn đang là người đấu giá cao nhất", exception.getMessage());
+            assertEquals("You are already the highest bidder", exception.getMessage());
         }
 
         @Test

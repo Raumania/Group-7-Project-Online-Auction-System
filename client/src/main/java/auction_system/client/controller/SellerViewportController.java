@@ -185,7 +185,7 @@ public class SellerViewportController implements Initializable {
         });
 
         productTable.setItems(sellerAuctions);
-        FilteredList  filteredData= new FilteredList<>(sellerAuctions, b -> true);
+        filteredData = new FilteredList<>(sellerAuctions, b -> true);
 
         // 2. Wrap FilteredList in SortedList to keep column sorting feature
         SortedList<AuctionDTO> sortedData = new SortedList<>(filteredData);

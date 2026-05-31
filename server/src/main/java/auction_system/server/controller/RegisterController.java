@@ -20,15 +20,15 @@ public class RegisterController implements RequestHandler {
             UserDTO user = GsonUtil.fromJson(data, UserDTO.class);
 
             if (user.getFullname() == null || user.getFullname().trim().isEmpty()) {
-                throw new RuntimeException("Fullname cannot be empty");
+                throw new RuntimeException("Fullname cannot be null or empty");
             }
 
             if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
-                throw new RuntimeException("Username cannot be empty");
+                throw new RuntimeException("Username cannot be null or empty");
             }
 
             if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-                throw new RuntimeException("Password cannot be empty");
+                throw new RuntimeException("Password cannot be null or empty");
             }
 
             User userRespond = userService.registerUser(user.getFullname(), user.getUsername(), user.getPassword());

@@ -282,7 +282,7 @@ public class AuctionService {
 
     public List<Auction> findbyItemName(String name) {
         if (name == null || name.trim().isEmpty()) {
-            throw new RuntimeException("Item name cannot be empty");
+            throw new RuntimeException("Item name cannot be null or empty");
         }
 
         List<Auction> auctionsList = new ArrayList<>();
@@ -393,9 +393,8 @@ public class AuctionService {
             }
 
             if (auction.getStatus() != AuctionStatus.OPEN &&
-                    auction.getStatus() != AuctionStatus.RUNNING &&
-                    auction.getStatus() != AuctionStatus.FINISHED) {
-                throw new RuntimeException("Auction is not in OPEN, RUNNING or FINISHED state");
+                    auction.getStatus() != AuctionStatus.RUNNING) {
+                throw new RuntimeException("Auction is not in OPEN or RUNNING state");
             }
 
             auction.setStatus(AuctionStatus.CANCELLED);
