@@ -286,7 +286,6 @@ public class BidEngine implements AuctionObserver {
         if (endTime != null && !now.isAfter(endTime)) {
             long remainingSeconds = Duration.between(now, endTime).getSeconds();
             if (remainingSeconds <= 30 && remainingSeconds >= 0) {
-                auctionDAO.antisnippingtime(auction.getId());
                 auction.setEndTime(endTime.plusMinutes(1));
             }
         }

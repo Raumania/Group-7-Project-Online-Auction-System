@@ -74,47 +74,6 @@ public class AuctionDAO {
     public int save(Connection connection, Auction auction, int itemId) throws SQLException {
         return save(connection, auction, itemId, null);
     }
-    public void antisnippingtime(int auctionid) {
-        // Thêm WHERE auctionid=? để chỉ thao tác trên đúng phiên đấu giá đó
-        String selectQuery = "SELECT ending_time FROM auctions WHERE id=?";
-        String updateQuery = "UPDATE auctions SET endingtime=? WHERE id=?";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
-
-            // 1. Gán giá trị auctionid vào câu lệnh SELECT
-            selectStmt.setInt(1, auctionid);
-
-            try (ResultSet rs = selectStmt.executeQuery()) {
-                if (rs.next()) {
-                    // Lấy thời gian kết thúc hiện tại từ Database
-                    Timestamp dbEndTime = rs.getTimestamp("ending_time");
-
-                    if (dbEndTime != null) {
-                        // 2. Chuyển sang LocalDateTime và CỘNG THÊM 1 PHÚT
-                        LocalDateTime currentEnd = dbEndTime.toLocalDateTime();
-                        LocalDateTime newEnd = currentEnd.plusMinutes(1);
-
-                        // 3. Cập nhật lại vào Database
-                        try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
-                            // Chuyển ngược lại từ LocalDateTime sang Timestamp
-                            updateStmt.setTimestamp(1, Timestamp.valueOf(newEnd));
-                            updateStmt.setInt(2, auctionid);
-
-                            int rowsUpdated = updateStmt.executeUpdate();
-                            if (rowsUpdated > 0) {
-                                System.out.println("Đã tự động cộng thêm 1 phút cho auction ID: " + auctionid);
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Lỗi cơ sở dữ liệu khi gia hạn thời gian đấu giá: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
     public LocalDateTime getAuctionEndTime(int auctionid) {
         String selectQuery = "SELECT ending_time FROM auctions WHERE id = ?";
 

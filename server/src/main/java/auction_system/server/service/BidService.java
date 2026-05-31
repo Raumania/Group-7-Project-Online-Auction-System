@@ -179,7 +179,6 @@ public class BidService {
 
             // Nếu thời gian còn lại <= X giây
             if (remainingSeconds <= X && remainingSeconds >= 0) {
-                auctionDAO.antisnippingtime(auctionId);
                 // Also update in-memory object time!
                 auction.setEndTime(endTime.plusMinutes(1));
             }
