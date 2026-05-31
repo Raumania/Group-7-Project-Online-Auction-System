@@ -25,7 +25,11 @@ jobs:
           fi
 
           # 2. Cấu hình Authtoken cho ngrok từ GitHub Secrets
-          ngrok config add-authtoken "${{ secrets.NGROK_AUTHTOKEN }}"
+          if [ -z "${{ secrets.NGROK_AUTHTOKEN }}" ]; then
+            echo "WARNING: NGROK_AUTHTOKEN secret is empty! Please add NGROK_AUTHTOKEN in GitHub Secrets."
+          else
+            ngrok config add-authtoken "${{ secrets.NGROK_AUTHTOKEN }}"
+          fi
 
           # 3. Thực hiện deploy server bằng Docker như cũ
           cd Group-7-Project-Online-Auction-System
@@ -39,6 +43,10 @@ jobs:
           # 4. Tự động kiểm tra và chạy ngrok ngầm (nếu chưa chạy)
           if ! pgrep -x "ngrok" > /dev/null; then
             echo "Starting ngrok tunnel..."
+            # Chạy thử 5 giây ghi thẳng ra log để kiểm tra lỗi nếu có
+            timeout 5 ngrok tcp 3636 --log=stdout || echo "Finished direct diagnostic run."
+            
+            # Chạy ngầm thực sự
             nohup ngrok tcp 3636 > ~/ngrok.log 2>&1 &
             sleep 3
           fi
