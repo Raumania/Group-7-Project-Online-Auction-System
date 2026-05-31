@@ -22,6 +22,10 @@ public class ClientHandler implements Runnable {
     private DataOutputStream out;
     private int userId = -1;
 
+    // Async sender fields to prevent blocking the entire broadcast
+    private final java.util.concurrent.BlockingQueue<String> outgoingQueue = new java.util.concurrent.LinkedBlockingQueue<>();
+    private volatile boolean isRunning = true;
+
     public ClientHandler(Socket socket) {
         this.socket = socket;
         try {
@@ -81,24 +85,49 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         AuctionServer.addActiveClient(this);
+
+        // Start dedicated sender thread to process outgoing messages asynchronously
+        Thread senderThread = new Thread(() -> {
+            try {
+                while (isRunning && !socket.isClosed()) {
+                    String msg = outgoingQueue.take();
+                    synchronized (this) {
+                        if (out != null && isRunning) {
+                            writeMessage(out, msg);
+                        }
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (IOException e) {
+                System.err.println("ClientHandler sender thread encountered write error: " + e.getMessage());
+                closeConnection();
+            }
+        }, "client-sender-" + socket.getRemoteSocketAddress());
+        senderThread.setDaemon(true);
+        senderThread.start();
+
         // FIX: Synchronize using DataInputStream and DataOutputStream like Client
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
              DataOutputStream output = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()))) {
 
-            this.out = output;
-            // Use infinite loop, readUTF() will throw EOFException when Client disconnects
-            while (true) {
+            synchronized (this) {
+                this.out = output;
+            }
+
+            // Use infinite loop, readMessage will throw EOFException when Client disconnects
+            while (isRunning) {
                 String line;
 
                 try {
-                    // FIX: Read using readUTF() to match out.writeUTF() of Client
-                    //line = in.readUTF();
-                    line=readMessage(in);
+                    line = readMessage(in);
                 } catch (EOFException e) {
                     // Client disconnected
                     System.out.println("Client disconnected.");
                     break;
                 }
+
+                if (line == null) continue;
 
                 System.out.println("Request: " + maskImageBase64(line));
                 Request req = GsonUtil.fromJson(line, Request.class);
@@ -161,29 +190,26 @@ public class ClientHandler implements Runnable {
         } catch (IOException e) {
             System.err.println("ClientHandler IO error: " + e.getMessage());
         } finally {
-            AuctionServer.removeActiveClient(this);
-            try {
-                if (socket != null && !socket.isClosed())
-                    socket.close();
-            } catch (IOException e) {
-                System.err.println("Error closing socket: " + e.getMessage());
-            }
+            closeConnection();
         }
     }
 
-    public synchronized void send(String message) {
-        if (out != null) {
+    public void send(String message) {
+        if (isRunning) {
+            outgoingQueue.offer(message);
+        }
+    }
+
+    private synchronized void closeConnection() {
+        if (isRunning) {
+            isRunning = false;
+            AuctionServer.removeActiveClient(this);
             try {
-                writeMessage(out, message);
-            } catch (IOException e) {
-                System.err.println("Failed to send message to client: " + e.getMessage());
-                // Remove disconnected client from active list and close socket
-                AuctionServer.removeActiveClient(this);
-                try {
+                if (socket != null && !socket.isClosed()) {
                     socket.close();
-                } catch (IOException ex) {
-                    // ignore
                 }
+            } catch (IOException e) {
+                System.err.println("Error closing socket: " + e.getMessage());
             }
         }
     }
