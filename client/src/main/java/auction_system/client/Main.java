@@ -12,7 +12,7 @@ import java.io.IOException;
 
 public class Main extends Application {
     public void start(Stage stage) throws IOException {
-        SocketClient.getInstance().connect("localhost",3636);
+        SocketClient.getInstance().connect("0.tcp.ap.ngrok.io",13539);
 
         Parent root = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
         Scene scene = new Scene(root);
