@@ -100,7 +100,7 @@ public class AuctionDAO {
         return null;
     }
     public Auction findById(int id) {
-        String sql = "SELECT a.*, i.name, i.description, i.type, u.username as highest_bidder_username FROM auctions a JOIN items i ON a.item_id = i.id LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE a.id = ?";
+        String sql = "SELECT a.*, i.name, i.description, i.type, u.username as highest_bidder_username, s.username as seller_username FROM auctions a JOIN items i ON a.item_id = i.id LEFT JOIN users u ON a.highest_bidder_id = u.id JOIN users s ON a.seller_id = s.id WHERE a.id = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -121,7 +121,7 @@ public class AuctionDAO {
     }
 
     public Auction findByIdForUpdate(Connection connection, int id) {
-        String sql = "SELECT a.*, i.name, i.description, i.type, u.username as highest_bidder_username FROM auctions a JOIN items i ON a.item_id = i.id LEFT JOIN users u ON a.highest_bidder_id = u.id WHERE a.id = ? FOR UPDATE";
+        String sql = "SELECT a.*, i.name, i.description, i.type, u.username as highest_bidder_username, s.username as seller_username FROM auctions a JOIN items i ON a.item_id = i.id LEFT JOIN users u ON a.highest_bidder_id = u.id JOIN users s ON a.seller_id = s.id WHERE a.id = ? FOR UPDATE";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
 
@@ -144,10 +144,12 @@ public class AuctionDAO {
         String sql = """
             SELECT
                 a.*, i.name, i.description, i.type,
-                u.username AS highest_bidder_username
+                u.username AS highest_bidder_username,
+                s.username AS seller_username
             FROM auctions a
             INNER JOIN items i ON a.item_id = i.id
             LEFT JOIN users u ON a.highest_bidder_id = u.id
+            INNER JOIN users s ON a.seller_id = s.id
             """;
 
         List<Auction> auctions = new ArrayList<>();
@@ -171,10 +173,12 @@ public class AuctionDAO {
         String sql = """
             SELECT
                 a.*, i.name, i.description, i.type,
-                u.username AS highest_bidder_username
+                u.username AS highest_bidder_username,
+                s.username AS seller_username
             FROM auctions a
             INNER JOIN items i ON a.item_id = i.id
             LEFT JOIN users u ON a.highest_bidder_id = u.id
+            INNER JOIN users s ON a.seller_id = s.id
             WHERE a.seller_id = ?
             """;
 
@@ -202,10 +206,12 @@ public class AuctionDAO {
         String sql = """
             SELECT
                 a.*, i.name, i.description, i.type,
-                u.username AS highest_bidder_username
+                u.username AS highest_bidder_username,
+                s.username AS seller_username
             FROM auctions a
             INNER JOIN items i ON a.item_id = i.id
             LEFT JOIN users u ON a.highest_bidder_id = u.id
+            INNER JOIN users s ON a.seller_id = s.id
             WHERE a.status = 'OPEN' OR a.status = 'RUNNING'
             """;
 
@@ -230,10 +236,12 @@ public class AuctionDAO {
         String sql = """
             SELECT
                 a.*, i.name, i.description, i.type,
-                u.username AS highest_bidder_username
+                u.username AS highest_bidder_username,
+                s.username AS seller_username
             FROM auctions a
             INNER JOIN items i ON a.item_id = i.id
             LEFT JOIN users u ON a.highest_bidder_id = u.id
+            INNER JOIN users s ON a.seller_id = s.id
             WHERE a.seller_id = ? AND (a.status = 'OPEN' OR a.status = 'RUNNING' OR a.status = 'FINISHED')
             """;
         List<Auction> auctions = new ArrayList<>();
@@ -254,10 +262,12 @@ public class AuctionDAO {
         String sql = """
             SELECT
                 a.*, i.name, i.description, i.type,
-                u.username AS highest_bidder_username
+                u.username AS highest_bidder_username,
+                s.username AS seller_username
             FROM auctions a
             INNER JOIN items i ON a.item_id = i.id
             LEFT JOIN users u ON a.highest_bidder_id = u.id
+            INNER JOIN users s ON a.seller_id = s.id
             WHERE a.highest_bidder_id = ? AND (a.status = 'OPEN' OR a.status = 'RUNNING' OR a.status = 'FINISHED')
             """;
         List<Auction> auctions = new ArrayList<>();
@@ -369,6 +379,7 @@ public class AuctionDAO {
         auction.setId(resultSet.getInt("id"));
         auction.setItemId(resultSet.getInt("item_id"));
         auction.setSellerId(resultSet.getInt("seller_id"));
+        auction.setSellerUsername(resultSet.getString("seller_username"));
         auction.setName(resultSet.getString("name"));
         auction.setDescription(resultSet.getString("description"));
         auction.setStartingPrice(resultSet.getBigDecimal("starting_price"));

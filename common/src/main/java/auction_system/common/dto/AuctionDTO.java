@@ -21,6 +21,7 @@ public class AuctionDTO {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String imageBase64;
+    private String sellerUsername;
 
     public AuctionDTO() {
     }
@@ -149,6 +150,14 @@ public class AuctionDTO {
 
     public void setStartTime(LocalDateTime startTime) {
         this.startTime = startTime;
+    }
+
+    public String getSellerUsername() {
+        return sellerUsername;
+    }
+
+    public void setSellerUsername(String sellerUsername) {
+        this.sellerUsername = sellerUsername;
     }
 
     public LocalDateTime getEndTime() {

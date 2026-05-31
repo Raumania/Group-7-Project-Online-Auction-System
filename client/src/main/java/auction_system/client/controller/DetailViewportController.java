@@ -113,7 +113,7 @@ public class DetailViewportController {
         itemNameLabel.setText(auctionDTO.getName());
         descriptionLabel.setText(auctionDTO.getDescription());
         updateStatusLabel(statusLabel, auctionDTO.getStatus());
-        sellerUsernameLabel.setText(String.valueOf(auctionDTO.getSellerId())); // Assuming we display Seller ID for now
+        sellerUsernameLabel.setText(auctionDTO.getSellerUsername() != null ? auctionDTO.getSellerUsername() : String.valueOf(auctionDTO.getSellerId()));
 
         if (auctionDTO.getStartingPrice() != null) {
             startingPriceLabel.setText(currencyFormatter.format(auctionDTO.getStartingPrice()));

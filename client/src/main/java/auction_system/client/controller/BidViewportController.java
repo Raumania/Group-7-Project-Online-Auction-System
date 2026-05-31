@@ -201,7 +201,7 @@ public class BidViewportController implements Initializable {
         AuctionStore.getInstance().getAuctions().addListener(storeListener);
 
         itemNameLabel.setText(auctionDTO.getName());
-        sellerLabel.setText(String.valueOf(auctionDTO.getSellerId()));
+        sellerLabel.setText(auctionDTO.getSellerUsername() != null ? auctionDTO.getSellerUsername() : String.valueOf(auctionDTO.getSellerId()));
         categoryLabel.setText(String.valueOf(auctionDTO.getType()));
         updateStatusLabel(statusLabel, auctionDTO.getStatus());
         startingPriceLabel.setText(currencyFormatter.format(auctionDTO.getStartingPrice()));

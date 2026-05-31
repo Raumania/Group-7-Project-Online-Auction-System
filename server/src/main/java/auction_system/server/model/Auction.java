@@ -23,6 +23,7 @@ public class Auction extends Entity{
     private LocalDateTime endTime;
     private String imageBase64;
     private String imagePath;
+    private String sellerUsername;
     public Auction() {
     }
 
@@ -33,6 +34,7 @@ public class Auction extends Entity{
         this.description = auctionDTO.getDescription();
         this.type = auctionDTO.getType();
         this.sellerId = auctionDTO.getSellerId();
+        this.sellerUsername = auctionDTO.getSellerUsername();
         this.startingPrice = auctionDTO.getStartingPrice();
         this.currentPrice = auctionDTO.getCurrentPrice();
         this.highestBidderId = auctionDTO.getHighestBidderId() == 0
@@ -162,6 +164,12 @@ public class Auction extends Entity{
     }
     public void setImagePath(String imagePath) {
         this.imagePath = imagePath;
+    }
+    public String getSellerUsername() {
+        return sellerUsername;
+    }
+    public void setSellerUsername(String sellerUsername) {
+        this.sellerUsername = sellerUsername;
     }
     @Override
     public String toString() {
