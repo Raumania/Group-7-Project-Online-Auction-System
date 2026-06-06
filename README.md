@@ -97,7 +97,7 @@ If you have Maven installed globally, open your terminal/command prompt at the r
 1. **Start the Server:**
 
 ```bash
-mvn clean compile javafx:run -pl server
+mvn clean compile exec:java -pl server
 ```
 
 2. **Start the Client** *(Open a new terminal window)*:
@@ -116,10 +116,10 @@ If you prefer not to install Maven globally, you can use the built-in Maven Wrap
 
 ```cmd
 # In Command Prompt (CMD)
-mvnw.cmd clean compile javafx:run -pl server
+mvnw.cmd clean compile exec:java -pl server
 
 # In PowerShell
-.\mvnw.cmd clean compile javafx:run -pl server
+.\mvnw.cmd clean compile exec:java -pl server
 ```
 
 2. **Start the Client:**
@@ -138,7 +138,7 @@ mvnw.cmd clean compile javafx:run -pl client
 1. **Start the Server:**
 
 ```bash
-./mvnw clean compile javafx:run -pl server
+./mvnw clean compile exec:java -pl server
 ```
 
 2. **Start the Client:**
