@@ -97,13 +97,13 @@ If you have Maven installed globally, open your terminal/command prompt at the r
 1. **Start the Server:**
 
 ```bash
-mvn clean compile exec:java -pl server
+mvn clean compile javafx:run -pl server
 ```
 
 2. **Start the Client** *(Open a new terminal window)*:
 
 ```bash
-mvn clean compile exec:java -pl client
+mvn clean compile javafx:run -pl client
 ```
 
 ### Running the Application (Maven Wrapper - mvnw)
@@ -116,20 +116,20 @@ If you prefer not to install Maven globally, you can use the built-in Maven Wrap
 
 ```cmd
 # In Command Prompt (CMD)
-mvnw.cmd clean compile exec:java -pl server
+mvnw.cmd clean compile javafx:run -pl server
 
 # In PowerShell
-.\mvnw.cmd clean compile exec:java -pl server
+.\mvnw.cmd clean compile javafx:run -pl server
 ```
 
 2. **Start the Client:**
 
 ```cmd
 # In Command Prompt (CMD)
-mvnw.cmd clean compile exec:java -pl client
+mvnw.cmd clean compile javafx:run -pl client
 
 # In PowerShell
-.\mvnw.cmd clean compile exec:java -pl client
+.\mvnw.cmd clean compile javafx:run -pl client
 ```
 
 #### 🍎 macOS / 🐧 Linux (Ubuntu)
@@ -138,13 +138,13 @@ mvnw.cmd clean compile exec:java -pl client
 1. **Start the Server:**
 
 ```bash
-./mvnw clean compile exec:java -pl server
+./mvnw clean compile javafx:run -pl server
 ```
 
 2. **Start the Client:**
 
 ```bash
-./mvnw clean compile exec:java -pl client
+./mvnw clean compile javafx:run -pl client
 ```
 
 ---
